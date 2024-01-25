@@ -2,6 +2,9 @@
 ; ---------- [ BASIC COMMANDS ] ----------
 ;
 
+%ifndef BASICCOMMANDS_ASM
+%define BASICCOMMANDS_ASM
+
 %macro CMDCMP_JUMP_EQUAL 3
 
   lea di, [%1]
@@ -58,3 +61,5 @@ kernel_printHelp:
 kernel_clear:
   call clear
   jmp kernel_readCommandsLoop
+
+%endif

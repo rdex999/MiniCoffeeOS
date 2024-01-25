@@ -2,6 +2,9 @@
 ; ---------- [ BASIC INPUT/OUTPUT FUNCTIONS ] ----------
 ;
 
+%ifndef IO_ASM
+%define IO_ASM
+
 ; prints 10 and 13 (ascii codes). goes down a line
 %macro PRINT_NEWLINE 0
 
@@ -123,3 +126,5 @@ read_backspace:
   int 10h       ;
 
   jmp read_loop
+
+%endif

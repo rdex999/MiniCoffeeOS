@@ -2,6 +2,9 @@
 ; ---------- [ BASIC STRING FUNCTIONS ] ----------
 ;
 
+%ifndef STRING_ASM
+%define STRING_ASM
+
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3
 
@@ -54,3 +57,5 @@ strlen_loop:
   mov ax, di
   sub ax, si
   ret
+
+%endif

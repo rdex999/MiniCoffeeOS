@@ -2,6 +2,9 @@
 ; ---------- [ BASIC SCREEN MANIPULATION FUNCTIONS ] ----------
 ;
 
+%ifndef SCREEN_ASM
+%define SCREEN_ASM
+
 ; sets the cursors position
 ; PARAMS
 ; 0) int => row
@@ -37,3 +40,5 @@ clear_loop:
   xor bh, bh
   int 10h
   ret
+
+%endif
