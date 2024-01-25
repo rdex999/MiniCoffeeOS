@@ -5,18 +5,6 @@
 %ifndef STRING_ASM
 %define STRING_ASM
 
-; compares two strings and if equal then jump to given lable
-%macro STRCMP_JUMP_EQUAL 3
-
-  lea di, %1
-  lea si, %2
-  call strcmp
-  test ax, ax
-  jz %3
-
-%endmacro
-
-
 ; compares two strings (zero terminated)
 ; PARAMS
 ; 0) const char* (DI) => string

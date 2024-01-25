@@ -12,6 +12,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "source/kernel/screen/screen.asm"
 %include "source/kernel/string/string.asm"
 %include "source/kernel/basicCommands/basicCommands.asm"
+%include "source/kernel/macros/macros.asm"
 
 ;
 ; ---------- [ DATA SECTION ] ----------

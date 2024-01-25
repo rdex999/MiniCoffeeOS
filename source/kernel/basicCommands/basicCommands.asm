@@ -5,16 +5,6 @@
 %ifndef BASICCOMMANDS_ASM
 %define BASICCOMMANDS_ASM
 
-%macro CMDCMP_JUMP_EQUAL 3
-
-  lea di, [%1]
-  lea si, [%2]
-  call cmdcmp
-  test ax, ax
-  jz %3
-
-%endmacro
-
 ; compares two commands (strings)
 ; basicli compares two strings but stops on a space
 ; PARAMS
@@ -49,7 +39,6 @@ cmdcmp_spaceFirst:
   je cmdcmp_endTrue
   mov ax, 1
   ret
-
 
 
 

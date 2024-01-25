@@ -5,27 +5,7 @@
 %ifndef IO_ASM
 %define IO_ASM
 
-; prints 10 and 13 (ascii codes). goes down a line
-%macro PRINT_NEWLINE 0
-
-  mov ah, 0Eh
-  mov al, 10
-  int 10h
-
-  mov ah, 0Eh
-  mov al, 13
-  int 10h
-
-%endmacro
-
-; prints a single character
-%macro PRINT_CHAR 1
-
-  mov ah, 0Eh
-  mov al, %1
-  int 10h
-
-%endmacro
+%include "source/kernel/macros/macros.asm"
 
 ; prints a zero terminated string.
 ; PARAMS
@@ -35,7 +15,7 @@ printStr:
   cmp al, 0
   je printStr_end
 
-  cmp al, 0Bh   ; check for tab
+  cmp al, 0Bh       ; check for tab
   je printStr_tab
 
   mov ah, 0Eh
@@ -66,9 +46,7 @@ read:
   mov bp, sp
   sub sp, 2
 
-  mov ah, 3     ;
-  xor bh, bh    ; get cursor location 
-  int 10h       ;
+  GET_CURSOR_POSITION 0
 
   mov [bp - 2], dx  ; store starting location
   xor cx, cx        ; zero out bytes read counter
@@ -104,9 +82,8 @@ read_end:
   ret
 
 read_backspace:
-  mov ah, 3   ; get cursor location
-  xor bh, bh  ;
-  int 10h     ;
+  
+  GET_CURSOR_POSITION 0 
 
   cmp [bp - 2], dx    ; Compare the location at which started reading to this location
   jge read_loop       ; if the starting location is greater or equal to this then dont delete characters
@@ -121,7 +98,7 @@ read_backspace:
   mov ah, 2   ; set location from DX (DH => row, DL, column)
   int 10h     ;
 
-  mov ah, 0Ah   ; write a space
+  mov ah, 0Ah   ; write a space without addvancing the cursor
   mov al, ' '   ; 
   int 10h       ;
 

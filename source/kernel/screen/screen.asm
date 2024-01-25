@@ -5,22 +5,6 @@
 %ifndef SCREEN_ASM
 %define SCREEN_ASM
 
-; sets the cursors position
-; PARAMS
-; 0) int => row
-; 1) int => column
-; 2) int => page
-%macro SET_CURSOR_POSITION 3
-
-  mov ah, 2h 
-  mov dh, %1
-  mov dl, %2
-  mov bh, %3
-  int 10h
-
-%endmacro
-
-
 ; clears the screen
 clear:
   mov ah, 2
