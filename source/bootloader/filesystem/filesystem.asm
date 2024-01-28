@@ -51,10 +51,84 @@ readDisk:
   ret
 
 
+; converts a cluster number to LBA address
+; PARAMS
+;   - 0) DI   => cluster address
+; RETURNS
+;   returns in AX the LBA address
+clusterToLBA:                       ; LBA = dataRegionOffset + (cluster - 2) * sectorsPerCluster
+  sub di, 2                         ; DI = cluster - 2
+  mov ax, di                        ; AX = cluster - 2
+  xor bh, bh
+  mov bl, [bpb_sectorPerCluster]    ;
+  mul bx                            ; AX *= sectorsPerCluster
+  ;mov si, ax                        ; save in SI for now
+  push ax 
+  GET_DATA_REGION_OFFSET            ; get data region first sector in AX
+  ;add ax, si                        ; add to result
+  pop bx
+  add ax, bx 
+  ret
 
-; Searches for kernelFilename ("KERNEL  BIN") (11 bytes) and loads it to memory at buffer (buffer is a lable at the end of the boot sector 7E00h)
-loadKernel:
 
+; Searches for a file and loads it to memory at buffer 
+; PARAMS
+;   - 0) DI     => file name, 11 bytes all capital
+;   - 1) ES:BX  => buffer to store data in
+; RETURNS
+; 0 on success and 1 on failure.
+readFile:
+  push bp
+  mov bp, sp
+
+  sub sp, 6                 ; allocate 4 bytes
+  mov [bp - 2], di          ; store file name
+  mov [bp - 4], bx          ; store buffer pointer offset
+  mov [bp - 6], es          ; store buffer pointer segment
+  xor bx, bx
+  mov es, bx
+
+  GET_ROOT_DIR_OFFSET       ; get the root directory offset (in sectors) in AX
+  mov si, ax                ; save for now in SI
+  GET_ROOT_DIR_SIZE         ; get the size of the root directory (in sectors) in AX
+
+  mov di, si                ; first argument for readDisk, LBA address
+  mov si, ax                ; second argument for readDisk, how many sectors to read
+  mov bx, buffer            ; third argument for readDisk, data buffer to store the data in. ES:BX 0000h:7E00h
+  call readDisk
+
+
+  mov ax, [bpb_rootDirectoryEntries]
+  xor bx, bx
+readFile_searchFileLoop:
+  mov di, buffer            ; get the location of the first thing in the root directory ( + 32 to skip the volume name)
+  add di, bx                ; offset by BX (which grows by 32 each iteration) to get next entry
+  mov si, [bp - 2]          ; get file name
+  mov cx, 11                ; compare 11 bytes
+  cld                       ; clear direction flag
+  
+  ; REPE will repeate the following instruction until CX is 0 (it decrements CX each time) 
+  ; CMDSB (compare string bytes) compares byte at DS:DI to byte at ES:SI, and increment SI and DI if direction flag is 1
+  repe cmpsb
+  je readFile_foundFile
+
+  add bx, 32
+
+  dec ax                              ; decrement entries counter
+  jnz readFile_searchFileLoop
+
+  mov ax, 1                           ; could not find file
+  mov sp, bp
+  pop bp
+  ret
+
+readFile_foundFile:
+  mov di, [di - 11 + 26]              ; get low 16 bits of entries first cluster number (26 is the offset and -11 because filename)
+
+
+end:
+  mov sp, bp
+  pop bp 
   ret
 
 %endif

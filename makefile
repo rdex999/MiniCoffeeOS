@@ -9,6 +9,7 @@ $(FDA): $(BLD)boot.bin $(BLD)kernel.bin
 	mkfs.fat -F 12 -n "MYKERNEL" $(FDA)
 	dd if=$(BLD)boot.bin of=$(FDA) conv=notrunc
 	mcopy -i $(FDA) $(BLD)kernel.bin "::kernel.bin"
+	mcopy -i $(FDA) $(BLD)kernel.bin "::test.txt"
 
 
 $(BLD)boot.bin: $(SRC)bootloader/boot.asm

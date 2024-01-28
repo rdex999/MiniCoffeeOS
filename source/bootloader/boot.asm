@@ -4,6 +4,9 @@ org 7c00h
 
 %include "source/bootloader/macros/macros.asm"
 
+%define KERNEL_SEGMENT  2000h
+%define KERNEL_OFFSET   0
+
 ;
 ; ---------- [ BIOS PARAMETER BLOCK ] ----------
 ;
@@ -72,18 +75,22 @@ afterCodeSegCheck:
   lea di, [loadingMsg]
   call printStr
 
-  GET_ROOT_DIR_OFFSET
-  mov si, ax
-  GET_ROOT_DIR_SIZE
+  lea di, kernelFilename
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
+  mov bx, KERNEL_OFFSET 
+  call readFile
+  
+  ;GET_ROOT_DIR_OFFSET
+  ;mov si, ax
+  ;GET_ROOT_DIR_SIZE
 
-  mov di, si
-  mov si, ax
-  mov bx, buffer
-  call readDisk
+  ;mov di, si
+  ;mov si, ax
+  ;mov bx, buffer
+  ;call readDisk
 
-  PRINT_STR11 buffer+32
-
-
+  ;PRINT_STR11 buffer+32
 
   cli           ; disable interrupts
   hlt
@@ -117,6 +124,7 @@ printStr_end:
 
 loadingMsg:         db "Loading kernel into memory and booting...", 10, 13, 0
 kernelFilename:     db "KERNEL  BIN"
+;kernelFilename:     db "TEST    TXT"        ;;;;;;;;;;;;; FOR DEBUG
 
 ; (510 - <size of segment>)/2 ( fill rest of sector with zeros and last to bytes are 0AA55h )
 times 510 - ($ - $$) db 0
