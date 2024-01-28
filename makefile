@@ -5,11 +5,11 @@ BLD=build/
 FDA=floppy.img
 
 $(FDA): $(BLD)boot.bin $(BLD)kernel.bin
-	dd if=/dev/zero of=$(FDA) bs=512 count=2880
-	mkfs.fat -F 12 -n "MYKERNEL" $(FDA)
+	dd if=/dev/zero of=$(FDA) bs=1000K count=9
+	mkfs.fat -F 16 -n "MYKERNEL" $(FDA)
 	dd if=$(BLD)boot.bin of=$(FDA) conv=notrunc
 	mcopy -i $(FDA) $(BLD)kernel.bin "::kernel.bin"
-	mcopy -i $(FDA) $(BLD)kernel.bin "::test.txt"
+	mcopy -i $(FDA) test.txt "::test.txt"
 
 
 $(BLD)boot.bin: $(SRC)bootloader/boot.asm

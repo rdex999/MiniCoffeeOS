@@ -62,12 +62,10 @@ clusterToLBA:                       ; LBA = dataRegionOffset + (cluster - 2) * s
   xor bh, bh
   mov bl, [bpb_sectorPerCluster]    ;
   mul bx                            ; AX *= sectorsPerCluster
-  ;mov si, ax                        ; save in SI for now
-  push ax 
-  GET_DATA_REGION_OFFSET            ; get data region first sector in AX
-  ;add ax, si                        ; add to result
+  push ax                           ; Save for now
+  GET_DATA_REGION_OFFSET            ; Get data region first sector in AX
   pop bx
-  add ax, bx 
+  add ax, bx                        ; add to result
   ret
 
 
@@ -81,7 +79,7 @@ readFile:
   push bp
   mov bp, sp
 
-  sub sp, 6                 ; allocate 4 bytes
+  sub sp, 10                 ; allocate 4 bytes
   mov [bp - 2], di          ; store file name
   mov [bp - 4], bx          ; store buffer pointer offset
   mov [bp - 6], es          ; store buffer pointer segment
@@ -97,7 +95,6 @@ readFile:
   mov bx, buffer            ; third argument for readDisk, data buffer to store the data in. ES:BX 0000h:7E00h
   call readDisk
 
-
   mov ax, [bpb_rootDirectoryEntries]
   xor bx, bx
 readFile_searchFileLoop:
@@ -112,18 +109,55 @@ readFile_searchFileLoop:
   repe cmpsb
   je readFile_foundFile
 
-  add bx, 32
+  add bx, 32                    ; each directory entry is 32 bytes (yes bytes and not bits)
 
-  dec ax                              ; decrement entries counter
-  jnz readFile_searchFileLoop
+  dec ax                        ; decrement entries counter
+  jnz readFile_searchFileLoop   ; As long as there are any root directories left, continue reading. (AX is a counter for entries left)
 
-  mov ax, 1                           ; could not find file
+  mov ax, 1                     ; Could not find file, return 1
   mov sp, bp
   pop bp
   ret
 
 readFile_foundFile:
   mov di, [di - 11 + 26]              ; get low 16 bits of entries first cluster number (26 is the offset and -11 because filename)
+  push di                             ; Store first cluster
+
+  ; Read FAT into memory at 7E00h
+  xor bx, bx                          ; Read at 7E00h (ES:BX)
+  mov es, bx                          ;
+  mov bx, buffer                      ;
+  mov di, [bpb_reservedSectors]       ; First sector of FATs
+  mov si, [bpb_sectorsPerFAT]         ; How much to read
+  call readDisk
+
+  pop di                              ; Restore first cluster number
+  call clusterToLBA                   ; Convert cluster to LBA
+  mov di, ax                          ; DI = LBA (First argument, where to read from)
+  mov si, 1                           ; Read one sector
+  mov bx, buffer                      ; Where to read to (7E00h) (yes i know it will overwrite FAT its for debug stuff)
+  call readDisk
+
+  mov di, buffer                      ; Print string from 7E00h (files data)
+  call printStr
+
+  ;;;;;;;;;;; this will be soon
+;   mov bx, [bp - 6]
+;   mov es, bx
+;   mov bx, [bp - 4]
+
+;   ; *(bp - 8) = index in FAT
+;   pop di
+;   mov [bp - 8], di
+; readFile_processClusterChain:
+;   call clusterToLBA
+
+;   mov di, ax
+;   mov si, 1                       ; Read one sector
+;   call readDisk
+
+;   mov di, [bp - 8]
+;   mov di, [ds:di + buffer]
 
 
 end:

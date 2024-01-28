@@ -41,11 +41,22 @@
 
 %macro GET_DATA_REGION_OFFSET 0
 
-  GET_ROOT_DIR_SIZE
+  ;GET_ROOT_DIR_SIZE
+  ;push ax
+  ;GET_ROOT_DIR_OFFSET
+  ;pop bx
+  ;add ax, bx
+
+  xor ah, ah
+  mov al, [bpb_FATs]
+  mov bx, [bpb_sectorsPerFAT]
+  mul bx
+  add ax, [bpb_reservedSectors]
   push ax
-  GET_ROOT_DIR_OFFSET
+  GET_ROOT_DIR_SIZE
   pop bx
   add ax, bx
+
 
 %endmacro
 
