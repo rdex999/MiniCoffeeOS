@@ -1,6 +1,6 @@
 bits 16
 
-org 0000h
+org 0h
 
 jmp kernelMain    ; skip data and function declaration section
 
@@ -42,8 +42,8 @@ clearCmd:           db "clear", 0
 
 kernelMain:
 
-  mov ax, 0800h
-  mov ds, ax      ; set data segment start at 0800h
+  ;mov ax, 0800h
+  ;mov ds, ax      ; set data segment start at 0800h
  
   call clear
  
