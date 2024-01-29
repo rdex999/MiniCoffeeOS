@@ -45,7 +45,6 @@ ebpb_signature:               db 29h
 ebpb_volumeID:                dw 0
                               dw 0
 ebpb_volumeLable:             db "MY KERNEL  " ; 11 bytes
-;ebpb_systemID:                 db "MYKERNEL"    ; 8 bytes
 ebpb_systemID:                db "KERNEL  "    ; 8 bytes
 
 ;
@@ -93,9 +92,6 @@ afterCodeSegCheck:
   mov bx, KERNEL_OFFSET               ; BX = KernelOffset // ES:BX points to a location in memory to load kernel to.
   call readFile                       ; Load kernel into memory at ES:BX
 
-  ;mov di, buffer
-  ;call printStr
-
   mov dl, [ebpb_driveNumber]
   mov ax, KERNEL_SEGMENT
   mov ds, ax
@@ -137,9 +133,9 @@ loadingMsg:         db "Loading kernel into memory and booting...", 10, 13, 0
 kernelFilename:     db "KERNEL  BIN"
 ;kernelFilename:     db "TEST    TXT"        ;;;;;;;;;;;;; FOR DEBUG
 
-; (510 - <size of segment>)/2 ( fill rest of sector with zeros and last to bytes are 0AA55h )
+; Fill rest of the file with zeros
 times 510 - ($ - $$) db 0
 
-dw 0AA55h   ; magic number%
+dw 0AA55h   ; Magic number
 
 buffer:
