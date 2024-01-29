@@ -135,7 +135,9 @@ readFile_processClusterChain:
   call clusterToLBA                       ; Each time we get here, DI will have the cluster number. Convert it to an LBA address        
 
   mov di, ax                              ; First argument for readDisk, the LBA address
-  mov si, [bpb_sectorPerCluster]          ; Read one cluster
+  xor ah, ah                              ; Because sectorPerCluster is 8 bits
+  mov al, [bpb_sectorPerCluster] 
+  mov si, ax                              ; Read one cluster (the number of sectors in a cluster)
 
   mov bx, [bp - 6]                        ; ES:BX points to receiving data buffer
   mov es, bx                              ;
