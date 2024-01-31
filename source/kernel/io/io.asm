@@ -27,13 +27,22 @@ printStr_end:
   ret
 
 printStr_tab:       ; loops 4 times and prints a space each time
-  mov cx, 4
+  inc di                      ; Increase string pointer
+  push di                     ; Save string pointer for now
+  GET_CURSOR_POSITION 0       ; Get the column in DL
 printStr_tabLoop:
   PRINT_CHAR ' '
-  loop printStr_tabLoop
-  inc di 
-  jmp printStr
+  inc dl                      ; Increase column number
+  mov al, dl                  ; Store copy of column number in AL
+  mov bl, 4                   ; Because divibing by 4
+  xor ah, ah                  ; Zero remainder register
+  div bl                      ; divibe the copy of the column number by 4
+  test ah, ah                 ; Check if the remainder is 0 (to stop printing spaces)
+  jnz printStr_tabLoop        ; If the remainder is not zero then continue printing spaces
 
+  ; Will get here when need to stop printing spaces
+  pop di                      ; Restore string pointer
+  jmp printStr                ; Continue printing characters from the string
 
 ; reads a string into a buffer with echoing. zero terminates the string.
 ; PARAMS
