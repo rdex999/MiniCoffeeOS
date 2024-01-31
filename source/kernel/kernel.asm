@@ -18,7 +18,8 @@ jmp kernelMain    ; skip data and function declaration section
 ; ---------- [ DATA SECTION ] ----------
 ;
 
-%define COMMAND_MAX_LENGTH 65
+; %define COMMAND_MAX_LENGTH 65
+%define COMMAND_MAX_LENGTH 80
 
 %define NEWLINE 10, 13
 %define TAB 0Bh
