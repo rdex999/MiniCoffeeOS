@@ -18,6 +18,9 @@ printStr:
   cmp al, 0Bh                     ; check for tab
   je printStr_tab
 
+  cmp al, 0Ah                     ; Check for newline
+  je printStr_newline
+
   mov ah, 0Eh                     ; int10h/AH=0Eh   // Write character from AL and advance the cursor
   int 10h
   inc di                          ; Increase string pointer
@@ -44,6 +47,12 @@ printStr_tabLoop:
   pop di                      ; Restore string pointer
   jmp printStr                ; Continue printing characters from the string
 
+printStr_newline:
+  mov ah, 0Eh                 ; value 10 is in AL
+  int 10h                     ; print Line Feed character
+  PRINT_CHAR 0Dh              ; print Carriage Return character
+  inc di
+  jmp printStr
 
 
 ; reads a string into a buffer with echoing. zero terminates the string.

@@ -5,6 +5,11 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
+; LC stands for: Line Feed, Carriage Return
+%define NEWLINE_LC 0Ah, 0Dh
+%define NEWLINE 0Ah
+%define TAB 0Bh
+
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3
 
