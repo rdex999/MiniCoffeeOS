@@ -10,6 +10,14 @@
 %define NEWLINE 0Ah
 %define TAB 0Bh
 
+; 2*20*512  // 2 FATs, 20 sectors per fat, 512 bytes per sector
+%define TOTAL_FAT_SIZE 20480
+
+; 512 * 32 = 16384   // 512 => root directory entries // 32 bytes per entry
+%define ROOT_DIRECTORY_SIZE 16384
+
+%define KERNEL_SEGMENT 2000h
+
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3
 
