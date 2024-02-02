@@ -77,6 +77,37 @@ clusterToLBA:                       ; LBA = dataRegionOffset + (cluster - 2) * s
   add ax, bx                        ; add to result
   ret
 
+; Searches for an entry in the root directory.
+; PARAMS
+;   - 0) ES:DI  => File name. 11 byte string all capital.
+;   - 1) DS:SI  => First entry in the root directory.
+; RETURNS
+;   in AX, the offset to the first byte of the files entry.
+;   If not found, BX is 1, if found, BX is 0
+searchInRootDir:
+  push bp
+  mov bp, sp
+  sub sp, 4
+
+  mov [bp - 2], di                      ; File name
+  mov [bp - 4], si                      ; First entry in root directory
+
+searchInRootDir_searchEntry:
+  mov cx, 11
+  repe cmpsb
+  je searchInRootDir_found
+
+  mov di, [bp - 2]
+  add word [bp - 4], 32
+  mov si, [bp - 4]
+  jmp searchInRootDir_searchEntry
+
+searchInRootDir_found:
+  lea ax, [si - 11]
+  xor bx, bx 
+  mov sp, bp
+  pop bp
+  ret
 
 
 ; Searches for a file and loads it to memory at buffer 
@@ -94,7 +125,7 @@ readFile:
   mov [bp - 2], di          ; store file name
   mov [bp - 4], bx          ; store buffer pointer offset
   mov [bp - 6], es          ; store buffer pointer segment
-  
+
   mov bx, KERNEL_SEGMENT
   mov es, bx 
 
@@ -103,36 +134,37 @@ readFile:
   GET_ROOT_DIR_SIZE         ; get the size of the root directory (in sectors) in AX
 
   ; Read the root directory
+
+  ; Here *(bp - 8) is used for storing segment registers
+  mov [bp - 8], es                ; Store ES segment, because changing it soon
+  sub sp, [bpb_bytesPerSector]    ; Allocate memory for 1 sector, for reading the root directory
+  
+  mov bx, ss                      ;
+  mov es, bx                      ; ES:BX points to buffer to store the root directory in
+
   mov di, si                      ; first argument for readDisk, LBA address
-  mov si, ax                      ; second argument for readDisk, how many sectors to read
-  mov bx, rootDirectoryBuffer     ; third argument for readDisk, data buffer to store the data in. ES:BX
+  mov si, 1                       ; second argument for readDisk, how many sectors to read
+  mov bx, sp                      ; third argument for readDisk, data buffer to store the data in. ES:BX
   call readDisk
 
-  mov ax, [bpb_rootDirectoryEntries]    ; AX will be a counter for root directories left to read
-  xor bx, bx                            ; BX is an offset for DI, which is a pointer to the next directory entry
-readFile_searchFileLoop:
-  mov di, rootDirectoryBuffer   ; get the location of the first thing in the root directory
-  add di, bx                    ; offset by BX (which grows by 32 each iteration) to get next entry
-  mov si, [bp - 2]              ; get file name
-  mov cx, 11                    ; compare 11 bytes
-  cld                           ; clear direction flag
-  
-  ; REPE will repeate the following instruction until CX is 0 (it decrements CX each time) 
-  ; CMDSB (compare string bytes) compares byte at DS:DI to byte at ES:SI, and increment SI and DI if direction flag is 1
-  repe cmpsb
-  je readFile_foundFile
+  mov bx, [bp - 8]
+  mov es, bx                      ; Restore ES segment
 
-  add bx, 32                    ; each directory entry is 32 bytes (yes bytes and not bits)
+  mov di, [bp - 2]                ; ES:DI Points to file name string (file name in *(bp - 2))
+  mov bx, ss                      ;
+  mov ds, bx                      ; Set data segment to stack segment, because the root directory is in the stack segment
+  mov si, sp                      ; DS:SI points to root directory location
+  call searchInRootDir
 
-  dec ax                        ; decrement entries counter
-  jnz readFile_searchFileLoop   ; As long as there are any root directories left, continue reading. (AX is a counter for entries left)
+  mov bx, [bp - 8]                ; Restore ES and DS segments to original value
+  mov es, bx                      ;
+  mov ds, bx                      ;
 
-  mov ax, 1                     ; Could not find file, return 1
-  jmp readFile_end
+  mov di, ax                      ; searchInRootDir returns pointer to the directory entry in AX
+  mov ax, ss:[di + 26]            ; Get the low 16 bits of the first cluster number
 
-readFile_foundFile:
-  mov di, [di - 11 + 26]              ; get low 16 bits of entries first cluster number (26 is the offset and -11 because filename)
-  mov [bp - 8], di
+  ; Now *(bp - 8) will be used as the cluster number
+  mov [bp - 8], ax                ; Store cluster number at *(bp - 8)
 
   ; Read FAT into memory 
   mov bx, FATs                        ;

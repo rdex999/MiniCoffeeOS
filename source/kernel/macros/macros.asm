@@ -52,6 +52,20 @@
 
 %endmacro
 
+
+%macro PRINT_STR11 1
+
+  lea di, [%1]
+  mov cx, 11
+%%printAgain:
+  mov al, es:[di]
+  mov ah, 0Eh
+  int 10h
+  inc di
+  loop %%printAgain
+
+%endmacro
+
 ; prints a single character
 %macro PRINT_CHAR 1
 
@@ -77,7 +91,7 @@
 %endmacro
 
 
-; sets the cursors position
+; Gets the cursors position
 ; PARAMS
 ; 0) int16 => page number
 ; RETURNS
@@ -98,5 +112,7 @@
   int 10h
 
 %endmacro
+
+
 
 %endif

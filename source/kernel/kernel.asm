@@ -32,7 +32,6 @@ errorUnknownCmd:          db "[-] Error, unknown command ", 22h, 0
 
 ; I will change this method of allocating memory in the future, I dont like this at all.
 FATs:                     times TOTAL_FAT_SIZE db 0           ; Allocate space for storing FATs
-rootDirectoryBuffer:      times ROOT_DIRECTORY_SIZE db 0      ; Allocate space for storing directory entries
 
 helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
   db "help", TAB, "| prints this help message.", NEWLINE, TAB,
