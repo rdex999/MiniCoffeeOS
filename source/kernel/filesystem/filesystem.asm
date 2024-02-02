@@ -92,9 +92,38 @@ searchInRootDir:
   mov [bp - 2], di                      ; File name
   mov [bp - 4], si                      ; First entry in root directory
 
+  push es                               ;
+  push ds                               ; Save segments for after reading the root directory
+  mov bx, KERNEL_SEGMENT                ;
+  mov es, bx                            ; Make ES and DS point to the kernel segment, so that
+  mov ds, bx                            ; GET_ROOT_DIR_OFFSET will be able to read correct values from BPB 
+
+  GET_ROOT_DIR_OFFSET
+  pop es                                ; ES = original DS
+
+  ; Read the root directory
+  mov di, ax                            ; First argument for read disk LBA address
+  mov bx, si                            ; ES:BX points to receiving data buffer
+  mov si, 1                             ; how many sectors to read
+  call readDisk
+
+  mov bx, es                            ; ES is the original DS, so make DS = ES
+  mov ds, bx                            ;
+  pop es                                ; Get the original ES
+  
+  test ax, ax                           ; Check if the return value of readDisk is 0
+  jnz searchInRootDir_error             ; If readDisk failed then return BX = 1
+
+  mov di, [bp - 2]                      ; Get file name in ES:DI 
+  mov si, [bp - 4]                      ; Get root directory location in DS:SI
+
 searchInRootDir_searchEntry:
-  mov cx, 11
-  repe cmpsb
+  mov cx, 11                            ; Compare 11 bytes
+  cld                                   ; Clear direction flag
+
+  ; REPE  => Repeate the following instruction until CX is 0 (and decrement CX each time)
+  ; CMPSB => (Compare string bytes) Compare byte at DS:SI to byte at ES:DI. If the direction flag is 0 then increment DI and SI
+  repe cmpsb                            
   je searchInRootDir_found
 
   mov di, [bp - 2]
@@ -102,9 +131,14 @@ searchInRootDir_searchEntry:
   mov si, [bp - 4]
   jmp searchInRootDir_searchEntry
 
+searchInRootDir_error:
+  mov bx, 1
+  jmp searchInRootDir_ret
+
 searchInRootDir_found:
   lea ax, [si - 11]
   xor bx, bx 
+searchInRootDir_ret:
   mov sp, bp
   pop bp
   ret
@@ -129,27 +163,9 @@ readFile:
   mov bx, KERNEL_SEGMENT
   mov es, bx 
 
-  GET_ROOT_DIR_OFFSET       ; get the root directory offset (in sectors) in AX
-  mov si, ax                ; save for now in SI
-  GET_ROOT_DIR_SIZE         ; get the size of the root directory (in sectors) in AX
-
-  ; Read the root directory
-
-  ; Here *(bp - 8) is used for storing segment registers
   mov [bp - 8], es                ; Store ES segment, because changing it soon
   sub sp, [bpb_bytesPerSector]    ; Allocate memory for 1 sector, for reading the root directory
   
-  mov bx, ss                      ;
-  mov es, bx                      ; ES:BX points to buffer to store the root directory in
-
-  mov di, si                      ; first argument for readDisk, LBA address
-  mov si, 1                       ; second argument for readDisk, how many sectors to read
-  mov bx, sp                      ; third argument for readDisk, data buffer to store the data in. ES:BX
-  call readDisk
-
-  mov bx, [bp - 8]
-  mov es, bx                      ; Restore ES segment
-
   mov di, [bp - 2]                ; ES:DI Points to file name string (file name in *(bp - 2))
   mov bx, ss                      ;
   mov ds, bx                      ; Set data segment to stack segment, because the root directory is in the stack segment
