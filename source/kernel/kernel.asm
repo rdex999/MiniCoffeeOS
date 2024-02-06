@@ -41,7 +41,7 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
-dbgTestTxt:               db "TEST    TXT"
+dbgTestTxt:               db "T16     TXT"
 buffer:                   times 3000 db 0
 
 ;
