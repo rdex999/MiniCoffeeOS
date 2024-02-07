@@ -130,6 +130,9 @@ searchInRootDir_nextSector:
   ; Search for the file directory entry. Increase the SI pointer by 32 each time to point to next entry.
   mov si, [bp - 4]                        ; Get first entry of root directory in SI
 searchInRootDir_searchEntry:
+  cmp byte ds:[si], 0                     ; If the first byte of the entry is 0 then there are no more entries left to read
+  je searchInRootDir_error                ; If zero then return 1 in BX
+
   push si                                 ; Save current SI because REPE CMPSB will change it
   mov di, [bp - 2]                        ; Get file name in DI
   mov cx, 11                              ; Compare 11 bytes
@@ -183,17 +186,21 @@ readFile:
   mov es, bx 
 
   mov [bp - 8], es                ; Store ES segment, because changing it soon
-  sub sp, [bpb_bytesPerSector]    ; Allocate memory for 1 sector, for reading the root directory
-  
+  sub sp, es:[bpb_bytesPerSector]    ; Allocate memory for 1 sector, for reading the root directory
+
   mov di, [bp - 2]                ; ES:DI Points to file name string (file name in *(bp - 2))
   mov bx, ss                      ;
   mov ds, bx                      ; Set data segment to stack segment, because the root directory is in the stack segment
   mov si, sp                      ; DS:SI points to root directory location
   call searchInRootDir
 
-  mov bx, [bp - 8]                ; Restore ES and DS segments to original value
-  mov es, bx                      ;
-  mov ds, bx                      ;
+  mov dx, [bp - 8]                ; Set segments to original value
+  mov es, dx                      ;
+  mov ds, dx                      ;
+
+  add sp, es:[bpb_bytesPerSector] ; Free allocated space
+  test bx, bx                     ; Check return status of searchInRootDir
+  jnz readFile_error              ; If the return status of searchInRootDir is not 0 then return 1, otherwise continue/
 
   mov di, ax                      ; searchInRootDir returns pointer to the directory entry in AX
   mov ax, ss:[di + 26]            ; Get the low 16 bits of the first cluster number
@@ -202,7 +209,7 @@ readFile:
   mov [bp - 8], ax                ; Store cluster number at *(bp - 8)
 
   ; Read FAT into memory 
-  mov bx, FATs                        ;
+  mov bx, FATs                        ; Buffer for storing the FATs
   mov di, [bpb_reservedSectors]       ; First sector of FATs
   mov si, [bpb_sectorsPerFAT]         ; How much to read
   call readDisk
@@ -214,7 +221,7 @@ readFile_processClusterChain:
 
   mov di, ax                              ; First argument for readDisk, the LBA address
   xor ah, ah                              ; Because sectorPerCluster is 8 bits
-  mov al, [bpb_sectorPerCluster] 
+  mov al, [bpb_sectorPerCluster]          ; 
   mov si, ax                              ; Read one cluster (the number of sectors in a cluster)
 
   mov bx, [bp - 6]                        ; ES:BX points to receiving data buffer
@@ -237,13 +244,18 @@ readFile_processClusterChain:
   cmp di, 0FFF8h                          ; Check for end of cluster chain
   jb readFile_processClusterChain         ; unsigned jump if below
 
-  xor ax, ax                              ; Read was successfull, return 0
-
-readFile_end:
+readFile_success:
   mov sp, bp
   pop bp
   popa
+  xor ax, ax                              ; Read was successfull, return 0
   ret
 
+readFile_error:
+  mov sp, bp
+  pop bp
+  popa
+  mov ax, 1                               ; Read has failed, return 1
+  ret
 
 %endif

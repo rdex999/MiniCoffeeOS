@@ -51,7 +51,7 @@ buffer:                   times 3000 db 0
 kernelMain:
 
   call clear
- 
+
   mov ch, 6               ;
   mov cl, 7               ; Show blinking text cursor
   mov ah, 1               ;
@@ -82,9 +82,14 @@ kernel_readCommandsLoop:
   lea di, dbgTestTxt
   lea bx, buffer
   call readFile
+
+  test ax, ax
+  jnz kernel_dontPrintFileContent
+
   lea di, buffer                ;;;;;;;; FOR DEBUG
   call printStr
-  
+
+  kernel_dontPrintFileContent:
   PRINT_NEWLINE
 
   ; compares two strings, and if their equal then jump to given lable
