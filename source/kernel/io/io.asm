@@ -6,6 +6,7 @@
 %define IO_ASM
 
 %include "source/kernel/macros/macros.asm"
+%include "source/kernel/io/printf.asm"
 
 ; prints a zero terminated string.
 ; PARAMS

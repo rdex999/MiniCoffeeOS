@@ -93,7 +93,9 @@
 %macro PRINT_CHAR 1
 
   mov ah, 0Eh
+%if %1 != al 
   mov al, %1
+%endif
   int 10h
 
 %endmacro

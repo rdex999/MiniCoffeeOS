@@ -25,7 +25,7 @@ jmp kernelMain    ; skip data and function declaration section
 bpbStart:
 %include "source/bootloader/bpbStruct/bpbStruct.asm"
 
-welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
+welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info. %ua", NEWLINE, "%daa", NEWLINE, 0
 shellStr:                 db NEWLINE, "[ PC@USER - PATH ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, 0
@@ -61,6 +61,12 @@ kernelMain:
 
   lea di, [welcomeMsg] 
   call printStr
+
+  push -312
+  push 1234
+  push welcomeMsg 
+  call printf
+
 
 kernel_readCommandsLoop:
  
