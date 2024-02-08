@@ -66,6 +66,29 @@
 
 %endmacro
 
+; Prints a string, example: PRINT_STR "Hello world!"
+%macro PRINT_STR 1
+
+  pusha                       ; Save all registers. I know pusha sucks, but its good enough for debugging
+  jmp %%skipStrBuffer         ; Skip string buffer declaration 
+%%strBuffer: db %1, 0         ; Declare the string, as %1 is replaced with its content
+
+%%skipStrBuffer:
+  lea si, %%strBuffer         ; Get a pointer to the first byte of the string
+%%printAgain:
+  cmp byte [si], 0            ; Check for null character
+  je %%stopPrint              ; If null then stop printing
+  mov ah, 0Eh                 ; int10h/AH-0Eh print character and advance cursor
+  mov al, [si]                ; Get next character from string
+  int 10h                     ; Print character from AL
+  inc si                      ; Increase string pointer
+  jmp %%printAgain            ; Continue printing characters
+
+%%stopPrint:
+  popa                        ; Restore all registers. (Again IK popa sucks, but its ok for debug)
+
+%endmacro
+
 ; prints a single character
 %macro PRINT_CHAR 1
 
