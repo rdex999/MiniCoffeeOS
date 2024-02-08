@@ -39,7 +39,6 @@ lbaToChs:
 ;   - 1) SI     => Amount of sectors to read
 ;   - 2) ES:BX  => Buffer
 readDisk:
-  pusha                         ; push all registers because BIOS messes them up
   push bx                       ; save data buffer
   call lbaToChs                 ; convert LBA from DI to CHS
   mov ax, si                    ; AL = number of sectors to read
@@ -47,7 +46,6 @@ readDisk:
   mov dl, [ebpb_driveNumber]    ; get drive number
   pop bx                        ; restore data buffer
   int 13h                       ; read!
-  popa                          ; restore all registers
   ret
 
 

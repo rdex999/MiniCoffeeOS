@@ -41,7 +41,6 @@ lbaToChs:
 ; RETURNS
 ;   In AH => 0 on success, and 1 on failure.
 readDisk:
-  pusha                         ; push all registers because BIOS messes them up
   push bx                       ; save data buffer
   call lbaToChs                 ; convert LBA from DI to CHS
   mov ax, si                    ; AL = number of sectors to read
@@ -49,14 +48,13 @@ readDisk:
   mov dl, [ebpb_driveNumber]    ; get drive number
   pop bx                        ; restore data buffer
   int 13h                       ; read!
-  popa
-  jc readDisk_error
+  jc readDisk_error             ; Jump if int13h/AH=2 has failed
   
-  xor ax, ax
+  xor ax, ax                    ; Read was successful, return 0
   ret
 
 readDisk_error:
-  mov ax, 1
+  mov ax, 1                     ; Read has failed, return 1
   ret
 
 
@@ -173,7 +171,6 @@ searchInRootDir_ret:
 ; RETURNS
 ; 0 on success and 1 on failure.
 readFile:
-  pusha
   push bp
   mov bp, sp
 
@@ -244,18 +241,14 @@ readFile_processClusterChain:
   cmp di, 0FFF8h                          ; Check for end of cluster chain
   jb readFile_processClusterChain         ; unsigned jump if below
 
-readFile_success:
+  xor ax, ax                              ; Read was successfull, return 0
+readFile_end:
   mov sp, bp
   pop bp
-  popa
-  xor ax, ax                              ; Read was successfull, return 0
   ret
 
 readFile_error:
-  mov sp, bp
-  pop bp
-  popa
   mov ax, 1                               ; Read has failed, return 1
-  ret
+  jmp readFile_end
 
 %endif
