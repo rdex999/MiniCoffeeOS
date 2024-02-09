@@ -20,7 +20,7 @@ printf:
 
   ; *(bp - 2) // Formatting arguments array pointer.
   ; *(bp - 7) // Buffer for formatting.
-  sub sp, 2+5                     ; Allocate 8 bytes
+  sub sp, 2+6                     ; Allocate 7 bytes
 
   lea di, [bp + 6]              ; *(bp + 4) // First formatting argument
   mov [bp - 2], di              ; Store pointer to arguments array at *(bp - 2)
@@ -38,15 +38,16 @@ printf_printLoop:
   je printf_newline
   cmp al, 0Bh                     ; Check for <tab>
   je printf_tab
-  cmp al, 25h                     ; Check for percent ( % ), for formatting
+  cmp al, '%'                     ; Check for percent ( % ), for formatting
   je printf_format
 
-  PRINT_CHAR al 
-  jmp printf_printLoop
+  ; If none of the above, then just print the character
+  PRINT_CHAR al                   ; Print the character
+  jmp printf_printLoop            ; Continue printing characters from string
 
 printf_newline:
-  PRINT_NEWLINE
-  jmp printf_printLoop
+  PRINT_NEWLINE                   ; Print a newline (ascii 0Ah)
+  jmp printf_printLoop            ; Continue printing characters from string
 
 printf_tab:
   push si                         ; Save string pointer for now
@@ -74,15 +75,27 @@ printf_format:
   je printf_format_signedInt
   cmp al, 'u'                     ; Check unsigned integer
   je printf_format_uInt
+  cmp al, 's'
+  je printf_format_string
+  cmp al, 'c'
+  je printf_format_char
+  cmp al, '%'
+  je printf_format_modulo
 
   ; If none of the above, then print an error message and return.
   lea di, [printf_errorFormat]    ; Get message pointer to DI
   call printStr                   ; Print the error message
   jmp printf_end                  ; Return
 
+printf_format_modulo:
+  PRINT_CHAR '%'
+  inc si
+  jmp printf_printLoop
+
 %include "source/kernel/io/printfFormat/uInt.asm"
 %include "source/kernel/io/printfFormat/int.asm"
-
+%include "source/kernel/io/printfFormat/string.asm"
+%include "source/kernel/io/printfFormat/char.asm"
 
 printf_end:
   mov sp, bp

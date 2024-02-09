@@ -53,6 +53,46 @@
 %endmacro
 
 
+
+; sets the cursors position
+; PARAMS
+; 0) int => row
+; 1) int => column
+; 2) int => page
+%macro SET_CURSOR_POSITION 3
+
+  mov ah, 2h 
+  mov dh, %1
+  mov dl, %2
+  mov bh, %3
+  int 10h
+
+%endmacro
+
+
+; Gets the cursors position
+; PARAMS
+; 0) int16 => page number
+; RETURNS
+; 0) DH => row
+; 1) DL => column
+; 2) CH => cursor start position
+; 3) CL => cursor bottom line
+%macro GET_CURSOR_POSITION 1
+
+  ; since XOR is more efficient
+  %if %1 == 0
+    xor bh, bh
+  %else
+    mov bh, %1
+  %endif
+
+  mov ah, 3
+  int 10h
+
+%endmacro
+
+
 %macro PRINT_STR11 1
 
   lea di, [%1]
@@ -141,45 +181,52 @@
 
 %endmacro
 
+; Printf macro ( _M is for macro)
+; First argument is a string, and after that are the arguemnts from printf
+; EXAMPLE: PRINTF_M "Heyyyy AX is: %d hey again", AX
+%macro PRINTF_M 1-*
 
-; sets the cursors position
-; PARAMS
-; 0) int => row
-; 1) int => column
-; 2) int => page
-%macro SET_CURSOR_POSITION 3
+  jmp %%skipStrBuffer           ; Skip the declaration of the string, so it wont execute thos bytes
+%%strBuffer: db %1, 0           ; Declare the string bytes, and null terminate the string
 
-  mov ah, 2h 
-  mov dh, %1
-  mov dl, %2
-  mov bh, %3
-  int 10h
+%%skipStrBuffer:
 
-%endmacro
-
-
-; Gets the cursors position
-; PARAMS
-; 0) int16 => page number
-; RETURNS
-; 0) DH => row
-; 1) DL => column
-; 2) CH => cursor start position
-; 3) CL => cursor bottom line
-%macro GET_CURSOR_POSITION 1
-
-  ; since XOR is more efficient
-  %if %1 == 0
-    xor bh, bh
-  %else
-    mov bh, %1
-  %endif
-
-  mov ah, 3
-  int 10h
+  ; %0 gives the number of parameters passed to the macro.
+  ; %rep is a NASM preprocessor command, which will repeate the following block of code N times.
+  ; Basicaly push all the arguments from right to left, and dont push the string.
+  %rep %0 - 1
+    ; Rotate will rotate the macros arguments, (just like the ROR instruction)
+    ; Say the arguments are 1, 2, 3, 4
+    ; %rotate -1 ; ARGS: 4, 1, 2, 3     ; meaning %1 is 4
+    %rotate -1
+    push %1             ; Push the currently first arguemnts (as they rotate)
+  %endrep
+  push %%strBuffer      ; Push the string buffer, as its the first argument for printf
+  call printf           ; Call printf and print the formatted string
+  add sp, %0 * 2        ; Free stack space
 
 %endmacro
 
 
+; Printf lable macro ( _LM is for lable, macro)
+; First argument is a pointer to the string (null terminated), and after that are the arguemnts from printf
+; EXAMPLE: PRINTF_LM str, AX  // str: db "Hello world! AX is %d.", 0
+%macro PRINTF_LM 1-*
+
+  ; %0 gives the number of parameters passed to the macro.
+  ; %rep is a NASM preprocessor command, which will repeate the following block of code N times.
+  ; Basicaly push all the arguments from right to left, and dont push the string.
+  %rep %0 - 1
+    ; Rotate will rotate the macros arguments, (just like the ROR instruction)
+    ; Say the arguments are 1, 2, 3, 4
+    ; %rotate -1 ; ARGS: 4, 1, 2, 3     ; meaning %1 is 4
+    %rotate -1
+    push %1             ; Push the currently first arguemnts (as they rotate)
+  %endrep
+  push %{-1:-1}      ; Push the string buffer, as its the first argument for printf
+  call printf           ; Call printf and print the formatted string
+  add sp, %0 * 2        ; Free stack space
+
+%endmacro
 
 %endif
