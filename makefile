@@ -1,5 +1,5 @@
 AS=nasm
-AS_FLAGS= -f bin -g # -g for debug symbols
+AS_FLAGS= -f bin
 SRC=source/
 BLD=build/
 FDA=floppy.img

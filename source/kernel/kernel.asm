@@ -61,6 +61,9 @@ kernelMain:
 
   lea di, [welcomeMsg] 
   call printStr
+  PRINT_NEWLINE
+
+  PRINTF_M "SP in decimal: %d   test char: %c   SP in hex: %x.", sp, 'H', sp
 
 kernel_readCommandsLoop:
  

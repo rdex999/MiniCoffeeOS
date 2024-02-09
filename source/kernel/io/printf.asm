@@ -79,6 +79,8 @@ printf_format:
   je printf_format_string
   cmp al, 'c'
   je printf_format_char
+  cmp al, 'x'
+  je printf_format_hex
   cmp al, '%'
   je printf_format_modulo
 
@@ -96,6 +98,7 @@ printf_format_modulo:
 %include "source/kernel/io/printfFormat/int.asm"
 %include "source/kernel/io/printfFormat/string.asm"
 %include "source/kernel/io/printfFormat/char.asm"
+%include "source/kernel/io/printfFormat/hex.asm"
 
 printf_end:
   mov sp, bp
