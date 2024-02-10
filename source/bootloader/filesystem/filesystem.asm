@@ -132,14 +132,15 @@ readFile_foundFile:
 readFile_processClusterChain:
   call clusterToLBA                       ; Each time we get here, DI will have the cluster number. Convert it to an LBA address        
 
+  ; Read the next cluster of the file into buffer
   mov di, ax                              ; First argument for readDisk, the LBA address
   xor ah, ah                              ; Because sectorPerCluster is 8 bits
   mov al, [bpb_sectorPerCluster] 
   mov si, ax                              ; Read one cluster (the number of sectors in a cluster)
 
   mov bx, [bp - 6]                        ; ES:BX points to receiving data buffer
-  mov es, bx                              ;
-  mov bx, [bp - 4]                        ;
+  mov es, bx                              ; *(bp - 6) is the buffer segment
+  mov bx, [bp - 4]                        ; *(bp - 4) is the buffer pointer
   call readDisk
 
   ; Get number of bytes per cluster
@@ -148,17 +149,16 @@ readFile_processClusterChain:
   mov al, [bpb_sectorPerCluster]          ;
   mul bx                                  ;
   add [bp - 4], ax                        ; Make receivind data buffer point to next location
-
+  
   ; Increment index of next cluster in FAT
-  add word [bp - 8], 2                    ; Each FAT entry is 16 bits
-  mov di, [bp - 8]                        ; DI = next cluster index in FAT
-  mov di, [buffer + di]                   ; DI = FAT[di]  // Get next cluster number
+  mov di, [bp - 8]                        ; Get the index of the next cluster in FAT
+  shl di, 1                               ; As each entry is 16 bits, myltiply by 2
+  mov di, [buffer + di]                   ; DI = FAT[DI]  // Next cluster number
+  mov [bp - 8], di                        ; Save the new cluster number at *(bp - 8)
 
   cmp di, 0FFF8h                          ; Check for end of cluster chain
   jb readFile_processClusterChain         ; unsigned jump if below
 
-  xor bx, bx
-  mov es, bx
   xor ax, ax                              ; Read was successfull, return 0
 
 readFile_end:
