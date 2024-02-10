@@ -11,7 +11,6 @@ $(FDA): $(BLD)boot.bin $(BLD)kernel.bin
 	mcopy -i $(FDA) $(BLD)kernel.bin "::kernel.bin"
 	mcopy -i $(FDA) test.txt "::test.txt"
 
-
 	mcopy -i $(FDA) tmp/t0.txt "::t0.txt"
 	mcopy -i $(FDA) tmp/t1.txt "::t1.txt"
 	mcopy -i $(FDA) tmp/t2.txt "::t2.txt"
@@ -42,5 +41,7 @@ clean:
 	rm -rf build/*
 
 run: $(FDA)
+	make clean
+	make
 	qemu-system-x86_64 -fda $(FDA)
 	clear
