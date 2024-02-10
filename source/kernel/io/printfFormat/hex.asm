@@ -8,9 +8,11 @@
 printf_format_hex:
   push si
 
-  mov si, [bp - 2]              ; Get number to print in SI
+  mov si, [bp - 2]              ; Get the array pointer in SI
   add word [bp - 2], 2          ; Make argument pointer point to next argument
   lea di, [bp - 3]
+
+  mov si, ss:[si]               ; Get the number to print in SI
 
 printf_format_hexDigitsLoop:
   mov ax, si
