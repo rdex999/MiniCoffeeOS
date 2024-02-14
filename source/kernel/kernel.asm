@@ -40,6 +40,7 @@ clearCmd:                 db "clear", 0
 
 dbgTestTxt:               db "T16     TXT"
 buffer:                   times 3000 db 0
+pathStf:                  db "folDEr/teSt.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -57,6 +58,13 @@ kernelMain:
   INIT_KERNEL             ; Initialize kernel.
 
   lea di, [welcomeMsg] 
+  call printStr
+
+  lea di, [buffer]
+  lea si, [pathStf]
+  call ParsePath
+
+  lea di, [buffer]
   call printStr
 
 kernel_readCommandsLoop:

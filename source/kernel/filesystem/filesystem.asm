@@ -8,6 +8,7 @@
 %include "source/bootloader/macros/getRegions.asm"
 %include "source/kernel/filesystem/readFile.asm"
 %include "source/kernel/filesystem/searchInRootDir.asm"
+%include "source/kernel/filesystem/parsePath.asm"
 
 ; Converts LBA (Logical Block Address) to CHS (Cylinder Head Sector)
 ; PARAMS
