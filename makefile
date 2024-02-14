@@ -27,7 +27,7 @@ $(FDA): $(BLD)boot.bin $(BLD)kernel.bin
 	mcopy -i $(FDA) tmp/t13.txt "::t13.txt"
 	mcopy -i $(FDA) tmp/t14.txt "::t14.txt"
 	mcopy -i $(FDA) tmp/t15.txt "::t15.txt"
-	mcopy -i $(FDA) tmp/t16.txt "::t16.txt"
+	mcopy -i $(FDA) tmp/folder "::folder"
 
 
 $(BLD)boot.bin: $(SRC)bootloader/boot.asm

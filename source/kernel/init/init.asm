@@ -33,7 +33,8 @@
 
   ; Copy the BPB and the EBPB from the bootloader 
   COPY_BPB bpbStart
-  ; There will be more stuff in the future..
+  mov sp, 0FFFFh                    ; Make stack larger
+  mov byte [currentPath], '/'
 
 %endmacro
 

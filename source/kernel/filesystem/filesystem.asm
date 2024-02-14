@@ -9,6 +9,7 @@
 %include "source/kernel/filesystem/readFile.asm"
 %include "source/kernel/filesystem/searchInRootDir.asm"
 %include "source/kernel/filesystem/parsePath.asm"
+%include "source/kernel/filesystem/readClusterChain.asm"
 
 ; Converts LBA (Logical Block Address) to CHS (Cylinder Head Sector)
 ; PARAMS
@@ -42,7 +43,7 @@ lbaToChs:
 ;   - 1) SI     => Amount of sectors to read
 ;   - 2) ES:BX  => Buffer
 ; RETURNS
-;   In AH => 0 on success, and 1 on failure.
+;   In AX => 0 on success, and 1 on failure.
 readDisk:
   push bx                       ; save data buffer
   call lbaToChs                 ; convert LBA from DI to CHS

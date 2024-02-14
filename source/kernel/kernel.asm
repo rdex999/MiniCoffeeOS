@@ -26,9 +26,10 @@ bpbStart:
 %include "source/bootloader/bpbStruct/bpbStruct.asm"
 
 welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
-shellStr:                 db NEWLINE, "[ PC@USER - PATH ]", NEWLINE, "|___/-=> $ ", 0
+shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
+currentPath:              times 64 db 0
 
 helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
   db "help", TAB, "| prints this help message.", NEWLINE, TAB,
@@ -38,8 +39,8 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
-dbgTestTxt:               db "T16     TXT"
-buffer:                   times 3000 db 0
+dbgTestTxt:               db "T3      TXT"
+buffer:                   times 512*8 db 0
 pathStf:                  db "folDEr/teSt.txt", 0
 
 ;
@@ -68,10 +69,9 @@ kernelMain:
   call printStr
 
 kernel_readCommandsLoop:
- 
+
   PRINT_NEWLINE                     ;
-  lea di, shellStr                  ; Go down a line and print the shell
-  call printStr                     ; 
+  PRINTF_LM shellStr, currentPath   ; Go down a line and print the shell
 
   lea di, [commandEntered]          ;
   mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
@@ -87,7 +87,6 @@ kernel_readCommandsLoop:
   lea di, dbgTestTxt
   lea bx, buffer
   call readFile
-
   test ax, ax
   jnz kernel_dontPrintFileContent
 

@@ -43,78 +43,14 @@ readFile:
   mov es, bx                      ;
   
   mov di, ax                      ; searchInRootDir returns pointer to the directory entry in AX
-  mov ax, ss:[di + 26]            ; Get the low 16 bits of the first cluster number
+  mov di, ss:[di + 26]            ; Get the low 16 bits of the first cluster number, First agument for ReadClusterChain
 
-  ; *(bp - 12) is the previous cluster number. Set it to 0 so that at the first iteration of the cluster chain
-  ; It will load fat into memory (it loads fat into memory only when the previous cluster != newCluster)
-  mov word [bp - 12], 0                 ; Set previous cluster number to 0
-  mov [bp - 8], ax                      ; Store cluster number at *(bp - 8)
-  mov di, ax                            ; DI = cluster number, its for the call to clusterToLBA
-readFile_processClusterChain:
-  call clusterToLBA
-  mov di, ax                            ; Set DI to the LBA, for readDisk
-
-  ; Set segments/pointers for readDisk
-  mov bx, [bp - 6]                      ; ES:BX points to receiving data buffer. 
-  mov es, bx                            ; *(bp - 6) is the buffer segment
-  mov bx, [bp - 4]                      ; *(bp - 4) is the buffer
-
-  ; Read a cluster of the file into memory
-  xor ah, ah                            ; Because bpb_sectorPerCluster is 8 bits
-  mov al, [bpb_sectorPerCluster]        ;
-  mov si, ax                            ; Second argument for readDisk, how many sectors to read. The number of sectors in a cluster
-  call readDisk
-  test ax, ax                           ; Check if read had failed
-  jnz readFile_error                    ; If failed then return 1
-
-  ; Increment buffer pointer to point to the next location.
-  ; buffer += bytesPerSector * sectorsPerCluster;
-  mov ax, [bpb_bytesPerSector]          ; Set AX to the number of bytes in a sector
-  xor bh, bh                            ; Because sectorPerCluster is 8 bits
-  mov bl, [bpb_sectorPerCluster]        ; Set BX to the number of sectors in a cluster
-  mul bx                                ; Multiply AX (bytesPerSector) by BX (secotrsPerCluster) and get result in AX
-  add [bp - 4], ax                      ; Increase buffer by the result
-
-  ; Calculate the sector offset to read. Basically means that instead of reading lots of sectors, just read the one that is needed.
-  ; sectorOffset = cluster / bytesPerSector;
-  ; clusterIndex = cluster % bytesPerSector;
-  mov ax, [bp - 8]                      ; Set AX to the cluster number
-  mov bx, [bpb_bytesPerSector]          ; Set BX to the number of bytes in a sector
-  xor dx, dx                            ; Zero out remainder
-  div bx                                ; Divibe the cluster number by the number of bytes in a sector
-
-  mov di, [bpb_reservedSectors]         ; DI = reservedSectors  // first sector of FAT
-  add di, ax                            ; Offset the first cluster of FAT by the result of the division. 
-                                        ; Using DI as argument for readDIsk
-
-  mov [bp - 2], dx                      ; Store the FAT index at *(bp - 2)
-
-  ; Check if the new calculated LBA is the same as the previouse one.
-  ; If its not the same then load a new FAT sector into memory. Doing this check prevents reading the same FAT each time
-  cmp di, [bp - 12]                           ; DI is the new LBA, *(bp - 12) is the previous one
-  je readFile_getCluster                      ; If they are the same then skip loading a new sector
-
-  ; Read a new sector of FAT into memory
-  mov [bp - 12], di                           ; Update the previous LBA
-  mov si, 1                                   ; Read 1 sector
-  mov bx, ss                                  ; ES:BX points to receiving data buffer
-  mov es, bx                                  ; SS because using the stack to store the data
-  mov bx, sp                                  ; Stack pointer is at allocated space
-  call readDisk
-  test ax, ax                                 ; Check if read has failed
-  jnz readFile_error                          ; If failed then return 1
-
-  ; Get the next cluster number
-readFile_getCluster:
-  mov di, sp                                  ; SP points to FAT
-  mov si, [bp - 2]                            ; *(bp - 2) is the FAT index
-  shl si, 1                                   ; Because each cluster number is 2 bytes, multiply by 2
-  add di, si                                  ; Make DI point to next cluster number
-  mov di, ss:[di]                             ; DI = Next cluster number
-  mov [bp - 8], di                            ; Store the cluster number at *(bp - 8)
-  cmp di, 0FFF8h                              ; Check for end of cluster chain
-  jb readFile_processClusterChain             ; If its not the end of the cluster chain then continue reading clusters
-  
+  mov bx, [bp - 6]                ; ES:BX points to receiving data buffer, 
+  mov es, bx                      ; set it to the buffer that was passed to this function.
+  mov bx, [bp - 4]                ; Set buffer offset
+  call ReadClusterChain           ; Process the cluster chain from the first cluster number (DI) and save data to buffer
+  test ax, ax                     ; Check exit code of ReadClusterChain
+  jnz readFile_end                ; If its not zero then return this error code.
   xor ax, ax                                  ; Read was successful, return 0
 readFile_end:
   ; Set segments to original value
@@ -122,7 +58,6 @@ readFile_end:
   mov es, dx                                  ;
   mov dx, [bp - 10]                           ; Data segment original value
   mov ds, dx                                  ;
-
   mov sp, bp
   pop bp
   ret
