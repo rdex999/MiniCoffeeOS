@@ -27,6 +27,35 @@
 
 %endmacro
 
+; Sets an interrupt in the IVT. When using this macro ES must be set to 0.
+; PARAMS
+;   - 0) Interrupt number. (Not the index in the IVT) Must be a constant.
+;   - 1) Segment for interrupt handler
+;   - 2) Offset for interrupt handler
+%macro SET_IVT 3
+
+  mov word es:[%1 * 4], %3
+  mov word es:[%1 * 4 + 2], %2
+
+%endmacro
+
+; Adds interrupt handler to the IVT
+%macro IVT_INIT 0
+
+  cli
+  push es
+  xor bx, bx
+  mov es, bx
+  
+  SET_IVT 0, cs, ISR_divZero
+
+
+  pop es
+  sti
+
+%endmacro
+
+
 ; When the kernel first starts up, need to initialize some things. (Like cpying the BPB from the bootlaoder)
 ; I made this macro here because it will only be included once.
 %macro INIT_KERNEL 0
@@ -35,6 +64,9 @@
   COPY_BPB bpbStart
   mov sp, 0FFFFh                    ; Make stack larger
   mov byte [currentPath], '/'
+
+  IVT_INIT
+
 
 %endmacro
 

@@ -14,6 +14,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "source/kernel/basicCommands/basicCommands.asm"
 %include "source/kernel/filesystem/filesystem.asm"
 %include "source/kernel/macros/macros.asm"
+%include "source/kernel/isr/isr.asm"
 %include "source/kernel/init/init.asm"
 
 ;
@@ -39,7 +40,7 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
-dbgTestTxt:               db "T3      TXT"
+dbgTestTxt:               db "T15     TXT"
 buffer:                   times 512*8 db 0
 pathStf:                  db "folDEr/teSt.txt", 0
 
@@ -57,6 +58,11 @@ kernelMain:
   int 10h                 ;
 
   INIT_KERNEL             ; Initialize kernel.
+
+  mov ax, 30
+  mov bx, 0
+  xor dx, dx
+  div bx                  ; Doesnt get in an infinite loop because of division by 0
 
   lea di, [welcomeMsg] 
   call printStr
