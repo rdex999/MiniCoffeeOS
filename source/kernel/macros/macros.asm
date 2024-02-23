@@ -5,6 +5,16 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
+%define PIC_MASTER_CMD 20h
+%define PIC_MASTER_DATA 21h
+
+%define PIC_SLAVE_CMD 0A0h
+%define PIC_SLAVE_DATA 0A1h
+
+%define ICW1_INIT 10h
+%define ICW1_ICW4 1
+%define ICW4_8086 1
+
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
 %define NEWLINE 0Ah

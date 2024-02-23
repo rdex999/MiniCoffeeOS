@@ -5,6 +5,8 @@
 %ifndef INIT_ASM
 %define INIT_ASM
 
+%include "source/kernel/macros/macros.asm"
+
 ; Copies the BPB and the EBPB from BIOS.
 ; PARAMS
 ;   0) lable  => where to copy to
@@ -39,19 +41,72 @@
 
 %endmacro
 
+; Initializes the PIC 8259, sets INT offsets in the IVT and stuff
+; PARAMS
+;   - 0) int8 => Master PIC IRQ offset
+;   - 1) int8 => Slave PIC IRQ offset
+%macro PIC8259_INIT 2
+
+  ; Save master and slave PICs masks
+  in al, PIC_MASTER_DATA                ; Get the master PIC mask
+  push ax                               ; Save it
+  in al, PIC_SLAVE_DATA                 ; Get the slaves PIC mask
+  push ax                               ; And save it
+
+  ; ICW1 (initialization command word) - Start the init process, wait for 3 ICWs
+  mov al, ICW1_INIT | ICW1_ICW4
+  out PIC_MASTER_CMD, al
+  out PIC_SLAVE_CMD, al
+
+  ; ICW2 - The INT offset in the IVT. Send it to both pics
+  mov al, %1                      ; First argument is the offset for the master PIC
+  out PIC_MASTER_DATA, al         ; Send this offset to the master PIC
+  
+  mov al, %2                      ; Second argument is the offset for the slave PIC
+  out PIC_SLAVE_DATA, al          ; Send it to the slave PIC
+
+
+  ; ICW3 - Tell both PICs how they are wired
+  mov al, 4                       ; IRQ 2, (2*2 = 4)
+  out PIC_MASTER_DATA, al         ; Tell the master PIC to accept IRQs from the slave on IRQ 2 (4)
+
+  mov al, 2                       ; Mark for the slave PIC
+  out PIC_SLAVE_DATA, al          ; Tell the slave PIC that it is connected to a master PIC
+
+
+  ; ICW4 - Enable 8086 mode
+  mov al, ICW4_8086               ; ICW for 8086 mode
+  out PIC_MASTER_DATA, al         ; Enable 8086 mode on master PIC
+  out PIC_SLAVE_DATA, al          ; Enable 8086 mode on slave PIC
+
+
+  ; Restore masks for both PICs
+  pop ax                          ; Restore the slaves PICs mask
+  out PIC_SLAVE_DATA, al          ; Send it to the slave PIC
+  pop ax                          ; Restore the masters PICs mask
+  out PIC_MASTER_DATA, al         ; Send it to the master PIC
+
+%endmacro
+
+
 ; Adds interrupt handler to the IVT
 %macro IVT_INIT 0
 
-  cli
-  push es
+  cli                             ; Disable interrupts, as doing some critical stuff
+  push es                         ; Save ES segment
+  
+  ; Set ES to 0 so SET_IVT will write to the IVT which is located at 0000:0000
   xor bx, bx
   mov es, bx
-  
+
+  ; Initialize both PICs and set offsets
+  PIC8259_INIT 8, 8+8
+
+  ; Set ISRs for interrupts 
   SET_IVT 0, cs, ISR_divZero
 
-
-  pop es
-  sti
+  pop es                          ; Restore ES segment
+  sti                             ; Enable interrupts
 
 %endmacro
 
