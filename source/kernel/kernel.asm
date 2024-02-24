@@ -15,6 +15,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "source/kernel/filesystem/filesystem.asm"
 %include "source/kernel/macros/macros.asm"
 %include "source/kernel/isr/isr.asm"
+%include "source/kernel/drivers/ps2_8042/ps2_8042.asm"
 %include "source/kernel/init/init.asm"
 
 ;
@@ -36,6 +37,9 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
   db "help", TAB, "| prints this help message.", NEWLINE, TAB,
   db "clear", TAB, "| clears the screen", NEWLINE, 
   db 0
+
+isReadingKeyboard:        db 0
+keyboardKeycodes:         times 104 db 0
 
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0

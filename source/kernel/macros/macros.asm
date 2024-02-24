@@ -5,15 +5,41 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
+%define VGA_SEGMENT 0B800h
+
 %define PIC_MASTER_CMD 20h
 %define PIC_MASTER_DATA 21h
 
 %define PIC_SLAVE_CMD 0A0h
 %define PIC_SLAVE_DATA 0A1h
 
+%define PIC_EOI 20h
+
 %define ICW1_INIT 10h
 %define ICW1_ICW4 1
 %define ICW4_8086 1
+
+%define PS2_DATA_PORT 60h
+%define PS2_COMMAND_PORT 64h
+%define PS2_STATUS_REGISTER 64h
+
+%define PS2_CMD_DISABLE_FIRST_PORT 0ADh
+%define PS2_CMD_DISABLE_SECOND_PORT 0A7h
+%define PS2_CMD_ENABLE_FIRST_PORT 0AEh
+%define PS2_CMD_ENABLE_SECOND_PORT 0A8h
+%define PS2_CMD_READ_OUTPUT_BUFFER 0D0h
+%define PS2_CMD_READ_CONFIGURATION_BYTE 20h
+%define PS2_CMD_WRITE_CONFIGURATION_BYTE 60h
+%define PS2_CMD_SET_SCAN_CODE_SET 0F0h
+%define PS2_CMD_SELF_TEST 0AAh
+%define PS2_CMD_TEST_FIRST_PORT 0ABh
+%define PS2_CMD_TEST_SECOND_PORT 0A9h
+
+%define PS2_SCAN_CODE_SET_2 2
+%define PS2_SELF_TEST_RESULT_OK 55h
+
+%define INT_DIVIBE_ZERO 0
+%define INT_KEYBOARD 9
 
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
@@ -102,6 +128,97 @@
 
 %endmacro
 
+; Sends an EOI (End Of Interrupt) signal to the PICs.
+%macro PIC8259_SEND_EOI 1
+
+  mov al, PIC_EOI 
+  %if %1 >= 8
+    out PIC_SLAVE_CMD, al
+  %endif
+
+  out PIC_MASTER_CMD, al
+
+%endmacro
+
+; Send a command on the PS/2 8042 micro controller
+; PARAMS
+;   - 0) int8 => the command code
+%macro PS2_SEND_COMMAND 1
+
+  call ps2_8042_waitInput
+  ; %if %1 != al
+    mov al, %1
+  ; %endif
+  out PS2_COMMAND_PORT, al
+
+%endmacro
+
+; Send a command on the PS/2 8042 micro controller, then send data on its data port.
+; PARAMS
+;   - 0) int8 => The command to send
+;   - 1) int8 => The data to send
+%macro PS2_SEND_COMMAND_DATA 2
+
+  PS2_SEND_COMMAND %1
+
+  call ps2_8042_waitInput
+  %if %2 != al
+    mov al, %2
+  %endif
+  out PS2_DATA_PORT, al
+
+%endmacro
+
+; Read data from a result of a command on the ps/2.
+; Executes a commands (OUT) and then reads data into AL (IN)
+; PARAMS
+;   - 0) int8 => Data command
+; RETURNS
+;   - 0) int8 [ AL ] => The data.
+%macro PS2_READ_DATA 1
+
+  PS2_SEND_COMMAND %1
+
+  call ps2_8042_waitOutput
+  in al, PS2_DATA_PORT
+
+%endmacro
+
+; USE THIS CRAP ONLY FOR DEBUGGING
+%macro PRINT_REGISTERS 0
+
+  pusha
+  PRINTF_M `AX: %x\n`, ax
+  popa
+  pusha 
+  PRINTF_M `BX: %x\n`, bx
+  popa
+  pusha
+  PRINTF_M `CX: %x\n`, cx
+  popa
+  pusha
+  PRINTF_M `DX: %x\n`, dx
+  popa
+  pusha
+  PRINTF_M `SI: %x\n`, si
+  popa
+  pusha
+  PRINTF_M `DI: %x\n`, di
+  popa
+  pusha
+  PRINTF_M `SP: %x\n`, sp
+  popa
+  pusha
+  PRINTF_M `SS: %x\n`, ss
+  popa
+  pusha
+  PRINTF_M `DS: %x\n`, ds
+  popa
+  pusha
+  PRINTF_M `ES: %x\n`, es
+  popa
+
+%endmacro
 
 %macro PRINT_STR11 1
 
@@ -191,6 +308,58 @@
 
 %endmacro
 
+; THIS MACRO IS TEMPORARY
+%macro PRINT_INT16_VGA 1
+
+  pusha
+
+  %if %1 != ax
+    mov ax, %1
+  %endif
+
+  push es
+  push gs
+
+  mov bx, ss
+  mov es, bx
+
+  mov si, sp
+  sub si, 6
+  mov byte es:[si], 0
+
+%%print_int16_vga_loop:
+  mov bx, 10
+  xor dx, dx
+  div bx
+
+  add dl, 48
+  dec si 
+  mov es:[si], dl
+
+  test ax, ax
+  jnz %%print_int16_vga_loop
+
+  mov bx, VGA_SEGMENT
+  mov gs, bx
+  xor di, di
+  mov ah, 00Eh
+
+%%print_int16_vga_loopPrint:
+  mov al, es:[si]
+  test al, al
+  jz %%print_int16_vga_end
+  mov gs:[di], ax
+  inc si
+  add di, 2
+  jmp %%print_int16_vga_loopPrint
+
+%%print_int16_vga_end:
+  pop gs
+  pop es
+  popa
+
+%endmacro
+
 ; Printf macro ( _M is for macro)
 ; First argument is a string, and after that are the arguemnts from printf
 ; EXAMPLE: PRINTF_M "Heyyyy AX is: %d hey again", AX
@@ -209,7 +378,7 @@
     ; Say the arguments are 1, 2, 3, 4
     ; %rotate -1 ; ARGS: 4, 1, 2, 3     ; meaning %1 is 4
     %rotate -1
-    push %1             ; Push the currently first arguemnts (as they rotate)
+    push word %1             ; Push the currently first arguemnts (as they rotate)
   %endrep
   push %%strBuffer      ; Push the string buffer, as its the first argument for printf
   call printf           ; Call printf and print the formatted string
