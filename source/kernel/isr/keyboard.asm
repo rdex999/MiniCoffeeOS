@@ -5,8 +5,8 @@
 ;   - 0) int16    => The keycode, (not the index in keyboardKeycodes, the index is keycode-1)
 %macro ISR_KEYBOARD_NORM_KEY_EVENT 1
 
-  mov di, %1
-  jmp ISR_keyboard_setKeycode
+  mov di, %1                          ; Set argument for ISR_keyboard_setKeycode
+  jmp ISR_keyboard_setKeycode         ; Execute ISR_keyboard_setKeycode
 
 %endmacro
 
@@ -16,8 +16,8 @@
 ;   - 1) the lable to jump to if equal
 %macro ISR_KEYBOARD_SCANCODE_JUMP 2
 
-  cmp al, %1
-  je %2
+  cmp al, %1                              ; Comapre AL to the scancode
+  je %2                                   ; If equal then jump to the given lable
 
 %endmacro
 
@@ -26,44 +26,55 @@
 ; PARAMS
 ;   - 0) DI   => The keycode, (not the index in keyboardKeycodes, the index is keycode-1)
 ISR_keyboard_setKeycode:
-  cmp byte [bp - 1], 0
-  je ISR_keyboard_setKeycode_pressed
+  cmp byte [bp - 1], 0                        ; Check if the key is being pressed or released
+  je ISR_keyboard_setKeycode_pressed          ; If pressed then setup stuff for key press
 
-  mov byte ds:[keyboardCurrentKeycode], 0
-  mov byte ds:[keyboardKeycodes - 1 + di], 0
-  jmp ISR_keyboard_end
+  ; If released then set the current keycode to 0
+  ; And the keycode in the keycodes array to 0
+  mov byte ds:[keyboardCurrentKeycode], 0     ; Set current keycode to 0 as its released
+  mov byte ds:[keyboardKeycodes - 1 + di], 0  ; Set the keycode in the keycode array to 0
+  jmp ISR_keyboard_end                        ; Return from iterrupt
 
 ISR_keyboard_setKeycode_pressed:
-  mov ax, di
-  mov byte ds:[keyboardCurrentKeycode], al
-  mov byte ds:[keyboardKeycodes - 1 + di], 1
-  jmp ISR_keyboard_end
+  mov ax, di                                  ; Because the keycode is 8 bits (1 byte)
+  mov byte ds:[keyboardCurrentKeycode], al    ; Set the current keycode to the new keycode
+  mov byte ds:[keyboardKeycodes - 1 + di], 1  ; Set the keycode in the keycode array to the new keycode
+  jmp ISR_keyboard_end                        ; Return from the interrupt
 
 ; Handles keyboard events, (interrupts)
 ISR_keyboard:
-  pusha
-  push bp
-  mov bp, sp
+  pusha                                       ; Save all registersz
+  push bp                                     ; Set up stack fram
+  mov bp, sp                                  ;
 
   ; sub sp, <size>
-  dec sp
+  dec sp                                      ; Allocate 1 byte
 
   mov byte [bp - 1], 0        ; Flag for if the key in released (0 for pressed, 1 for released)
 
-  cli
+  cli                                         ; Disable interrupts while processing this interrupt
 
-  push ds
+  push ds                                     ; Save data segment as were modifying it
 
-  mov bx, KERNEL_SEGMENT
-  mov ds, bx
+  ; Set the data segment to the kernel data segment, as we dont know what it was when the interrupt happened
+  mov bx, KERNEL_SEGMENT                      ; Cant modify segment directly
+  mov ds, bx                                  ; Set data segment to kernel data segment
 
-  cmp byte ds:[kbdSkipNextInt], 0
-  je ISR_keyboard_dontSkipInt
+  ; Equivalent C code:
+; if(bKbdSkipNextInt){
+;   bKbdSkipNextInt = false;
+;   return;
+; }
+  cmp byte ds:[kbdSkipNextInt], 0             ; Check if should skip this interrupt
+  je ISR_keyboard_dontSkipInt                 ; If not, then execute this interrupt
 
-  mov byte ds:[kbdSkipNextInt], 0
-  jmp ISR_keyboard_end
+  ; If should not execute this interrupt, set flag off (so next interrupt WILL execute) and return.
+  mov byte ds:[kbdSkipNextInt], 0             ; Set flag off
+  jmp ISR_keyboard_end                        ; Return
 
 ISR_keyboard_dontSkipInt:
+
+  ; This #define is commented out on the top of this file, uncomment to get keyboard scan codes
   %ifdef ISR_KEYBOARD_GET_SCANCODES
     PRINT_NEWLINE
     in al, PS2_DATA_PORT
@@ -78,19 +89,21 @@ ISR_keyboard_dontSkipInt:
     jmp ISR_keyboard_end
   %endif
 
-  call ps2_8042_waitOutput
-  in al, PS2_DATA_PORT
+  in al, PS2_DATA_PORT                        ; Get the keyboard scan code in AL
 
+  ; Check for special keys
   cmp al, KBD_SCANCODE_SPECIAL
   je ISR_keyboard_special_E0
 
   cmp al, KBD_SCANCODE_SPECIAL+1
   je ISR_keyboard_special_E1
 
-  cmp al, KBD_SCANCODE_NORM_BREAK
-  je ISR_keyboard_normBreak
+  ; Check for a break code
+  cmp al, KBD_SCANCODE_NORM_BREAK             ; Check for break code
+  je ISR_keyboard_normBreak                   ; IF break then jump to its handler code
 
 ISR_keyboard_normChecks:
+  ; Perform a switch-case on the scan code (there should be around a 104 of these)
   ISR_KEYBOARD_SCANCODE_JUMP 76h, ISR_keyboard_76   ; <ESC>
 
   ISR_KEYBOARD_SCANCODE_JUMP 5h, ISR_keyboard_5     ; <F1>
@@ -114,15 +127,15 @@ ISR_keyboard_normChecks:
   ISR_KEYBOARD_SCANCODE_JUMP 9h, ISR_keyboard_9     ; <F10>
 
 
-  mov byte ds:[keyboardCurrentKeycode], 0
+  mov byte ds:[keyboardCurrentKeycode], 0           ; (default) If none of the above, then just set the current key to NULL
 
 ISR_keyboard_end: 
-  PIC8259_SEND_EOI IRQ_KEYBOARD
-  pop ds
-  mov sp, bp
-  pop bp
-  popa
-  iret
+  PIC8259_SEND_EOI IRQ_KEYBOARD                     ; Send an EOI to the PIC, so new interrupts can be called
+  pop ds                                            ; Restore data segment
+  mov sp, bp                                        ; Restore stack fram
+  pop bp                                            ;
+  popa                                              ; Restore all registers
+  iret                                              ; Return from interrupt
 
 ISR_keyboard_special_E0:
   jmp ISR_keyboard_end
@@ -131,12 +144,14 @@ ISR_keyboard_special_E1:
   jmp ISR_keyboard_end
 
 ISR_keyboard_normBreak:
-  mov byte ds:[kbdSkipNextInt], 1
-  mov byte [bp - 1], 1
-  call ps2_8042_waitOutput
-  in al, PS2_DATA_PORT
-  jmp ISR_keyboard_normChecks
+  ; If the key is released, then skip the next interrupt as the keyboard will send a new one next to this one
+  mov byte ds:[kbdSkipNextInt], 1                   ; Set flag to skip next interrupt
+  mov byte [bp - 1], 1                              ; Set flag to indicate key release
+  call ps2_8042_waitOutput                          ; Wait for data from PIC
+  in al, PS2_DATA_PORT                              ; Get the real scan code in AL
+  jmp ISR_keyboard_normChecks                       ; Go to the scan code switch case with the new scan code
 
+  ; Handlers for scan codes
 ISR_keyboard_76:
   ISR_KEYBOARD_NORM_KEY_EVENT 1
 
