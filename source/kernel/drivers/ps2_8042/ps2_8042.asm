@@ -33,5 +33,14 @@ kbd_waitForKeycode_wait:
   je kbd_waitForKeycode_wait
 
   mov al, ds:[keyboardCurrentKeycode]
+  mov cx, 2
+kbd_waitForKeycode_waitRelease:
+  dec cx
+  jz kbd_waitForKeycode_end
+  hlt
+  cmp byte ds:[keyboardCurrentKeycode], 0
+  jne kbd_waitForKeycode_waitRelease
+
+kbd_waitForKeycode_end:
   pop ds 
   ret

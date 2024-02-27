@@ -43,5 +43,5 @@ clean:
 run: $(FDA)
 	make clean
 	make
-	qemu-system-x86_64 -fda $(FDA)
+	qemu-system-x86_64 -hda $(FDA)
 	clear

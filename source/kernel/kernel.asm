@@ -65,11 +65,6 @@ kernelMain:
 
   INIT_KERNEL             ; Initialize kernel.
 
-  mov ax, 30
-  mov bx, 0
-  xor dx, dx
-  div bx                  ; Doesnt get in an infinite loop because of division by 0
-
   lea di, [welcomeMsg] 
   call printStr
 
@@ -85,16 +80,16 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentPath   ; Go down a line and print the shell
 
-  ; lea di, [commandEntered]          ;
-  ; mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
-  ; call read                         ; 
+  lea di, [commandEntered]          ;
+  mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
+  call read                         ; 
 
-  ; test ax, ax                       ; if zero bytes were read then just show a new shell
-  ; jz kernel_readCommandsLoop        ;
+  test ax, ax                       ; if zero bytes were read then just show a new shell
+  jz kernel_readCommandsLoop        ;
 
-  call kbd_waitForKeycode
-  xor ah, ah
-  PRINT_INT16 ax
+  ; call kbd_waitForKeycode
+  ; xor ah, ah
+  ; PRINT_INT16 ax
 
   PRINT_NEWLINE
   PRINT_NEWLINE
@@ -113,10 +108,10 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE
 
   ; compares two strings, and if their equal then jump to given lable
-  ; CMDCMP_JUMP_EQUAL commandEntered, helpCmd, kernel_printHelp
-  ; CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
+  CMDCMP_JUMP_EQUAL commandEntered, helpCmd, kernel_printHelp
+  CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
 
-  ; PRINTF_LM errorUnknownCmd, commandEntered
+  PRINTF_LM errorUnknownCmd, commandEntered
 
   jmp kernel_readCommandsLoop       ; continue reading commands
 
