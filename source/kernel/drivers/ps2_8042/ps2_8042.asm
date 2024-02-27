@@ -17,3 +17,21 @@ ps2_8042_waitOutput:
   test al, 1
   jz ps2_8042_waitOutput
   ret
+
+; Waits for a key press from the keyboard
+; Takes no parameters
+; RETURNS
+;   - AL      => The keycode
+kbd_waitForKeycode:
+  push ds
+  mov bx, KERNEL_SEGMENT
+  mov ds, bx
+  sti
+kbd_waitForKeycode_wait:
+  hlt
+  cmp byte ds:[keyboardCurrentKeycode], 0
+  je kbd_waitForKeycode_wait
+
+  mov al, ds:[keyboardCurrentKeycode]
+  pop ds 
+  ret

@@ -38,8 +38,10 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
   db "clear", TAB, "| clears the screen", NEWLINE, 
   db 0
 
-isReadingKeyboard:        db 0
 keyboardKeycodes:         times 104 db 0
+keyboardCurrentKeycode:   db 0                ; Keycode 0 means no key was pressed
+
+kbdSkipNextInt:           db 0
 
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
@@ -83,12 +85,16 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentPath   ; Go down a line and print the shell
 
-  lea di, [commandEntered]          ;
-  mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
-  call read                         ; 
+  ; lea di, [commandEntered]          ;
+  ; mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
+  ; call read                         ; 
 
-  test ax, ax                       ; if zero bytes were read then just show a new shell
-  jz kernel_readCommandsLoop        ;
+  ; test ax, ax                       ; if zero bytes were read then just show a new shell
+  ; jz kernel_readCommandsLoop        ;
+
+  call kbd_waitForKeycode
+  xor ah, ah
+  PRINT_INT16 ax
 
   PRINT_NEWLINE
   PRINT_NEWLINE
@@ -107,10 +113,10 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE
 
   ; compares two strings, and if their equal then jump to given lable
-  CMDCMP_JUMP_EQUAL commandEntered, helpCmd, kernel_printHelp
-  CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
+  ; CMDCMP_JUMP_EQUAL commandEntered, helpCmd, kernel_printHelp
+  ; CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
 
-  PRINTF_LM errorUnknownCmd, commandEntered
+  ; PRINTF_LM errorUnknownCmd, commandEntered
 
   jmp kernel_readCommandsLoop       ; continue reading commands
 

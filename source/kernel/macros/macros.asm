@@ -41,6 +41,11 @@
 %define INT_DIVIBE_ZERO 0
 %define INT_KEYBOARD 9
 
+%define IRQ_KEYBOARD 1
+
+%define KBD_SCANCODE_NORM_BREAK 0F0h
+%define KBD_SCANCODE_SPECIAL 0E0h
+
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
 %define NEWLINE 0Ah
