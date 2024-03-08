@@ -15,7 +15,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "source/kernel/filesystem/filesystem.asm"
 %include "source/kernel/macros/macros.asm"
 %include "source/kernel/isr/isr.asm"
-%include "source/kernel/drivers/ps2_8042/ps2_8042.asm"
+; %include "source/kernel/drivers/ps2_8042/ps2_8042.asm"
 %include "source/kernel/init/init.asm"
 
 ;
@@ -38,10 +38,11 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
   db "clear", TAB, "| clears the screen", NEWLINE, 
   db 0
 
-keyboardKeycodes:         times 104 db 0
-keyboardCurrentKeycode:   db 0                ; Keycode 0 means no key was pressed
 
-kbdSkipNextInt:           db 0
+; kbdKeycodes:              times 104 db 0
+; kbdCurrentKeycode:        db 0                ; Keycode 0 means no key was pressed
+
+; kbdSkipNextInt:           db 0
 
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
@@ -86,10 +87,6 @@ kernel_readCommandsLoop:
 
   test ax, ax                       ; if zero bytes were read then just show a new shell
   jz kernel_readCommandsLoop        ;
-
-  ; call kbd_waitForKeycode
-  ; xor ah, ah
-  ; PRINT_INT16 ax
 
   PRINT_NEWLINE
   PRINT_NEWLINE

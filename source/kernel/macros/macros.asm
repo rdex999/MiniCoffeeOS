@@ -365,6 +365,56 @@
 
 %endmacro
 
+
+
+%macro PRINT_HEX16 1
+
+  pusha
+  push bp
+  mov bp, sp
+  sub sp, 2
+
+  mov di, sp
+  mov byte ss:[di + 1], 0
+
+  %if %1 != si
+    mov si, %1
+  %endif
+
+%%printHex16_hexDigitsLoop:
+  mov ax, si
+  and ax, 0Fh                         ; Remove upper bytes, and leave the 4 LSBs
+  cmp al, 0Ah
+  jl %%printHex16_hexLetter
+
+  add al, 37h                         ; Convert digit to ascii letter
+  jmp %%printHex16_hexSkipLetter
+
+%%printHex16_hexLetter:
+  add al, 30h                         ; Convert digit to ascii number
+
+%%printHex16_hexSkipLetter:
+  mov ss:[di], al                        ; Store letter/number in buffer
+  dec di
+  shr si, 4                           ; Remove last hex digit from number
+  test si, si
+  jnz %%printHex16_hexDigitsLoop
+
+%%printHex16_hexPrintLoop:
+  inc di
+  mov al, ss:[di]
+  test al, al
+  jz %%printHex16_end
+  PRINT_CHAR al
+  jmp %%printHex16_hexPrintLoop
+
+%%printHex16_end:
+  mov sp, bp
+  pop bp
+  popa
+
+%endmacro
+
 ; Printf macro ( _M is for macro)
 ; First argument is a string, and after that are the arguemnts from printf
 ; EXAMPLE: PRINTF_M "Heyyyy AX is: %d hey again", AX

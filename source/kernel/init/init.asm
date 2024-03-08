@@ -6,7 +6,7 @@
 %define INIT_ASM
 
 %include "source/kernel/macros/macros.asm"
-%include "source/kernel/init/ps2_8042.asm"
+; %include "source/kernel/init/ps2_8042.asm"
 
 ; Copies the BPB and the EBPB from BIOS.
 ; PARAMS

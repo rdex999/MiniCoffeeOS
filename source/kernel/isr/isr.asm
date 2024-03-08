@@ -3,4 +3,4 @@
 ;
 
 %include "source/kernel/isr/divZero.asm"
-%include "source/kernel/isr/keyboard.asm"
+; %include "source/kernel/isr/keyboard.asm"

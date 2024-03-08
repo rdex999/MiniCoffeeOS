@@ -31,14 +31,14 @@ ISR_keyboard_setKeycode:
 
   ; If released then set the current keycode to 0
   ; And the keycode in the keycodes array to 0
-  mov byte ds:[keyboardCurrentKeycode], 0     ; Set current keycode to 0 as its released
-  mov byte ds:[keyboardKeycodes - 1 + di], 0  ; Set the keycode in the keycode array to 0
+  mov byte ds:[kbdCurrentKeycode], 0     ; Set current keycode to 0 as its released
+  mov byte ds:[kbdKeycodes - 1 + di], 0  ; Set the keycode in the keycode array to 0
   jmp ISR_keyboard_end                        ; Return from iterrupt
 
 ISR_keyboard_setKeycode_pressed:
   mov ax, di                                  ; Because the keycode is 8 bits (1 byte)
-  mov byte ds:[keyboardCurrentKeycode], al    ; Set the current keycode to the new keycode
-  mov byte ds:[keyboardKeycodes - 1 + di], 1  ; Set the keycode in the keycode array to the new keycode
+  mov byte ds:[kbdCurrentKeycode], al    ; Set the current keycode to the new keycode
+  mov byte ds:[kbdKeycodes - 1 + di], 1  ; Set the keycode in the keycode array to the new keycode
   jmp ISR_keyboard_end                        ; Return from the interrupt
 
 ; Handles keyboard events, (interrupts)
@@ -69,7 +69,7 @@ ISR_keyboard:
   je ISR_keyboard_dontSkipInt                 ; If not, then execute this interrupt
 
   ; If should not execute this interrupt, set flag off (so next interrupt WILL execute) and return.
-  mov byte ds:[kbdSkipNextInt], 0             ; Set flag off
+  dec byte ds:[kbdSkipNextInt]                ; Decrement skip counter
   jmp ISR_keyboard_end                        ; Return
 
 ISR_keyboard_dontSkipInt:
@@ -79,12 +79,17 @@ ISR_keyboard_dontSkipInt:
     PRINT_NEWLINE
     in al, PS2_DATA_PORT
     xor ah, ah
-    PRINT_INT16 ax
-
+    PRINT_HEX16 ax
     PRINT_NEWLINE
+
     in al, PS2_DATA_PORT
     xor ah, ah
-    PRINT_INT16 ax
+    PRINT_HEX16 ax
+    PRINT_NEWLINE
+
+    in al, PS2_DATA_PORT
+    xor ah, ah
+    PRINT_HEX16 ax
     PRINT_NEWLINE
     jmp ISR_keyboard_end
   %endif
@@ -127,7 +132,7 @@ ISR_keyboard_normChecks:
   ISR_KEYBOARD_SCANCODE_JUMP 9h, ISR_keyboard_9     ; <F10>
 
 
-  mov byte ds:[keyboardCurrentKeycode], 0           ; (default) If none of the above, then just set the current key to NULL
+  mov byte ds:[kbdCurrentKeycode], 0           ; (default) If none of the above, then just set the current key to NULL
 
 ISR_keyboard_end: 
   PIC8259_SEND_EOI IRQ_KEYBOARD                     ; Send an EOI to the PIC, so new interrupts can be called
