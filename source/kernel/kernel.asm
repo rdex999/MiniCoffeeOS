@@ -71,10 +71,8 @@ kernelMain:
 
   lea di, [buffer]
   lea si, [pathStf]
-  mov dx, 22
+  mov dx, 23
   call ParsePath
-
-  PRINT_INT16 bx
 
   lea di, [buffer]
   call printStr

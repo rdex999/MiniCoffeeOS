@@ -95,25 +95,29 @@ ParsePath_fSlash_fillSpace:
   jmp ParsePath_parseName           ; Continue parsing name
 
 ParsePath_foundNull:
-  ; mov byte es:[di], 0                   ; Null terminate
-  push di 
+  push di                               ; Save current position in buffer
+
+  ; Get the amount of bytes to fill with spaces 
   mov ax, di                            ; CX = buffer pointer
   sub ax, [bp - 3]                      ; Subract the beginning of the buffer to get current name length in CX
-  mov cx, 11
-  sub cx, ax 
+  mov cx, 11                            ; CX = length of path part (11)
+  sub cx, ax                            ; CX = 11 - currentNameLength   => How many spaces to fill
 
-  sub [bp - 6], cl
-  js ParsePath_errBufferLimit
+  dec byte [bp - 6]                     ; The size of the buffer must include space for the NULL character
+  sub [bp - 6], cl                      ; Check if the buffer is big enough for the amount of spaces
+  js ParsePath_errBufferLimit           ; If not then return an ERR_BUFFER_LIMIT error
 
+  ; Fill rest of the buffer with spaces
 ParsePath_foundNull_fillSpaceAfterExt:
-  mov byte es:[di], 'q'
-  inc di
-  loop ParsePath_foundNull_fillSpaceAfterExt
+  mov byte es:[di], 'q'                       ; Make current byte a space
+  inc di                                      ; Increase buffer pointer
+  loop ParsePath_foundNull_fillSpaceAfterExt  ; Continue until there are no more bytes to fill (until CX == 0)
 
-  mov byte es:[di], 0
-  pop di
-  mov cx, di
-  sub cx, [bp - 3]
+  ; Null terminate buffer and get the length of the name in CX (length not including the spaces that were just filled)
+  mov byte es:[di], 0                   ; Null terminate the buffer
+  pop di                                ; Restore the location of the last character in the buffer (which is not a space)
+  mov cx, di                            ; Set CX to it to get the length of the path part without the spaces
+  sub cx, [bp - 3]                      ; Subtract from the location the location of the first byte in the name. (lastChar - firstChar)
 
   ; Search for the file extension, and if not found then just return
 ParsePath_foundNull_searchExt:          ; Loop from the end of the buffer and search for '.'
