@@ -7,7 +7,7 @@
 ; PARAMS
 ;   - 0) ES:DI    => Buffer to store new path in
 ;   - 1) DS:SI    => File path (string, null terminated)
-;   - 2) DX       => Max path length
+;   - 2) DL       => Buffer size (from argument 0)
 ; RETURNS
 ;   - In BX, the error code. 0 for no error, 1 for one of the names is too long
 ;   - In AL, the number of directories in path. (count '/')
@@ -15,12 +15,13 @@
 ParsePath:
   push bp
   mov bp, sp
-  sub sp, 5                       ; Allocate 5 bytes
+  sub sp, 6                       ; Allocate 6 bytes
 
   mov byte [bp - 1], 11+2         ; Characters left to read
   mov [bp - 3], di                ; Beginning of currect name (formatted)
   mov byte [bp - 4], 0            ; Zero count of directories (count '/')
   mov byte [bp - 5], 0            ; Flag for if the path is from the root directory
+  mov [bp - 6], dl                ; Store buffer size
 
   cmp byte ds:[si], '/'           ; Check if the path is from the root dir
   jne ParsePath_parseName         ; If not the root directory then leave the flag on, otherwise (if root dir) make the flag 1
@@ -35,6 +36,7 @@ ParsePath_parseName:
   dec byte [bp - 1]               ; Decrement counter of bytes left in current name. Name is like the current directory,
                                   ; for example "/idk/test.txt" then "idk", and "test.txt" are names
   jz ParsePath_nameTooLong        ; If the bytes left in current name is 0 then return an error of 1 in BX
+
   mov al, ds:[si]                 ; AL = next character in source path, its more efficient to compare registers instead of pointer
   
   test al, al                     ; Check for null character
@@ -42,6 +44,9 @@ ParsePath_parseName:
 
   cmp al, '/'                     ; Check for directories
   je ParsePath_fSlash
+
+  dec byte [bp - 6]               ; Decrement buffer size, so if its 0 then return an error code
+  jz ParsePath_errBufferLimit     ; If the number of bytes left in the buffer is 0 then return an error
 
 ; Because everything under 'a' (in ascii table) can be treated as a symbol, no need to even check for it/
 ; For exampla there is no need to format an 'A' or an '$'
@@ -77,9 +82,12 @@ ParsePath_fSlash:
   sub cx, ax                        ; Subtract from CX the length of the processed string to get number of spaces to fill
   jz ParsePath_parseName            ; If zero and try to decrement will be 0FFFFh, which is not what we want
 
+  sub [bp - 6], cl
+  js ParsePath_errBufferLimit
+
   ; Will the rest of the name with spaces
 ParsePath_fSlash_fillSpace:
-  mov byte es:[di], ' '             ; Set byte in buffer to space
+  mov byte es:[di], 'q'             ; Set byte in buffer to space
   inc di                            ; Increment buffer pointer
   loop ParsePath_fSlash_fillSpace   ; Continue filling with spaces until number of spaces to fill is zero
 
@@ -87,10 +95,26 @@ ParsePath_fSlash_fillSpace:
   jmp ParsePath_parseName           ; Continue parsing name
 
 ParsePath_foundNull:
-  mov byte es:[di], 0                   ; Null terminate
-  mov cx, di                            ; CX = buffer pointer
-  sub cx, [bp - 3]                      ; Subract the beginning of the buffer to get current name length in CX
-  
+  ; mov byte es:[di], 0                   ; Null terminate
+  push di 
+  mov ax, di                            ; CX = buffer pointer
+  sub ax, [bp - 3]                      ; Subract the beginning of the buffer to get current name length in CX
+  mov cx, 11
+  sub cx, ax 
+
+  sub [bp - 6], cl
+  js ParsePath_errBufferLimit
+
+ParsePath_foundNull_fillSpaceAfterExt:
+  mov byte es:[di], 'q'
+  inc di
+  loop ParsePath_foundNull_fillSpaceAfterExt
+
+  mov byte es:[di], 0
+  pop di
+  mov cx, di
+  sub cx, [bp - 3]
+
   ; Search for the file extension, and if not found then just return
 ParsePath_foundNull_searchExt:          ; Loop from the end of the buffer and search for '.'
   cmp byte es:[di - 1], '.'             ; Check for '.'
@@ -116,7 +140,7 @@ ParsePath_foundNull_copyExt:
   add si, 11-3                          ; Set SI to the first byte of the copied extension (three bytes from the end)
   sub di, 4                             ; Subtract 4 from extension pointer (old extension) to point to the '.'
 ParsePath_foundNull_fillSpace:
-  mov byte es:[di], ' '                 ; Make current byte a space
+  mov byte es:[di], 'q'                 ; Make current byte a space
   inc di                                ; Increase pointer
   cmp di, si                            ; Comapre the pointer to the beginning of the extension.
   jb ParsePath_foundNull_fillSpace      ; As long as the pointer is smaller then the extension pointer continue filling spaces
@@ -133,5 +157,10 @@ ParsePath_end:
 
 ParsePath_nameTooLong:
   xor ax, ax                              ; Zero out result
-  mov bx, 1                               ; Return error 1 if one of the directories is too long 
+  mov bx, ERR_PATH_PART_LIMIT             ; Return an error if one of the directories is too long 
+  jmp ParsePath_end
+
+ParsePath_errBufferLimit:
+  xor ax, ax                              ; Zero out result
+  mov bx, ERR_BUFFER_LIMIT                ; Return an error if the buffer is too small for the new path
   jmp ParsePath_end

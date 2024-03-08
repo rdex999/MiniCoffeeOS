@@ -5,6 +5,8 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
+%include "source/kernel/macros/errorCodes.asm"
+
 %define VGA_SEGMENT 0B800h
 
 %define PIC_MASTER_CMD 20h

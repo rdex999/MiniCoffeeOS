@@ -71,7 +71,10 @@ kernelMain:
 
   lea di, [buffer]
   lea si, [pathStf]
+  mov dx, 22
   call ParsePath
+
+  PRINT_INT16 bx
 
   lea di, [buffer]
   call printStr
@@ -92,14 +95,14 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE
 
   ;;;;; FOR DEBUG
-  lea di, dbgTestTxt
-  lea bx, buffer
-  call readFile
-  test ax, ax
-  jnz kernel_dontPrintFileContent
+  ; lea di, dbgTestTxt
+  ; lea bx, buffer
+  ; call readFile
+  ; test ax, ax
+  ; jnz kernel_dontPrintFileContent
 
-  lea di, buffer                ;;;;;;;; FOR DEBUG
-  call printStr
+  ; lea di, buffer                ;;;;;;;; FOR DEBUG
+  ; call printStr
 
   kernel_dontPrintFileContent:
   PRINT_NEWLINE

@@ -8,7 +8,7 @@
 ;   - 1) ES:BX  => Buffer to store data in
 ; RETURNS
 ;   - In AX, the error code. 0 for no error.
-ReadClusterChain:
+readClusterChain:
   push bp
   mov bp, sp
   sub sp, 12
@@ -26,7 +26,7 @@ ReadClusterChain:
   mov [bp - 12], sp               ; Save FAT sector pointer 
 
   ; When getting here the cluster number is allways in DI
-ReadClusterChain_readCluster:
+readClusterChain_readCluster:
   call clusterToLBA               ; Convert the cluster number to an LBA address
   mov di, ax                      ; DI = LBA address. As first argument for readDisk
 
@@ -40,7 +40,7 @@ ReadClusterChain_readCluster:
   mov bx, [bp - 6]                ; Set buffer offset
   call readDisk
   test ax, ax                     ; Checl exit code of readDisk
-  jnz ReadClusterChain_end        ; If its not 0 then return, and return it in AX
+  jnz readClusterChain_end        ; If its not 0 then return, and return it in AX
 
   ; Calculate the number of bytes in a sector and add it to the buffer.
   ; buffer += bytesPerSector * sectorsPerCluster;
@@ -59,7 +59,7 @@ ReadClusterChain_readCluster:
   mov [bp - 10], dx               ; Store relative index at *(bp - 10)
 
   cmp ax, [bp - 2]                ; Check if the new sector offset is the same as the old one
-  je ReadClusterChain_skipNewFat  ; If the same then there is no need to read again the same FAT sector. Skip the FAT read
+  je readClusterChain_skipNewFat  ; If the same then there is no need to read again the same FAT sector. Skip the FAT read
 
   ; Prepare arguments for readDisk and read a new sector of FAT into memory
   mov [bp - 2], ax                ; Store new custer sector offset
@@ -74,19 +74,19 @@ ReadClusterChain_readCluster:
 
   call readDisk                   ; Read a sector of fat into memory
   test ax, ax                     ; Check exit code of readDisk
-  jnz ReadClusterChain_end        ; If its not zero then return and return it as the exit code
+  jnz readClusterChain_end        ; If its not zero then return and return it as the exit code
 
-ReadClusterChain_skipNewFat:
+readClusterChain_skipNewFat:
   mov si, [bp - 10]               ; Get index in FAT in SI
   shl si, 1                       ; Because each FAT entry is 2 bytes, multiply the index by 2
   add si, [bp - 12]               ; Add to the index a pointer to FAT, so SI points to the cluster number
   mov di, ss:[si]                 ; Set DI to the next cluster number
   mov [bp - 8], di                ; Store the next cluster number
   cmp di, 0FFF8h                  ; Check if its the end of the cluster chain
-  jb ReadClusterChain_readCluster ; If not the end then continue reading clusters
+  jb readClusterChain_readCluster ; If not the end then continue reading clusters
 
   xor ax, ax                      ; Read was successful, return 0
-ReadClusterChain_end:
+readClusterChain_end:
   mov sp, bp
   pop bp
   ret
