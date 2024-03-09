@@ -123,7 +123,6 @@
   mov sp, 0FFFFh                    ; Make stack larger
   mov bx, 50h                       
   mov ss, bx                        ; So make the stack not overwrite the IVT
-  mov byte [currentPath], '/'
   
   IVT_INIT
 

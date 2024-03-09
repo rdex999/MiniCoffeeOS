@@ -32,18 +32,43 @@ strcmp_notEqual:
 
 ; calculates the length of a string (zero terminated)
 ; PARAMS
-; 0) const char* (DI) => string
+; 0) const char* (DS:DI) => string
 ; RETURNS
 ; int16 => the length of the string
 strlen:
   mov si, di  ; store copy of original pointer in SI
 strlen_loop:
   inc di
-  cmp byte [di], 0  ; check for null character
+  cmp byte ds:[di], 0  ; check for null character
   jne strlen_loop
 
   mov ax, di
   sub ax, si
   ret
+
+
+; Calculates how many times a letter exists in a string
+; PARAMS
+;   - 0) DS:DI    => The string, null terminated
+;   - 1) SI       => The letter (lower 8 bits)
+; RETURNS
+;   - In AX, the amount of times the letter was found in the string
+strFindLetterCount:
+  xor ax, ax                    ; Zero out counter.
+  mov bx, si                    ; Set BX to the letter, because then we can use the lower 8 bits of it. (which is the letter)
+strFindLetterCount_loop:
+  inc di                        ; Increase string pointer to point to the next character
+  cmp byte ds:[di - 1], 0       ; Check for the end of the string (null character)
+  je strFindLetterCount_end     ; If null then stop searching and return
+
+  cmp byte ds:[di - 1], bl      ; Check the current letter in the string to the character
+  jne strFindLetterCount_loop   ; If not equal then continue searching, otherwise increase character counter and then continue
+
+  inc ax                        ; Increase character coutner
+  jmp strFindLetterCount_loop   ; Continue looping
+
+strFindLetterCount_end:
+  ret
+
 
 %endif

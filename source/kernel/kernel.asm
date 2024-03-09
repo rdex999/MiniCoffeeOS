@@ -31,7 +31,8 @@ welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
-currentPath:              times 64 db 0
+currentUserDirPath:       db '/'
+                          times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
 helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
   db "help", TAB, "| prints this help message.", NEWLINE, TAB,
@@ -69,18 +70,19 @@ kernelMain:
   lea di, [welcomeMsg] 
   call printStr
 
+  ;;;;;;;;; DEBUG
   lea di, [buffer]
   lea si, [pathStf]
-  mov dx, 23
-  call ParsePath
-
+  mov dl, 200
+  call getFullPath
+  
   lea di, [buffer]
   call printStr
 
 kernel_readCommandsLoop:
 
   PRINT_NEWLINE                     ;
-  PRINTF_LM shellStr, currentPath   ; Go down a line and print the shell
+  PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 
   lea di, [commandEntered]          ;
   mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
@@ -93,14 +95,14 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE
 
   ;;;;; FOR DEBUG
-  ; lea di, dbgTestTxt
-  ; lea bx, buffer
-  ; call readFile
-  ; test ax, ax
-  ; jnz kernel_dontPrintFileContent
+  lea di, dbgTestTxt
+  lea bx, buffer
+  call readFile
+  test ax, ax
+  jnz kernel_dontPrintFileContent
 
-  ; lea di, buffer                ;;;;;;;; FOR DEBUG
-  ; call printStr
+  lea di, buffer                ;;;;;;;; FOR DEBUG
+  call printStr
 
   kernel_dontPrintFileContent:
   PRINT_NEWLINE

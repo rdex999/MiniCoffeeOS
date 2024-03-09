@@ -7,22 +7,13 @@
 
 ; clears the screen
 clear:
-  mov ah, 2
-  xor dx, dx  ; DL column, DH row // both 0
-  xor bh, bh
-  int 10h
+  mov ax, 0700h                   ; AH = 7 AL = 0   => Clear screen
+  mov bh, 7                       ; Gray color
+  xor cx, cx                      ; Upper left row (CH) and column (CL)
+  mov dx, 1950h                   ; Lower right row (DH) and column (DL)  | DH = 25, DL = 80
+  int 10h                         ; Perform interrupt
 
-  mov cx, 25*80
-  mov al, ' '
-clear_loop:
-  mov ah, 0Eh
-  int 10h
-  loop clear_loop
-
-  mov ah, 2
-  xor dx, dx  ; DL column, DH row // both 0
-  xor bh, bh
-  int 10h
+  SET_CURSOR_POSITION 0, 0, 0     ; Set the cursor to (0, 0)
   ret
 
 %endif

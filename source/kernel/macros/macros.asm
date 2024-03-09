@@ -7,6 +7,21 @@
 
 %include "source/kernel/macros/errorCodes.asm"
 
+; LC stands for: Line Feed, Carriage Return
+%define NEWLINE_LC 0Ah, 0Dh
+%define NEWLINE 0Ah
+%define TAB 0Bh
+
+; 2*20*512  // 2 FATs, 20 sectors per fat, 512 bytes per sector
+%define TOTAL_FAT_SIZE 20480
+
+; 512 * 32 = 16384   // 512 => root directory entries // 32 bytes per entry
+%define ROOT_DIRECTORY_SIZE 16384
+
+%define KERNEL_SEGMENT 2000h
+
+%define MAX_PATH_FORMATTED_LENGTH 256
+
 %define VGA_SEGMENT 0B800h
 
 %define PIC_MASTER_CMD 20h
@@ -48,18 +63,6 @@
 %define KBD_SCANCODE_NORM_BREAK 0F0h
 %define KBD_SCANCODE_SPECIAL 0E0h
 
-; LC stands for: Line Feed, Carriage Return
-%define NEWLINE_LC 0Ah, 0Dh
-%define NEWLINE 0Ah
-%define TAB 0Bh
-
-; 2*20*512  // 2 FATs, 20 sectors per fat, 512 bytes per sector
-%define TOTAL_FAT_SIZE 20480
-
-; 512 * 32 = 16384   // 512 => root directory entries // 32 bytes per entry
-%define ROOT_DIRECTORY_SIZE 16384
-
-%define KERNEL_SEGMENT 2000h
 
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3

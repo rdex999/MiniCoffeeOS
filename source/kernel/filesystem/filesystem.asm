@@ -9,6 +9,7 @@
 %include "source/kernel/filesystem/readFile.asm"
 %include "source/kernel/filesystem/searchInRootDir.asm"
 %include "source/kernel/filesystem/parsePath.asm"
+%include "source/kernel/filesystem/getFullPath.asm"
 %include "source/kernel/filesystem/readClusterChain.asm"
 
 ; Converts LBA (Logical Block Address) to CHS (Cylinder Head Sector)

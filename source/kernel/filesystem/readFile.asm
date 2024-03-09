@@ -77,7 +77,7 @@ readFile:
   push bp
   mov bp, sp
 
-  sub sp, 4*2+1
+  sub sp, 4*2
 
   mov [bp - 2], es          ; Store buffer segment
   mov [bp - 4], di          ; Store buffer offset
