@@ -15,60 +15,59 @@ getFullPath:
   mov bp, sp
 
   sub sp, 4*2
-  mov [bp - 2], es          ; Store buffer segment
-  mov [bp - 4], di          ; Store buffer offset
+  mov [bp - 2], es                          ; Store buffer segment
+  mov [bp - 4], di                          ; Store buffer offset
   
-  mov [bp - 6], ds          ; Store path segment
-  mov [bp - 8], si          ; Store path offset
+  mov [bp - 6], ds                          ; Store path segment
+  mov [bp - 8], si                          ; Store path offset
   
-  mov bx, KERNEL_SEGMENT    ; Set the kernel segment because currentUserDirPath is in it
-  mov ds, bx                ; 
+  mov bx, KERNEL_SEGMENT                    ; Set the kernel segment because currentUserDirPath is in it
+  mov ds, bx                                ; 
 
   ; ES is already at the buffer segment, and DI is already on the buffer offset
-  cmp byte ds:[currentUserDirPath + 1], 0
-  je getFullPath_afterUserPathCopy
+  cmp byte ds:[currentUserDirPath + 1], 0   ; Check if current user path is on the root directory
+  je getFullPath_afterUserPathCopy          ; If it is, then there is no need to parse it
 
-  lea si, [currentUserDirPath]
-  call parsePath
-  test bx, bx
-  jnz getFullPath_end
+  ; If currentUserDirPath is not on the root directory then parse it
+  lea si, [currentUserDirPath]              ; Get pointer to currentUserDirPath in SI
+  call parsePath                            ; Parse it, as the buffer is already set at ES:DI
+  test bx, bx                               ; Check if there was an error
+  jnz getFullPath_end                       ; If there was an error then return with it as the error code in BX
 
-  mov di, [bp - 4]
-  call strlen
+  ; Get the length of the new parsed path, and add it to the buffer pointer to get the location of the last character there.
+  mov di, [bp - 4]                          ; Pointer to the beginning of the buffer, which is the parsed path
+  call strlen                               ; Get its length in AX
 
-  mov di, [bp - 4]
-  add di, ax
+  mov di, [bp - 4]                          ; Get pointer to the beginning of the parsed path in DI
+  add di, ax                                ; Add to the its length and get a pointer to its last character in DI
 
 getFullPath_afterUserPathCopy:
-  mov bx, [bp - 6]
-  mov ds, bx
-
-  mov si, [bp - 8]
-  mov bx, [bp - 6]
-  mov ds, bx
+  ; Set pointers to buffer and path. ES:DI => buffer, DS:SI => path
+  mov si, [bp - 8]                    ; Set path offset in SI
+  mov bx, [bp - 6]                    ; Set path segemnt in DS
+  mov ds, bx                          ; 
   
-  mov bx, [bp - 2]
-  mov es, bx
+  mov bx, [bp - 2]                    ; Set buffer segment in ES
+  mov es, bx                          ;
 
-  cmp byte ds:[si], '/'
-  je getFullPath_isOnFullPath
+  cmp byte ds:[si], '/'               ; Check if the path (parameter) starts with '/' to determin if its from the root dir
+  je getFullPath_isOnFullPath         ; If its from the root dir then just parse it and write it to the beginning of the buffer
 
+  ; If the path (parameter) is not from the root directory then parse it and
+  ; write the new path to the current position in the buffer. (After the parsed currentUserDirPath)
+  ; ES:DI buffer (already set)
+  ; DS:SI path offset (already set)
   call parsePath
-  xor bx, bx
-  jmp getFullPath_end
-
+  jmp getFullPath_end                 ; If there was an error, BX will be the error code and we will return with this error code
 
 getFullPath_isOnFullPath:
-  mov di, [bp - 4]
+  ; If the path (parameter) is from the root directory then parse it and write it after the parsed currentUserDirPath
+  mov di, [bp - 4]                    ; Get buffer offset in DI
+  ; DS:SI path is already set
   call parsePath
-
-  xor bx, bx
+  ; If there was an error then return with the error code which is in BX
 
 getFullPath_end:
-  mov sp, bp
-  pop bp
+  mov sp, bp                          ; Restore stack frame
+  pop bp                              ; 
   ret
-
-getFullPath_errBufferTooSmall:
-  mov bx, ERR_BUFFER_LIMIT
-  jmp getFullPath_end

@@ -31,7 +31,7 @@ welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
-currentUserDirPath:       db '/folder'
+currentUserDirPath:       db '/folder/idk/'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
 helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB

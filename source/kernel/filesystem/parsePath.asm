@@ -2,7 +2,7 @@
 ; ---------- [ PARSE A FILES PATH INTO 11 BYTE STRINGS ] ----------
 ;
 
-%define PARSE_PATH_DEBUG
+; %define PARSE_PATH_DEBUG
 
 
 ; Converts a normal path into an array of 11 byte strings all capital
