@@ -7,7 +7,6 @@
 ; PARAMS
 ;   - 0) ES:DI    => Buffer to store new path in
 ;   - 1) DS:SI    => File path (string, null terminated)
-;   - 2) DL       => Buffer size (from argument 0)
 ; RETURNS
 ;   - In BX, the error code. 0 for no error, 1 for one of the names is too long
 ;   - In AL, the number of directories in path. (count '/')
@@ -15,13 +14,12 @@
 parsePath:
   push bp
   mov bp, sp
-  sub sp, 6                       ; Allocate 6 bytes
+  sub sp, 5                       ; Allocate 6 bytes
 
   mov byte [bp - 1], 11+2         ; Characters left to read
   mov [bp - 3], di                ; Beginning of currect name (formatted)
   mov byte [bp - 4], 0            ; Zero count of directories (count '/')
   mov byte [bp - 5], 0            ; Flag for if the path is from the root directory
-  mov [bp - 6], dl                ; Store buffer size
 
   cmp byte ds:[si], '/'           ; Check if the path is from the root dir
   jne parsePath_parseName         ; If not the root directory then leave the flag on, otherwise (if root dir) make the flag 1
@@ -44,9 +42,6 @@ parsePath_parseName:
 
   cmp al, '/'                     ; Check for directories
   je parsePath_fSlash
-
-  dec byte [bp - 6]               ; Decrement buffer size, so if its 0 then return an error code
-  jz parsePath_errBufferLimit     ; If the number of bytes left in the buffer is 0 then return an error
 
 ; Because everything under 'a' (in ascii table) can be treated as a symbol, no need to even check for it/
 ; For exampla there is no need to format an 'A' or an '$'
@@ -82,9 +77,6 @@ parsePath_fSlash:
   sub cx, ax                        ; Subtract from CX the length of the processed string to get number of spaces to fill
   jz parsePath_parseName            ; If zero and try to decrement will be 0FFFFh, which is not what we want
 
-  sub [bp - 6], cl
-  js parsePath_errBufferLimit
-
   ; Will the rest of the name with spaces
 parsePath_fSlash_fillSpace:
   mov byte es:[di], ' '             ; Set byte in buffer to space
@@ -102,10 +94,6 @@ parsePath_foundNull:
   sub ax, [bp - 3]                      ; Subract the beginning of the buffer to get current name length in CX
   mov cx, 11                            ; CX = length of path part (11)
   sub cx, ax                            ; CX = 11 - currentNameLength   => How many spaces to fill
-
-  dec byte [bp - 6]                     ; The size of the buffer must include space for the NULL character
-  sub [bp - 6], cl                      ; Check if the buffer is big enough for the amount of spaces
-  js parsePath_errBufferLimit           ; If not then return an ERR_BUFFER_LIMIT error
 
   ; Fill rest of the buffer with spaces
 parsePath_foundNull_fillSpaceAfterExt:
@@ -162,9 +150,4 @@ parsePath_end:
 parsePath_nameTooLong:
   xor ax, ax                              ; Zero out result
   mov bx, ERR_PATH_PART_LIMIT             ; Return an error if one of the directories is too long 
-  jmp parsePath_end
-
-parsePath_errBufferLimit:
-  xor ax, ax                              ; Zero out result
-  mov bx, ERR_BUFFER_LIMIT                ; Return an error if the buffer is too small for the new path
   jmp parsePath_end

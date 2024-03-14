@@ -57,7 +57,6 @@ pathStf:                  db "folDEr/teSt.txt", 0
 ;
 
 kernelMain:
-
   call clear
 
   mov ch, 6               ;
@@ -73,14 +72,13 @@ kernelMain:
   ;;;;;;;;; DEBUG
   lea di, [buffer]
   lea si, [pathStf]
-  mov dl, 200
-  call getFullPath
-  
+  ; call getFullPath
+  call parsePath
+
   lea di, [buffer]
   call printStr
 
 kernel_readCommandsLoop:
-
   PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 

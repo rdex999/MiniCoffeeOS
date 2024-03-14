@@ -7,7 +7,6 @@
 ; PARAMS
 ;   - 0) ES:DI    => Buffer to store new path in.
 ;   - 1) DS:SI    => Normal path string, null terminated.
-;   - 2) DL       => Buffer length (from argument 0).
 ; RETURNS
 ;   - In BX, the error code. 0 for no error, an error code otherwise.
 ;   - In AL, the number of directories in path. (count '/')
@@ -15,15 +14,13 @@ getFullPath:
   push bp
   mov bp, sp
 
-  sub sp, 4*2+1
+  sub sp, 4*2
   mov [bp - 2], es          ; Store buffer segment
   mov [bp - 4], di          ; Store buffer offset
   
   mov [bp - 6], ds          ; Store path segment
   mov [bp - 8], si          ; Store path offset
   
-  mov [bp - 9], dl          ; Store buffer size
-
   mov bx, KERNEL_SEGMENT    ; Set the kernel segment because currentUserDirPath is in it
   mov ds, bx                ; 
 
@@ -33,8 +30,16 @@ getFullPath:
   mov si, '/'
   call strFindLetterCount
 
+  test ax, ax
+  jz getFullPath_afterCalcLength
+
+  mov bx, 11
+  mul bx
+
   PRINTF_M "Count: %u", ax
 
+
+getFullPath_afterCalcLength:
 
 getFullPath_end:
   mov sp, bp
