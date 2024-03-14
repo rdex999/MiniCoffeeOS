@@ -31,7 +31,7 @@ welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
-currentUserDirPath:       db '/'
+currentUserDirPath:       db '/folder'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
 helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
@@ -49,8 +49,8 @@ helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
 dbgTestTxt:               db "T15     TXT"
-buffer:                   times 512*8 db 97
-pathStf:                  db "folDEr/teSt.txt", 0
+buffer:                   times 512*8 db 97         ;;;;;; DEBUG
+pathStf:                  db "fld/teSt.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -72,8 +72,7 @@ kernelMain:
   ;;;;;;;;; DEBUG
   lea di, [buffer]
   lea si, [pathStf]
-  ; call getFullPath
-  call parsePath
+  call getFullPath
 
   lea di, [buffer]
   call printStr

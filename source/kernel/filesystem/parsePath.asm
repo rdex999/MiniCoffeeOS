@@ -2,13 +2,15 @@
 ; ---------- [ PARSE A FILES PATH INTO 11 BYTE STRINGS ] ----------
 ;
 
+%define PARSE_PATH_DEBUG
+
 
 ; Converts a normal path into an array of 11 byte strings all capital
 ; PARAMS
 ;   - 0) ES:DI    => Buffer to store new path in
 ;   - 1) DS:SI    => File path (string, null terminated)
 ; RETURNS
-;   - In BX, the error code. 0 for no error, 1 for one of the names is too long
+;   - In BX, the error code. 0 for no error, and a non-zero error code otherwise
 ;   - In AL, the number of directories in path. (count '/')
 ;   - In AH, a flag for determining if the path is from the root directory or not (0, not from root dir. 1, from root dir)
 parsePath:
@@ -66,6 +68,8 @@ parsePath_symbol:
   jmp parsePath_parseName           ; Continue parsing name
 
 parsePath_fSlash:
+  cmp byte ds:[si + 1], 0
+  je parsePath_fSlash_endSlash
   inc si                            ; Increase source path pointer
   mov byte [bp - 1], 11+2           ; Reset bytes left for current name
   inc byte [bp - 4]                 ; Increase counter of directories (count of '/')
@@ -79,12 +83,21 @@ parsePath_fSlash:
 
   ; Will the rest of the name with spaces
 parsePath_fSlash_fillSpace:
+%ifdef PARSE_PATH_DEBUG
+  mov byte es:[di], 'q'             ; Set byte in buffer to space
+%else
   mov byte es:[di], ' '             ; Set byte in buffer to space
+%endif
+
   inc di                            ; Increment buffer pointer
   loop parsePath_fSlash_fillSpace   ; Continue filling with spaces until number of spaces to fill is zero
 
   mov [bp - 3], di                  ; Set beginning of current string buffer to buffer pointer
   jmp parsePath_parseName           ; Continue parsing name
+
+parsePath_fSlash_endSlash:
+  inc si
+  jmp parsePath_parseName
 
 parsePath_foundNull:
   push di                               ; Save current position in buffer
@@ -97,7 +110,12 @@ parsePath_foundNull:
 
   ; Fill rest of the buffer with spaces
 parsePath_foundNull_fillSpaceAfterExt:
+%ifdef PARSE_PATH_DEBUG
+  mov byte es:[di], 'q'
+%else
   mov byte es:[di], ' '                       ; Make current byte a space
+%endif
+
   inc di                                      ; Increase buffer pointer
   loop parsePath_foundNull_fillSpaceAfterExt  ; Continue until there are no more bytes to fill (until CX == 0)
 
@@ -132,7 +150,12 @@ parsePath_foundNull_copyExt:
   add si, 11-3                          ; Set SI to the first byte of the copied extension (three bytes from the end)
   sub di, 4                             ; Subtract 4 from extension pointer (old extension) to point to the '.'
 parsePath_foundNull_fillSpace:
+%ifdef PARSE_PATH_DEBUG
+  mov byte es:[di], 'q'                 ; Make current byte a space
+%else
   mov byte es:[di], ' '                 ; Make current byte a space
+%endif
+
   inc di                                ; Increase pointer
   cmp di, si                            ; Comapre the pointer to the beginning of the extension.
   jb parsePath_foundNull_fillSpace      ; As long as the pointer is smaller then the extension pointer continue filling spaces

@@ -22,21 +22,47 @@ getFullPath:
   mov [bp - 8], si          ; Store path offset
   
   mov bx, KERNEL_SEGMENT    ; Set the kernel segment because currentUserDirPath is in it
-  mov es, bx                ; 
+  mov ds, bx                ; 
 
-  ; Search how many directories are in currentUserDirPath
-  ; to find the minimum size of the buffer needed.
-  lea di, [currentUserDirPath]
-  mov si, '/'
-  call strFindLetterCount
+  ; ES is already at the buffer segment, and DI is already on the buffer offset
+  cmp byte ds:[currentUserDirPath + 1], 0
+  je getFullPath_afterUserPathCopy
 
-  mov bx, 11
-  mul bx
+  lea si, [currentUserDirPath]
+  call parsePath
+  test bx, bx
+  jnz getFullPath_end
 
+  mov di, [bp - 4]
+  call strlen
+
+  mov di, [bp - 4]
+  add di, ax
+
+getFullPath_afterUserPathCopy:
   mov bx, [bp - 6]
   mov ds, bx
 
+  mov si, [bp - 8]
+  mov bx, [bp - 6]
+  mov ds, bx
+  
+  mov bx, [bp - 2]
+  mov es, bx
 
+  cmp byte ds:[si], '/'
+  je getFullPath_isOnFullPath
+
+  call parsePath
+  xor bx, bx
+  jmp getFullPath_end
+
+
+getFullPath_isOnFullPath:
+  mov di, [bp - 4]
+  call parsePath
+
+  xor bx, bx
 
 getFullPath_end:
   mov sp, bp
