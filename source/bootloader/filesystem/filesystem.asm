@@ -69,101 +69,130 @@ clusterToLBA:                       ; LBA = dataRegionOffset + (cluster - 2) * s
 
 ; Searches for a file and loads it to memory at buffer 
 ; PARAMS
-;   - 0) DI     => file name, 11 bytes all capital
-;   - 1) ES:BX  => buffer to store data in
+;   - 0) ES:DI      => Buffer to store files data in
+;   - 1) DS:SI      => File name, 11 bytes all capital
 ; RETURNS
 ; 0 on success and 1 on failure.
 readFile:
   push bp
   mov bp, sp
 
-  sub sp, 8                 ; allocate 8 bytes
-  mov [bp - 2], di          ; store file name
-  mov [bp - 4], bx          ; store buffer pointer offset
-  mov [bp - 6], es          ; store buffer pointer segment
-  xor bx, bx
-  mov es, bx
+  sub sp, 14                 ; allocate 8 bytes
 
-  GET_ROOT_DIR_OFFSET       ; get the root directory offset (in sectors) in AX
-  mov si, ax                ; save for now in SI
-  GET_ROOT_DIR_SIZE         ; get the size of the root directory (in sectors) in AX
+  mov [bp - 2], es          ; Store buffer segment
+  mov [bp - 4], di          ; Store buffer offset
+  mov [bp - 6], ds          ; Store file name segment
+  mov [bp - 8], si          ; Store file name offset
 
-  mov di, si                ; first argument for readDisk, LBA address
-  mov si, ax                ; second argument for readDisk, how many sectors to read
-  mov bx, buffer            ; third argument for readDisk, data buffer to store the data in. ES:BX 0000h:7E00h
+  sub sp, [bpb_bytesPerSector]        ; Allocate space on the stack for one sector
+
+  GET_ROOT_DIR_OFFSET                 ; Get the first sector of the root directory in AX
+
+  mov [bp - 10], ax                   ; Save the sector number at *(bp - 10)
+
+readFile_searchFileNextSector:
+  ; Read one sector from the root directory into the stack, to search for the files entry
+  mov di, [bp - 10]                   ; Get sector in root directory
+  mov bx, ss                          ; Set buffer segment to stack segment as we will save the data to the stack
+  mov es, bx                          ; 
+  mov bx, sp                          ; Set buffer offset to the stack pointer as the stack pointer already points to our buffer
+  mov si, 1                           ; Read one sector
   call readDisk
 
-  mov ax, [bpb_rootDirectoryEntries]
-  xor bx, bx
+  inc word [bp - 10]                  ; Increase the sector number (of the root directory)
+
+; Set segments and counters to prepare for the file entry search loop
+  mov bx, [bp - 6]                    ; Set data segment to the file path segment
+  mov ds, bx                          ;
+
+  ; Will subtract 32 from DX each iteration, as each entry is 32 bits.
+  ; DX is used as a counter for how many file entries are left to read in the current loaded sector
+  mov dx, [bpb_bytesPerSector]        ; Get the number of bytes in a sector in DX
+
+  mov di, sp                          ; Make DI point to the sector in which there are file entries
+
 readFile_searchFileLoop:
-  mov di, buffer            ; get the location of the first thing in the root directory ( + 32 to skip the volume name)
-  add di, bx                ; offset by BX (which grows by 32 each iteration) to get next entry
-  mov si, [bp - 2]          ; get file name
-  mov cx, 11                ; compare 11 bytes
-  cld                       ; clear direction flag
-  
-  ; REPE will repeate the following instruction until CX is 0 (it decrements CX each time) 
-  ; CMDSB (compare string bytes) compares byte at DS:DI to byte at ES:SI, and increment SI and DI if direction flag is 1
-  repe cmpsb
-  je readFile_foundFile
+  mov si, [bp - 8]                    ; Set SI to the file path string
 
-  add bx, 32                    ; each directory entry is 32 bytes (yes bytes and not bits)
+  mov cx, 11                          ; Compare 11 bytes
+  cld                                 ; Clear direction flag so cmpsb will increase DI and SI
+  mov ax, di                          ; Save DI in AX
+  rep cmpsb
+  je readFile_foundFile               ; If found the file then jump
 
-  dec ax                        ; decrement entries counter
-  jnz readFile_searchFileLoop   ; As long as there are any root directories left, continue reading. (AX is a counter for entries left)
+  ; Will get here if the current entry isnt the file
+  mov di, ax                          ; Restore buffer pointer, of the root directories entries
 
-  mov ax, 1                     ; Could not find file, return 1
-  jmp readFile_end
+  sub dx, 32                          ; Decrement entries counter 
+  jz readFile_searchFileNextSector    ; If its zero then load a new sector of the root directory into memory
+
+  add di, 32                          ; Increase root directory buffer pointer
+  jmp readFile_searchFileLoop         ; Continue searching for the files entry
 
 readFile_foundFile:
-  mov di, [di - 11 + 26]              ; get low 16 bits of entries first cluster number (26 is the offset and -11 because filename)
-  mov [bp - 8], di
+  mov di, es:[di - 11 + 26]           ; Get the first cluster number of the file
+  mov word [bp - 12], 0FFFFh          ; *(bp - 12) is the sector offset, set it to 0FFFFH so the first iteration will load the FAT
 
-  ; Read FAT into memory at 7E00h
-  xor bx, bx                          ; Read at 7E00h (ES:BX)
-  mov es, bx                          ;
-  mov bx, buffer                      ;
-  mov di, [bpb_reservedSectors]       ; First sector of FATs
-  mov si, [bpb_sectorsPerFAT]         ; How much to read
-  call readDisk
-
-  ; *(bp - 8) = index in FAT
-  mov di, [bp - 8]
+; Every time we get here the cluster number must be in DI
 readFile_processClusterChain:
-  call clusterToLBA                       ; Each time we get here, DI will have the cluster number. Convert it to an LBA address        
+  mov [bp - 10], di                   ; Save the cluster number at *(bp - 10)
+  call clusterToLBA                   ; Convert the cluster number to an LBA address which will be in AX
 
-  ; Read the next cluster of the file into buffer
-  mov di, ax                              ; First argument for readDisk, the LBA address
-  xor ah, ah                              ; Because sectorPerCluster is 8 bits
-  mov al, [bpb_sectorPerCluster] 
-  mov si, ax                              ; Read one cluster (the number of sectors in a cluster)
-
-  mov bx, [bp - 6]                        ; ES:BX points to receiving data buffer
-  mov es, bx                              ; *(bp - 6) is the buffer segment
-  mov bx, [bp - 4]                        ; *(bp - 4) is the buffer pointer
+  mov di, ax                          ; Set DI to the LBA address as its the first argument for readDisk
+  mov bx, [bp - 2]                    ; Set ES to the buffer segment, second argument for readDisk
+  mov es, bx                          ;
+  mov bx, [bp - 4]                    ; Set BX to the buffer offset, second argument for readDisk
+  mov al, [bpb_sectorPerCluster]      ; How many sectors to read, in this case one cluster. (the number of sectors in a cluster)
+  xor ah, ah                          ; bpb_sectorPerCluster is 8 bits (1 byte)
+  mov si, ax                          ; Number of sectors to read
   call readDisk
 
-  ; Get number of bytes per cluster
-  mov bx, [bpb_bytesPerSector]            ; bytesPerCluster = bytesPerSector * secotrsPerCluster
-  xor ah, ah                              ; sectorPerCluster is 8 bits
-  mov al, [bpb_sectorPerCluster]          ;
-  mul bx                                  ;
-  add [bp - 4], ax                        ; Make receivind data buffer point to next location
-  
-  ; Increment index of next cluster in FAT
-  mov di, [bp - 8]                        ; Get the index of the next cluster in FAT
-  shl di, 1                               ; As each entry is 16 bits, myltiply by 2
-  mov di, [buffer + di]                   ; DI = FAT[DI]  // Next cluster number
-  mov [bp - 8], di                        ; Save the new cluster number at *(bp - 8)
+; Calculate the amount of bytes in a cluster and add it to the buffer so it points to the next location
+  mov al, [bpb_sectorPerCluster]      ; Get the number of sectors in a cluster
+  xor ah, ah                          ; 
+  mov bx, [bpb_bytesPerSector]        ; Get the number of bytes in a sector
+  mul bx                              ; Multiply them 
+  add [bp - 4], ax                    ; Add the result to the buffer pointer so it points to the next location
 
-  cmp di, 0FFF8h                          ; Check for end of cluster chain
-  jb readFile_processClusterChain         ; unsigned jump if below
+  ; Calculate the sector offset to read. Basically means that instead of reading lots of sectors, just read the one that is needed.
+  ; sectorOffset = cluster / bytesPerSector;
+  ; clusterIndex = cluster % bytesPerSector;
+  mov ax, [bp - 10]                   ; Get the cluster number
+  mov bx, [bpb_bytesPerSector]        ; Get the number of bytes in a sector
+  xor dx, dx                          ; Zero out remainder register
+  div bx                              ; Divibe the cluster number by the amount of bytes in a sector
 
-  xor ax, ax                              ; Read was successfull, return 0
+  mov [bp - 14], dx                   ; Store the new index in FAT
+
+  cmp ax, [bp - 12]                   ; Compare the cluster offset to the old one, 
+  je readFile_afterReadFAT            ; if they are the same there is no need to read the same FAT sector once again
+
+  ; If not the same then prepare arguments for readDisk and read the FAT sector. Also save the new FAT sector offset
+  mov [bp - 12], ax                   ; Save FAT sector offset
+
+  mov di, ax                          ; Set DI to the FAT sector offset
+  add di, [bpb_reservedSectors]       ; Add to it the number of reserved sectors to get the first sector of the FAT (with the offset)
+  mov si, 1                           ; How many sectors to read, 1 in this case
+
+  mov bx, ss                          ; Read the sector to the stack (space already allocated)
+  mov es, bx                          ; Set buffer segment to stack segment
+  mov bx, sp                          ; Set buffer offset to the stack pointer as it points to the beginning of the buffer
+  call readDisk
+
+  mov dx, [bp - 14]                   ; Restore the index in FAT
+
+; When getting here the index in FAT is in DX
+readFile_afterReadFAT:
+  mov di, dx                          ; Set DI to the index in FAT
+  shl di, 1                           ; Multiply the index by 2 as each fat entry is 2 bytes
+  add di, sp                          ; Add the buffer pointer to the index so it points to the cluster number
+  mov di, ss:[di]                     ; Get the cluster number in DI
+  cmp di, 0FFF8h                      ; Check for the end of the cluster chain
+  jb readFile_processClusterChain     ; If not the end then continue reading clusters
 
 readFile_end:
-  mov sp, bp
-  pop bp 
+  mov sp, bp                          ; Restore stack frame
+  pop bp                              ;
   ret
 
 %endif

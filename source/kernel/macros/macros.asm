@@ -18,7 +18,7 @@
 ; 512 * 32 = 16384   // 512 => root directory entries // 32 bytes per entry
 %define ROOT_DIRECTORY_SIZE 16384
 
-%define KERNEL_SEGMENT 2000h
+%define KERNEL_SEGMENT 7E0h
 
 %define MAX_PATH_FORMATTED_LENGTH 256
 
@@ -306,9 +306,8 @@
 %%printLoop:
   cmp byte ss:[si], 0               ; Check for null character, so dont print it
   je %%stopPrint                    ; If null the stop printing
-  mov ah, 0Eh                       ; int10h/AH=0Eh   // print character and advance cursor
   mov al, ss:[si]                   ; Get character in AL
-  int 10h                           ; Print character
+  PRINT_CHAR al 
   inc si                            ; Increase buffer pointer
   jmp %%printLoop                   ; Continue printing
 
