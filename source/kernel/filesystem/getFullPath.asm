@@ -22,7 +22,7 @@ getFullPath:
   mov [bp - 8], si          ; Store path offset
   
   mov bx, KERNEL_SEGMENT    ; Set the kernel segment because currentUserDirPath is in it
-  mov ds, bx                ; 
+  mov es, bx                ; 
 
   ; Search how many directories are in currentUserDirPath
   ; to find the minimum size of the buffer needed.
@@ -30,16 +30,13 @@ getFullPath:
   mov si, '/'
   call strFindLetterCount
 
-  test ax, ax
-  jz getFullPath_afterCalcLength
-
   mov bx, 11
   mul bx
 
-  PRINTF_M "Count: %u", ax
+  mov bx, [bp - 6]
+  mov ds, bx
 
 
-getFullPath_afterCalcLength:
 
 getFullPath_end:
   mov sp, bp

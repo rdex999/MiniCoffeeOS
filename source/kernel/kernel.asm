@@ -49,7 +49,7 @@ helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
 dbgTestTxt:               db "T15     TXT"
-buffer:                   times 512*8 db 0
+buffer:                   times 512*8 db 97
 pathStf:                  db "folDEr/teSt.txt", 0
 
 ;
