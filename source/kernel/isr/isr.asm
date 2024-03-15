@@ -3,4 +3,7 @@
 ;
 
 %include "source/kernel/isr/divZero.asm"
-; %include "source/kernel/isr/keyboard.asm"
+
+%ifdef KBD_DRIVER
+  %include "source/kernel/isr/keyboard.asm"
+%endif

@@ -8,14 +8,18 @@ jmp kernelMain    ; skip data and function declaration section
 ; ---------- [ FUNCTIONS DECLARATION ] ----------
 ;
 
+%include "source/kernel/macros/macros.asm"
 %include "source/kernel/io/io.asm"
 %include "source/kernel/screen/screen.asm"
 %include "source/kernel/string/string.asm"
 %include "source/kernel/basicCommands/basicCommands.asm"
 %include "source/kernel/filesystem/filesystem.asm"
-%include "source/kernel/macros/macros.asm"
 %include "source/kernel/isr/isr.asm"
-; %include "source/kernel/drivers/ps2_8042/ps2_8042.asm"
+
+%ifdef KBD_DRIVER
+  %include "source/kernel/drivers/ps2_8042/ps2_8042.asm"
+%endif
+
 %include "source/kernel/init/init.asm"
 
 ;
@@ -40,10 +44,11 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
   db 0
 
 
-; kbdKeycodes:              times 104 db 0
-; kbdCurrentKeycode:        db 0                ; Keycode 0 means no key was pressed
+%ifdef KBD_DRIVER
+  kbdKeycodes:              times 104 db 0
+  kbdCurrentKeycode:        db 0                ; Keycode 0 means no key was pressed
+%endif
 
-; kbdSkipNextInt:           db 0
 
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
@@ -81,12 +86,16 @@ kernel_readCommandsLoop:
   PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 
+%ifdef KBD_DRIVER  
+  call kbd_waitForKeycode
+%else
   lea di, [commandEntered]          ;
   mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
   call read                         ; 
 
   test ax, ax                       ; if zero bytes were read then just show a new shell
   jz kernel_readCommandsLoop        ;
+%endif
 
   PRINT_NEWLINE
   PRINT_NEWLINE

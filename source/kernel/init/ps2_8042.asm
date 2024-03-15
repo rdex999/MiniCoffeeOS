@@ -15,7 +15,8 @@
   ; Read the configuration byte, mask it, save it and write it back.
   PS2_READ_DATA PS2_CMD_READ_CONFIGURATION_BYTE     ; Get the configuration byte in AL
 
-  and al, 00100100b                                 ; Mask the configuration byte. For some reason only this mask works
+  ; and al, 00100100b                                 ; Mask the configuration byte. For some reason only this mask works
+  mov al, 0010_0100b
   mov [bp - 1], al                                  ; Save the mask
 
   PS2_SEND_COMMAND_DATA PS2_CMD_WRITE_CONFIGURATION_BYTE, al    ; Send the new configuration byte to the PS/2
