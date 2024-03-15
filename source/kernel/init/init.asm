@@ -5,10 +5,10 @@
 %ifndef INIT_ASM
 %define INIT_ASM
 
-%include "source/kernel/macros/macros.asm"
+%include "kernel/macros/macros.asm"
 
 %ifdef KBD_DRIVER
-  %include "source/kernel/init/ps2_8042.asm"
+  %include "kernel/init/ps2_8042.asm"
 %endif
 
 ; Copies the BPB and the EBPB from BIOS.

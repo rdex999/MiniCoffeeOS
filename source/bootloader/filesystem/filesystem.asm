@@ -5,7 +5,7 @@
 %ifndef FILESYSTEM_ASM
 %define FILESYSTEM_ASM
 
-%include "source/bootloader/macros/macros.asm"
+%include "bootloader/macros/macros.asm"
 
 ; Converts LBA (Logical Block Address) to CHS (Cylinder Head Sector)
 ; PARAMS

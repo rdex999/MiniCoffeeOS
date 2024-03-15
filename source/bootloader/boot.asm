@@ -2,12 +2,12 @@ bits 16
 
 org 7C00h
 
-%include "source/bootloader/macros/macros.asm"
+%include "bootloader/macros/macros.asm"
 
 %define KERNEL_SEGMENT  7E0h
 %define KERNEL_OFFSET   0
 
-%include "source/bootloader/bpbStruct/bpbStruct.asm"
+%include "bootloader/bpbStruct/bpbStruct.asm"
 
 ;
 ; ------ [ CODE SECTION ] ------
@@ -61,7 +61,7 @@ afterCodeSegCheck:
 ; ------ [ PROCEDURES ] ------
 ;
 
-%include "source/bootloader/filesystem/filesystem.asm"
+%include "bootloader/filesystem/filesystem.asm"
 
 ; prints a string from DI (null terminated)
 ; printStr:

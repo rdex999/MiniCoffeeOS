@@ -8,19 +8,19 @@ jmp kernelMain    ; skip data and function declaration section
 ; ---------- [ FUNCTIONS DECLARATION ] ----------
 ;
 
-%include "source/kernel/macros/macros.asm"
-%include "source/kernel/io/io.asm"
-%include "source/kernel/screen/screen.asm"
-%include "source/kernel/string/string.asm"
-%include "source/kernel/basicCommands/basicCommands.asm"
-%include "source/kernel/filesystem/filesystem.asm"
-%include "source/kernel/isr/isr.asm"
+%include "kernel/macros/macros.asm"
+%include "kernel/io/io.asm"
+%include "kernel/screen/screen.asm"
+%include "kernel/string/string.asm"
+%include "kernel/basicCommands/basicCommands.asm"
+%include "kernel/filesystem/filesystem.asm"
+%include "kernel/isr/isr.asm"
 
 %ifdef KBD_DRIVER
-  %include "source/kernel/drivers/ps2_8042/ps2_8042.asm"
+  %include "kernel/drivers/ps2_8042/ps2_8042.asm"
 %endif
 
-%include "source/kernel/init/init.asm"
+%include "kernel/init/init.asm"
 
 ;
 ; ---------- [ DATA SECTION ] ----------
@@ -29,7 +29,7 @@ jmp kernelMain    ; skip data and function declaration section
 %define COMMAND_MAX_LENGTH 80
 
 bpbStart:
-%include "source/bootloader/bpbStruct/bpbStruct.asm"
+%include "bootloader/bpbStruct/bpbStruct.asm"
 
 welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
@@ -42,6 +42,9 @@ helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:
   db "help", TAB, "| prints this help message.", NEWLINE, TAB,
   db "clear", TAB, "| clears the screen", NEWLINE, 
   db 0
+
+errPs2CtrlSelfTestFailed: db "[- KERNEL PANIC] Error, one of the PS/2 controller chips has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
+errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
 
 
 %ifdef KBD_DRIVER

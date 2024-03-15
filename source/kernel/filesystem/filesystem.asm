@@ -5,12 +5,12 @@
 %ifndef FILESYSTEM_ASM
 %define FILESYSTEM_ASM
 
-%include "source/bootloader/macros/getRegions.asm"
-%include "source/kernel/filesystem/readFile.asm"
-%include "source/kernel/filesystem/searchInRootDir.asm"
-%include "source/kernel/filesystem/parsePath.asm"
-%include "source/kernel/filesystem/getFullPath.asm"
-%include "source/kernel/filesystem/readClusterChain.asm"
+%include "bootloader/macros/getRegions.asm"
+%include "kernel/filesystem/readFile.asm"
+%include "kernel/filesystem/searchInRootDir.asm"
+%include "kernel/filesystem/parsePath.asm"
+%include "kernel/filesystem/getFullPath.asm"
+%include "kernel/filesystem/readClusterChain.asm"
 
 ; Converts LBA (Logical Block Address) to CHS (Cylinder Head Sector)
 ; PARAMS

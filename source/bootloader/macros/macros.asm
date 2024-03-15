@@ -5,7 +5,7 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
-%include "source/bootloader/macros/getRegions.asm"
+%include "bootloader/macros/getRegions.asm"
 
 ; prints an 11 byte string (this macro is for debuggind)
 ; PARAMS

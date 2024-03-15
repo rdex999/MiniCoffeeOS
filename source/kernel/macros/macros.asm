@@ -5,7 +5,7 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
-%include "source/kernel/macros/errorCodes.asm"
+%include "kernel/macros/errorCodes.asm"
 
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
@@ -467,6 +467,34 @@
   push %{-1:-1}      ; Push the string buffer, as its the first argument for printf
   call printf           ; Call printf and print the formatted string
   add sp, %0 * 2        ; Free stack space
+
+%endmacro
+
+%macro PANIC_LM 1-*
+
+  ; %0 gives the number of parameters passed to the macro.
+  ; %rep is a NASM preprocessor command, which will repeate the following block of code N times.
+  ; Basicaly push all the arguments from right to left, and dont push the string.
+  %rep %0 - 1
+    ; Rotate will rotate the macros arguments, (just like the ROR instruction)
+    ; Say the arguments are 1, 2, 3, 4
+    ; %rotate -1 ; ARGS: 4, 1, 2, 3     ; meaning %1 is 4
+    %rotate -1
+    push %1             ; Push the currently first arguemnts (as they rotate)
+  %endrep
+  push %{-1:-1}      ; Push the string buffer, as its the first argument for printf
+  call printf           ; Call printf and print the formatted string
+  add sp, %0 * 2        ; Free stack space
+
+  mov cx, 0FFFFh        ; CX:DX => Time to wait in microseconds
+  mov dx, 0FFFFh        ; (1000000 microseconds is 1 second)
+  mov ah, 86h           ; INT15h/AH=86h BIOS wait function
+  int 15h               ; Wait 1.114095 seconds
+  jc %%PANIC_LM_WAIT_ERR
+
+  int 19h               ; Reboot
+%%PANIC_LM_WAIT_ERR:
+  jmp $
 
 %endmacro
 

@@ -2,8 +2,8 @@
 ; ---------- [ INTERRUPT SECRIVE ROUTINES ] ----------
 ;
 
-%include "source/kernel/isr/divZero.asm"
+%include "kernel/isr/divZero.asm"
 
 %ifdef KBD_DRIVER
-  %include "source/kernel/isr/keyboard.asm"
+  %include "kernel/isr/keyboard.asm"
 %endif

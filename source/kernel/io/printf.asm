@@ -94,11 +94,11 @@ printf_format_modulo:
   inc si
   jmp printf_printLoop
 
-%include "source/kernel/io/printfFormat/uInt.asm"
-%include "source/kernel/io/printfFormat/int.asm"
-%include "source/kernel/io/printfFormat/string.asm"
-%include "source/kernel/io/printfFormat/char.asm"
-%include "source/kernel/io/printfFormat/hex.asm"
+%include "kernel/io/printfFormat/uInt.asm"
+%include "kernel/io/printfFormat/int.asm"
+%include "kernel/io/printfFormat/string.asm"
+%include "kernel/io/printfFormat/char.asm"
+%include "kernel/io/printfFormat/hex.asm"
 
 printf_end:
   mov sp, bp
