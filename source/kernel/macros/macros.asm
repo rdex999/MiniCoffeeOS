@@ -6,6 +6,7 @@
 %define MACROS_ASM
 
 %include "kernel/macros/errorCodes.asm"
+%include "kernel/macros/kbdKeyCodes.asm"
 
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
@@ -15,6 +16,7 @@
 %define KERNEL_SEGMENT 7E0h
 
 %define KBD_DRIVER
+; %define GET_ASCII_CODES
 
 ; 2*20*512  // 2 FATs, 20 sectors per fat, 512 bytes per sector
 %define TOTAL_FAT_SIZE 20480

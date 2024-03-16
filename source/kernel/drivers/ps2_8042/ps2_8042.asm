@@ -27,21 +27,12 @@ kbd_waitForKeycode:
   mov bx, KERNEL_SEGMENT
   mov ds, bx
   sti
-kbd_waitForKeycode_wait:
+kbd_waitForKeycode_waitLoop:
   hlt
   cmp byte ds:[kbdCurrentKeycode], 0
-  je kbd_waitForKeycode_wait
+  je kbd_waitForKeycode_waitLoop
 
   mov al, ds:[kbdCurrentKeycode]
-
-  mov cx, 2
-kbd_waitForKeycode_waitRelease:
-  dec cx
-  jz kbd_waitForKeycode_end
-  hlt
-  cmp byte ds:[kbdCurrentKeycode], 0
-  jne kbd_waitForKeycode_waitRelease
-
 kbd_waitForKeycode_end:
   pop ds 
   ret

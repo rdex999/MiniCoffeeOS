@@ -48,8 +48,14 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
 
 
 %ifdef KBD_DRIVER
-  kbdKeycodes:              times 104 db 0
-  kbdCurrentKeycode:        db 0                ; Keycode 0 means no key was pressed
+  kbdKeycodes:
+    %include "kernel/drivers/ps2_8042/kbdScanCodes.asm"  
+
+  ; Highest keycode is 84
+  kbdKeys:                times 84 db 0
+
+  kbdCurrentKeycode:      db 0                ; Keycode 0 means no key was pressed
+  kbdSkipIntCount:        db 0
 %endif
 
 
@@ -91,14 +97,27 @@ kernel_readCommandsLoop:
 
 %ifdef KBD_DRIVER  
   call kbd_waitForKeycode
-%else
+  xor ah, ah
+  PRINT_INT16 ax
+  PRINT_NEWLINE
+%endif
+
+%ifdef GET_ASCII_CODES
+  xor ah, ah
+  int 16h
+  xor ah, ah
+  PRINT_HEX16 ax
+  PRINT_NEWLINE
+%endif
+
+%ifndef GET_ASCII_CODES
+%ifndef KBD_DRIVER
   lea di, [commandEntered]          ;
   mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
   call read                         ; 
 
   test ax, ax                       ; if zero bytes were read then just show a new shell
   jz kernel_readCommandsLoop        ;
-%endif
 
   PRINT_NEWLINE
   PRINT_NEWLINE
@@ -112,7 +131,7 @@ kernel_readCommandsLoop:
 
   lea di, buffer                ;;;;;;;; FOR DEBUG
   call printStr
-
+  
   kernel_dontPrintFileContent:
   PRINT_NEWLINE
 
@@ -121,6 +140,9 @@ kernel_readCommandsLoop:
   CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
 
   PRINTF_LM errorUnknownCmd, commandEntered
+%endif
+%endif
+
 
   jmp kernel_readCommandsLoop       ; continue reading commands
 
