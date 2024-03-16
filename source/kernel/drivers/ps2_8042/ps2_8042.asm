@@ -36,3 +36,30 @@ kbd_waitForKeycode_waitLoop:
 kbd_waitForKeycode_end:
   pop ds 
   ret
+
+
+; Waits for a printable key to be pressed, or multiple keys which correspond to one character
+; For example <SHIFT> + <A> => 'A'
+; Takes to parameters
+; RETURNS
+;   - AL      => The ascii code for the character. (The character)
+kbd_waitForChar:
+  call kbd_waitForKeycode
+  
+  push ds
+  mov bx, KERNEL_SEGMENT
+  mov ds, bx
+
+  test al, al
+  jz kbd_waitForChar_end
+
+  dec al
+  xor ah, ah
+  mov di, ax
+  mov al, [kbdAsciiCodes + di]
+
+  mov cx, 800
+  rep hlt
+kbd_waitForChar_end:
+  pop ds
+  ret

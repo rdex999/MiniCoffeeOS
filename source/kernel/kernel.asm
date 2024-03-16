@@ -51,6 +51,9 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
   kbdKeycodes:
     %include "kernel/drivers/ps2_8042/kbdScanCodes.asm"  
 
+  kbdAsciiCodes:
+    %include "kernel/drivers/ps2_8042/kbdAsciiCodes.asm"
+
   ; Highest keycode is 84
   kbdKeys:                times 84 db 0
 
@@ -96,9 +99,9 @@ kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 
 %ifdef KBD_DRIVER  
-  call kbd_waitForKeycode
+  call kbd_waitForChar
   xor ah, ah
-  PRINT_INT16 ax
+  PRINT_CHAR al 
   PRINT_NEWLINE
 %endif
 
