@@ -15,6 +15,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "kernel/basicCommands/basicCommands.asm"
 %include "kernel/filesystem/filesystem.asm"
 %include "kernel/isr/isr.asm"
+%include "kernel/time/time.asm"
 
 %ifdef KBD_DRIVER
   %include "kernel/drivers/ps2_8042/ps2_8042.asm"

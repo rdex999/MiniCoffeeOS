@@ -44,22 +44,27 @@ kbd_waitForKeycode_end:
 ; RETURNS
 ;   - AL      => The ascii code for the character. (The character)
 kbd_waitForChar:
-  call kbd_waitForKeycode
+  call kbd_waitForKeycode         ; Wait for a key code, which will be in AL
   
-  push ds
-  mov bx, KERNEL_SEGMENT
-  mov ds, bx
+  push ds                         ; Save old data segment
+  mov bx, KERNEL_SEGMENT          ; Set data segment to kernel segment so we can access keyboard variables
+  mov ds, bx                      ; 
 
-  test al, al
-  jz kbd_waitForChar_end
+  test al, al                     ; Check if the keycode is valid. (Zero is an invalid keycode)
+  jz kbd_waitForChar_end          ; If its zero then just return zero
 
-  dec al
-  xor ah, ah
-  mov di, ax
-  mov al, [kbdAsciiCodes + di]
+  dec al                          ; Decrement the keycode, becuase it starts from 1
+  xor ah, ah                      ; Zero out high part because we want to access memory with it, and memory is 16bits
+  mov di, ax                      ; Access memory with DI
+  mov al, [kbdAsciiCodes + di]    ; Get the ascii code for this keycode
 
-  mov cx, 800
-  rep hlt
+  push ax                         ; Save ascii code
+  mov di, 0E000h                  ; Wait 0E000h microseconds, a delay for key presses
+  mov si, 1                       ; 0E000h * 1 = 0E000h
+  call sleep                      ; Sleep n time
+  pop ax                          ; Restore ascii code
+
+
 kbd_waitForChar_end:
-  pop ds
+  pop ds                          ; Restore old data segment
   ret
