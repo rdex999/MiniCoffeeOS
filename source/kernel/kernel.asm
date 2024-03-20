@@ -108,11 +108,11 @@ kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 
 %ifdef KBD_DRIVER  
-  call kbd_waitForKeycode
-  ; call kbd_waitForChar
+  ; call kbd_waitForKeycode
+  call kbd_waitForChar
   xor ah, ah
-  ; PRINT_CHAR al
-  PRINT_INT16 ax 
+  PRINT_CHAR al
+  ; PRINT_INT16 ax 
   PRINT_NEWLINE
 %endif
 
