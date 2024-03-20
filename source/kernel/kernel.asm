@@ -59,7 +59,7 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
     %include "kernel/drivers/ps2_8042/kbdAsciiCodes.asm"
 
   ; Highest keycode is 84
-  kbdKeys:                times 84 db 0       ; An array of booleans, which each index is for a keycode. if(kbdKeys[keycode - 1]) { printf("key is pressed"); }
+  kbdKeys:                times 104 db 0  ; An array of booleans, which each index is for a keycode. if(kbdKeys[keycode - 1]) { printf("key is pressed"); }
 
   kbdCurrentKeycode:      db 0            ; The current key that is pressed (if any). Keycode 0 means no key was pressed
   kbdSkipForKey:          db 0            ; Because after a key is released the keyboard sends the same key again. 
