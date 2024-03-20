@@ -59,7 +59,7 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
   kbdKeys:                times 84 db 0
 
   kbdCurrentKeycode:      db 0                ; Keycode 0 means no key was pressed
-  kbdSkipIntCount:        db 0
+  kbdSkipForKey:          db 0
 %endif
 
 

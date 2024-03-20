@@ -31,16 +31,6 @@ ISR_keyboard:
     jmp ISR_keyboard_end
   %endif
 
-  ; Basicaly check if we should skip this interuppt, as some times the keyboard sends more interrupts after one
-  cmp byte ds:[kbdSkipIntCount], 0                  ; Check if the skip counter is zero
-  je ISR_keyboard_start                             ; If it is zero, then continue and process this interrupt
-
-  ; If its not zero then decrement it, and return from this interrupt
-  dec byte ds:[kbdSkipIntCount]                     ; Decrement skip interrupt counter
-  ; mov byte ds:[kbdSkipIntCount], 0
-  jmp ISR_keyboard_end                              ; Return from this interrupt
-
-ISR_keyboard_start:
   in al, PS2_DATA_PORT
 
   cmp al, KBD_SCANCODE_SPECIAL
@@ -54,6 +44,15 @@ ISR_keyboard_start:
   mov al, ds:[kbdKeycodes + di]
   mov di, ax
 
+  cmp al, ds:[kbdSkipForKey]
+  jne ISR_keyboard_notToSkip
+
+  mov byte ds:[kbdSkipForKey], 0
+  jmp ISR_keyboard_end
+
+ISR_keyboard_notToSkip:
+  mov byte ds:[kbdSkipForKey], 0
+
   mov byte ds:[kbdKeys + di - 1], 1
   mov ds:[kbdCurrentKeycode], al
 
@@ -65,10 +64,11 @@ ISR_keyboard_breakNorm:
   mov di, ax
   mov al, ds:[kbdKeycodes + di]
   mov di, ax
-  
+
+  mov ds:[kbdSkipForKey], al
+
   mov byte ds:[kbdCurrentKeycode], 0
   mov byte ds:[kbdKeys + di - 1], 0
-  mov byte ds:[kbdSkipIntCount], 1
 
 ISR_keyboard_end: 
   PIC8259_SEND_EOI IRQ_KEYBOARD                     ; Send an EOI to the PIC, so new interrupts can be called
