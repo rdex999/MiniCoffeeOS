@@ -34,10 +34,19 @@ ISR_keyboard:
   in al, PS2_DATA_PORT                    ; Get scan code from keyboartd
 
   cmp al, KBD_SCANCODE_SPECIAL            ; Check if its an extended scan code
-  je ISR_keyboard_end                     ;;;;; WILL SUPPORT IN THE FUTURE
+  je ISR_keyboard_special                 ; If special then handle special keys
 
   cmp al, KBD_SCANCODE_NORM_BREAK         ; Check if the key is released
   je ISR_keyboard_breakNorm               ; If the key is released then handle a key release
+
+  cmp al, ds:[kbdSkipForScanExt]          ; Check if this scan code is a part of a previous extended scan code, which is marked for skip
+  jne ISR_keyboard_special_notToSkip      ; If should skip this one then unmark it and return from this interrupt
+
+  ; Should skip it
+  mov byte ds:[kbdSkipForScanExt], 0      ; Unmark this scan code
+  jmp ISR_keyboard_end                    ; Return from interrupt
+
+ISR_keyboard_special_notToSkip:
 
   ; Get the scancodes keycode, from the keycode array
   xor ah, ah                              ; Pointers are 16 bits so zero out high part of AX
@@ -59,6 +68,42 @@ ISR_keyboard_notToSkip:
   mov ds:[kbdCurrentKeycode], al          ; Set the current key being pressed to this key
 
   jmp ISR_keyboard_end                    ; Return from this interrupt
+
+ISR_keyboard_special:
+  in al, PS2_DATA_PORT                    ; We are here because of the E0 byte, so read input port again to get the scan code
+
+  cmp al, KBD_SCANCODE_NORM_BREAK         ; Check if the key was released
+  je ISR_keyboard_breakSpecial            ; If released then handle an extended scan code release event
+
+  ; The keyboard will send this scan code again after this interrupt, without the E0 byte. So mark it for skip.
+  mov ds:[kbdSkipForScanExt], al          ; Mark scan code for skip
+
+  xor ah, ah                              ; Memory address is 16 bits so zero out high part
+  mov di, ax                              ; Access memory with DI
+  mov al, ds:[kbdExtendedKeycodes + di]   ; Get the scancodes corresponding key code in AL
+
+  mov di, ax                              ; Access memory with DI (AH is already 0)
+  mov byte ds:[kbdKeys + di - 1], 1       ; Mark this key as pressed in the keys array
+  mov ds:[kbdCurrentKeycode], al          ; Set the current key that is being pressed to this key
+
+  jmp ISR_keyboard_end                    ; Return from interrupt
+
+ISR_keyboard_breakSpecial:
+  in al, PS2_DATA_PORT                    ; Read input port again to get scancode
+
+  ; The keyboard will send this scan code again after this interrupt, without the E0 byte. So mark it for skip.
+  mov ds:[kbdSkipForScanExt], al          ; Mark scan code for skip
+
+  xor ah, ah                              ; Memory address is 16 bits so zero out high part
+  mov di, ax                              ; Access memory with DI
+  mov al, ds:[kbdExtendedKeycodes + di]   ; Get this scancodes corresponding key code in AL 
+  mov di, ax                              ; Access memory with DI (AH is already zero)
+  
+  mov byte ds:[kbdKeys + di - 1], 0       ; Mark this key as not pressed in the keyboard array
+  mov byte ds:[kbdCurrentKeycode], 0      ; Set the current key that is being pressed to NULL
+
+  jmp ISR_keyboard_end                    ; Return from interrupt
+
 ISR_keyboard_breakNorm:
   in al, PS2_DATA_PORT                    ; The keyboard sent a break code (key released) then read again to get the scan code
   

@@ -50,16 +50,24 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
 
 %ifdef KBD_DRIVER
   kbdKeycodes:
-    %include "kernel/drivers/ps2_8042/kbdScanCodes.asm"  
+    %include "kernel/drivers/ps2_8042/kbdScanCodes.asm"
+
+  kbdExtendedKeycodes:
+    %include "kernel/drivers/ps2_8042/kbdExtendedScanCodes.asm"
 
   kbdAsciiCodes:
     %include "kernel/drivers/ps2_8042/kbdAsciiCodes.asm"
 
   ; Highest keycode is 84
-  kbdKeys:                times 84 db 0
+  kbdKeys:                times 84 db 0       ; An array of booleans, which each index is for a keycode. if(kbdKeys[keycode - 1]) { printf("key is pressed"); }
 
-  kbdCurrentKeycode:      db 0                ; Keycode 0 means no key was pressed
-  kbdSkipForKey:          db 0
+  kbdCurrentKeycode:      db 0            ; The current key that is pressed (if any). Keycode 0 means no key was pressed
+  kbdSkipForKey:          db 0            ; Because after a key is released the keyboard sends the same key again. 
+                                          ; This variable is used to indicate whether to skip a key event or not. 
+                                          ; (This one is used on key codes)
+
+  kbdSkipForScanExt:      db 0            ; The current scan code to skip, same reason as the variable above,
+                                          ; but this one is used with scan codes, and only for extended scan codes (The bytes after E0)
 %endif
 
 
@@ -100,9 +108,11 @@ kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 
 %ifdef KBD_DRIVER  
-  call kbd_waitForChar
+  call kbd_waitForKeycode
+  ; call kbd_waitForChar
   xor ah, ah
-  PRINT_CHAR al 
+  ; PRINT_CHAR al
+  PRINT_INT16 ax 
   PRINT_NEWLINE
 %endif
 

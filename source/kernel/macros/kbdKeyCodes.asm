@@ -2,6 +2,7 @@
 ; ---------- [ %DEFINE FOR ALL KEYBOARD KEY CODES ] ----------
 ;
 
+%define KBD_KEY_FORWARD_SLASH_KP 71
 %define KBD_KEY_F9 10
 %define KBD_KEY_F5 6
 %define KBD_KEY_F3 4
@@ -68,21 +69,21 @@
 %define KBD_KEY_CLOSED_BRACKET 40
 %define KBD_KEY_BACK_SLASH 41
 %define KBD_KEY_BACKSPACE 27
-%define KBD_KEY_1_KP 80
-%define KBD_KEY_4_KP 77
-%define KBD_KEY_7_KP 73
-%define KBD_KEY_0_KP 83
-%define KBD_KEY_DOT_KP 84
-%define KBD_KEY_2_KP 81
-%define KBD_KEY_5_KP 78
-%define KBD_KEY_6_KP 79
-%define KBD_KEY_8_KP 74
+%define KBD_KEY_1_KP 81
+%define KBD_KEY_4_KP 78
+%define KBD_KEY_7_KP 74
+%define KBD_KEY_0_KP 84
+%define KBD_KEY_DOT_KP 85
+%define KBD_KEY_2_KP 82
+%define KBD_KEY_5_KP 79
+%define KBD_KEY_6_KP 80
+%define KBD_KEY_8_KP 75
 %define KBD_KEY_ESC 1
 %define KBD_KEY_NUMLOCK 70
 %define KBD_KEY_F11 12
-%define KBD_KEY_PLUS_KP 76
-%define KBD_KEY_3_KP 82
-%define KBD_KEY_MINUS_KP 72
-%define KBD_KEY_ASTERISK_KP 71
-%define KBD_KEY_9_KP 75
+%define KBD_KEY_PLUS_KP 77
+%define KBD_KEY_3_KP 83
+%define KBD_KEY_MINUS_KP 73
+%define KBD_KEY_ASTERISK_KP 72
+%define KBD_KEY_9_KP 76
 %define KBD_KEY_F7 8
