@@ -58,6 +58,9 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
   kbdAsciiCodes:
     %include "kernel/drivers/ps2_8042/kbdAsciiCodes.asm"
 
+  kbdAsciiCapCodes:
+    %include "kernel/drivers/ps2_8042/kbdAsciiCapsCodes.asm"
+
   ; Highest keycode is 84
   kbdKeys:                times 104 db 0  ; An array of booleans, which each index is for a keycode. if(kbdKeys[keycode - 1]) { printf("key is pressed"); }
 

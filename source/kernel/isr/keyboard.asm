@@ -64,10 +64,26 @@ ISR_keyboard_notToSkip:
   ; If the key should not be skipped then its a normal key press, and we should set so no key should be skipped
   mov byte ds:[kbdSkipForKey], 0          ; No key should be skipped
 
-  mov byte ds:[kbdKeys + di - 1], 1       ; Mark this key in the keys array as TRUE, as it is being pressed
   mov ds:[kbdCurrentKeycode], al          ; Set the current key being pressed to this key
 
-  jmp ISR_keyboard_end                    ; Return from this interrupt
+  cmp al, KBD_KEY_CAPSLOCK                ; Check if the pressed key is cpaslock
+  je ISR_keyboard_notToSkip_capsLock      ; If it is caps lock then process caps lock event
+
+  ; Will be here if the key is not the caps lock key 
+  mov byte ds:[kbdKeys - 1 + di], 1       ; Turn key on in the keys array
+  jmp ISR_keyboard_end                    ; Return from interrupt
+
+ISR_keyboard_notToSkip_capsLock:
+  GET_KEY_STATE KBD_KEY_CAPSLOCK                    ; Check if caps lock was already toggled on
+  jne ISR_keyboard_notToSkip_capsLockTurnOff        ; If it was then turn it of
+
+  mov byte ds:[kbdKeys - 1 + KBD_KEY_CAPSLOCK], 1   ; If it wasnt toggled on, (meaning it was off) then turn it on
+  jmp ISR_keyboard_end                              ; Return from interrupt
+
+ISR_keyboard_notToSkip_capsLockTurnOff:
+  mov byte ds:[kbdKeys - 1 + KBD_KEY_CAPSLOCK], 0   ; If it was toggled on, then turn it off
+  jmp ISR_keyboard_end                              ; Return from interrupt
+
 
 ISR_keyboard_special:
   in al, PS2_DATA_PORT                    ; We are here because of the E0 byte, so read input port again to get the scan code
@@ -117,6 +133,9 @@ ISR_keyboard_breakNorm:
   mov ds:[kbdSkipForKey], al              ; Set the key to be skipped to this key
 
   mov byte ds:[kbdCurrentKeycode], 0      ; Because the key is released set the current keycode to 0
+
+  GET_KEY_STATE KBD_KEY_CAPSLOCK          ; Check if the key released is caps lock
+  jne ISR_keyboard_end                    ; If it is, then no need to unmark it from the keys array
   mov byte ds:[kbdKeys + di - 1], 0       ; Set this key in the keys array to 0 because it is no longer being pressed
 
 ISR_keyboard_end: 

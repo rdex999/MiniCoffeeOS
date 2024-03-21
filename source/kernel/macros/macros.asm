@@ -143,6 +143,17 @@
 
 %endmacro
 
+; Get the state of a key on the keyboard (pressed, or not pressed)
+; PARAMS
+;   - 0) The key (keycode)
+; RETURNS
+;   - Zero flag set if the key is being pressed, cleared otherwise (JE - key not pressed, JNE - key being pressed)
+%macro GET_KEY_STATE 1
+
+  cmp byte ds:[kbdKeys - 1 + %1], 0
+
+%endmacro
+
 ; Sends an EOI (End Of Interrupt) signal to the PICs.
 %macro PIC8259_SEND_EOI 1
 

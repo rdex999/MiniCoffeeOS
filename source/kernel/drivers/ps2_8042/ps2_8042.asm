@@ -44,27 +44,50 @@ kbd_waitForKeycode_end:
 ; RETURNS
 ;   - AL      => The ascii code for the character. (The character)
 kbd_waitForChar:
-  call kbd_waitForKeycode         ; Wait for a key code, which will be in AL
+  push ds                                 ; Save old data segment
+  mov bx, KERNEL_SEGMENT                  ; Set data segment to kernel segment so we can access keyboard variables
+  mov ds, bx                              ; 
   
-  push ds                         ; Save old data segment
-  mov bx, KERNEL_SEGMENT          ; Set data segment to kernel segment so we can access keyboard variables
-  mov ds, bx                      ; 
+kbd_waitForChar_waitValid:
+  call kbd_waitForKeycode                 ; Wait for a key code, which will be in AL
 
-  test al, al                     ; Check if the keycode is valid. (Zero is an invalid keycode)
-  jz kbd_waitForChar_end          ; If its zero then just return zero
+  test al, al                             ; Check if the keycode is valid. (Zero is an invalid keycode)
+  jz kbd_waitForChar_end                  ; If its zero then just return zero
 
-  dec al                          ; Decrement the keycode, becuase it starts from 1
-  xor ah, ah                      ; Zero out high part because we want to access memory with it, and memory is 16bits
-  mov di, ax                      ; Access memory with DI
-  mov al, [kbdAsciiCodes + di]    ; Get the ascii code for this keycode
+  cmp al, KBD_KEY_LEFT_SHIFT              ; Check if it was the shift key
+  je kbd_waitForChar_waitValid            ; If the shift key was pressed, skip it, and continue waiting for another key
 
-  push ax                         ; Save ascii code
-  mov di, 0E000h                  ; Wait 0E000h microseconds, a delay for key presses
-  mov si, 1                       ; 0E000h * 1 = 0E000h
-  call sleep                      ; Sleep n time
-  pop ax                          ; Restore ascii code
+  cmp al, KBD_KEY_RIGHT_SHIFT             ; Check if it was the right shift key
+  je kbd_waitForChar_waitValid            ; If the shift key was pressed, skip it, and continue waiting for another key
+
+  cmp al, KBD_KEY_CAPSLOCK                ; Check if it was the caps lock
+  je kbd_waitForChar_waitValid            ; Again, caps lock doesnt matter, just continue waiting for a key
+
+  ; Will get here once we got a real key (not shift or caps lock)
+  xor ah, ah                              ; We want to use the key code as an index
+  mov di, ax                              ; Access memory with Di
+
+  GET_KEY_STATE KBD_KEY_LEFT_SHIFT        ; Check if the left shift key is currently being pressed
+  jne kbd_waitForChar_capital             ; If it is, then process for a capital letter
+
+  GET_KEY_STATE KBD_KEY_CAPSLOCK          ; Check if caps lock is on
+  jne kbd_waitForChar_capital             ; If caps lock is one then process for a capital letter
+
+  ; Will get here if no shift key is pressed or caps lock, processing for a lower case letter
+  mov al, ds:[kbdAsciiCodes - 1 + di]     ; Get lower case letter ascii for keycode
+  jmp kbd_waitForChar_afterCapState       ; 
+
+kbd_waitForChar_capital:
+  mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If shift was pressed, then get the capital ascii character for the keycode
+
+kbd_waitForChar_afterCapState:
+  push ax                                 ; Save ascii code
+  mov di, 0E000h                          ; Wait 0E000h microseconds, a delay for key presses
+  mov si, 1                               ; 0E000h * 1 = 0E000h
+  call sleep                              ; Sleep n time
+  pop ax                                  ; Restore ascii code
 
 
 kbd_waitForChar_end:
-  pop ds                          ; Restore old data segment
+  pop ds                                  ; Restore old data segment
   ret
