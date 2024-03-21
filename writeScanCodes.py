@@ -319,3 +319,21 @@ keyAsciiFile = open("source/kernel/drivers/ps2_8042/kbdAsciiCodes.asm", "+w")
 keyAsciiFile.write(keyAsciiStr)
 keyAsciiFile.close()
 
+
+
+perLine = 0
+for akey in keys:
+    if perLine % 10 == 0:
+        keyAsciiCapsStr += "\n\tdb "
+
+    asciiCode = getCapitalAscii(akey.keyCode)
+    if chr(asciiCode).isalpha():
+        keyAsciiCapsStr += f"'{chr(asciiCode)}', "
+    else:
+        keyAsciiCapsStr += f"{asciiCode}, "
+
+    perLine += 1
+
+keyAsciiFile = open("source/kernel/drivers/ps2_8042/kbdAsciiCapsCodes.asm", "+w")
+keyAsciiFile.write(keyAsciiCapsStr)
+keyAsciiFile.close()
