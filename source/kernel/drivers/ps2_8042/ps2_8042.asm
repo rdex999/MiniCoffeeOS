@@ -69,9 +69,12 @@ kbd_waitForChar_waitValid:
 
   GET_KEY_STATE KBD_KEY_LEFT_SHIFT        ; Check if the left shift key is currently being pressed
   jne kbd_waitForChar_capital             ; If it is, then process for a capital letter
-
+  
+  GET_KEY_STATE KBD_KEY_RIGHT_SHIFT        ; Check if the right shift key is currently being pressed
+  jne kbd_waitForChar_capital
+  
   GET_KEY_STATE KBD_KEY_CAPSLOCK          ; Check if caps lock is on
-  jne kbd_waitForChar_capital             ; If caps lock is one then process for a capital letter
+  jne kbd_waitForChar_capslock            ; If caps lock is one then process for caps lock
 
   ; Will get here if no shift key is pressed or caps lock, processing for a lower case letter
   mov al, ds:[kbdAsciiCodes - 1 + di]     ; Get lower case letter ascii for keycode
@@ -79,6 +82,24 @@ kbd_waitForChar_waitValid:
 
 kbd_waitForChar_capital:
   mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If shift was pressed, then get the capital ascii character for the keycode
+  jmp kbd_waitForChar_afterCapState
+
+kbd_waitForChar_capslock:
+  mov bl, ds:[kbdAsciiCodes - 1 + di]     ; Get the lower case version of the key, just to check if its between 'a' and 'z'
+  
+  cmp bl, 'a'                             ; Check if the key is below 'a'
+  jb kbd_waitForChar_capslock_symbol      ; If below 'a' then its a symbol, so process capslock on a symbol
+
+  cmp bl, 'z'                             ; Check if the key is above 'z'
+  ja kbd_waitForChar_capslock_symbol      ; If above 'z' then its a symbol so process for a symbol
+
+  ; Will get here if the key is between 'a' and 'z' (key >= 'a' && key <= 'z')
+  mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If it is between 'a' and 'z' then get the capital ascii character of the key in AL
+  jmp kbd_waitForChar_afterCapState       ; Delay and return
+
+kbd_waitForChar_capslock_symbol:
+  ; If the key is not between 'a' and 'z' then its a symbol, and capslock on a symbol (<CAPS_ON> + <1> = 1) just gives you the symbol
+  mov al, ds:[kbdAsciiCodes - 1 + di]     ; Get the capital ascii code for the key, then delay and return
 
 kbd_waitForChar_afterCapState:
   push ax                                 ; Save ascii code
