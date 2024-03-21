@@ -2,7 +2,7 @@
 ; ---------- [ TRANSLATION FROM KEYCODES TO ASCII ] ----------
 ;
 
-; Acs as an array of ascii characters, when each index in the array in a keycode, which gives you its ascii code.
+; Acts as an array of ascii characters, when each index in the array is a keycode, which gives you its ascii code.
 ; keyAsciiArr[keyCode] == asciiCode
 
 	db 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 

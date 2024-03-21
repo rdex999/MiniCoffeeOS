@@ -41,8 +41,17 @@ keyAsciiStr = """;
 ; ---------- [ TRANSLATION FROM KEYCODES TO ASCII ] ----------
 ;
 
-; Acs as an array of ascii characters, when each index in the array in a keycode, which gives you its ascii code.
+; Acts as an array of ascii characters, when each index in the array is a keycode, which gives you its ascii code.
 ; keyAsciiArr[keyCode] == asciiCode
+"""
+
+keyAsciiCapsStr = """;
+; ---------- [ TRANSLATION FROM KEYCODES TO CAPITAL ASCII ] ----------
+;
+
+; Acts as an array of capital ascii characters when each index in the array is a keycode, which gives you its capital ascii code.
+; keyCapitalAsciiArr[keyCode] == capitalAsciiCode
+; keyCapitalAsciiArr[KBD_KEY_1] == '!'
 """
 
 keys = [
@@ -169,11 +178,6 @@ keys = [
     key(scanCode=0, name="ENTER_KP", ascii=0x0D, extendedScanCodes=[0x5A,])
 ]
 
-def findKeycode(name: str) -> int:
-    for akey in keys:
-        if akey.name == name:
-            return akey.asciie
-
 for i in range(len(keys)):
     cnt = 0 
     for j in range(len(keys)):
@@ -184,6 +188,60 @@ for i in range(len(keys)):
             cnt += 1
 
 
+def getCapitalAscii(keyCode: int) -> int:
+    k = keys[[akey.keyCode for akey in keys].index(keyCode)]
+    if k.name.endswith("_KP"):
+        return 0
+
+    c = chr(k.ascii)
+    if c.isalpha():
+        return ord(c.capitalize())
+
+    match c:
+        case '`':
+            return ord('~')
+        case '1':
+            return ord('!')
+        case '2':
+            return ord('@')
+        case '3':
+            return ord('#')
+        case '4':
+            return ord('$')
+        case '5':
+            return ord('%')
+        case '6':
+            return ord('^')
+        case '7':
+            return ord('&')
+        case '8':
+            return ord('*')
+        case '9':
+            return ord('(')
+        case '0':
+            return ord(')')
+        case '-':
+            return ord('_')
+        case '=':
+            return ord('+')
+        case '[':
+            return ord('{')
+        case ']':
+            return ord('}')
+        case '\\':
+            return ord('|')
+        case ';':
+            return ord(':')
+        case '\'':
+            return ord('"')
+        case ',':
+            return ord('<')
+        case '.':
+            return ord('>')
+        case '/':
+            return ord('?')
+        case _:
+            return 0
 
 keys.sort(key=attrgetter("scanCode"))
 
