@@ -78,33 +78,40 @@ kbd_waitForChar_waitValid:
 
   ; Will get here if no shift key is pressed or caps lock, processing for a lower case letter
   mov al, ds:[kbdAsciiCodes - 1 + di]     ; Get lower case letter ascii for keycode
-  jmp kbd_waitForChar_afterCapState       ; 
+  jmp kbd_waitForChar_afterCapState       ; Delay and return
 
 kbd_waitForChar_capital:
-  GET_KEY_STATE KBD_KEY_CAPSLOCK
-  jne kbd_waitForChar_capital_withCaps
+  ; Check if shift is on along with caps lock
+  GET_KEY_STATE KBD_KEY_CAPSLOCK          ; Check caps lock state
+  jne kbd_waitForChar_capital_withCaps    ; If caps lock is on then react accordingly
 
+  ; Will be here if caps lock is off
   mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If shift was pressed, then get the capital ascii character for the keycode
-  jmp kbd_waitForChar_afterCapState
+  jmp kbd_waitForChar_afterCapState       ; Delay and return
 
 kbd_waitForChar_capital_withCaps:
-  mov bl, ds:[kbdAsciiCodes - 1 + di]
+  ; Will get here if shift is pressed when caps lock is on
+  ; If <caps> + <shift> and the key pressed was an alphabetic one, then give its lower case version
+  ; If <caps> + <shift> and the key pressed was a number/symbol, then give its capital version
+  mov bl, ds:[kbdAsciiCodes - 1 + di]     ; Get the lower case ascii for the key, just to perform checks
 
-  cmp bl, 'a'
-  jb kbd_waitForChar_capslock_capAscii
+  cmp bl, 'a'                             ; Check for alphabetic characters
+  jb kbd_waitForChar_capslock_capAscii    ; If not alphabetic then give capital symbol
 
-  cmp bl, 'z'
-  ja kbd_waitForChar_capslock_capAscii
+  cmp bl, 'z'                             ; Check for alphabetic characters
+  ja kbd_waitForChar_capslock_capAscii    ; If not alphabetic then give capital symbol
 
-  mov al, ds:[kbdAsciiCodes - 1 + di]
-  jmp kbd_waitForChar_afterCapState
+  ; Will get here if the key is an alphabetic character
+  mov al, bl                              ; Get lower ascii character
+  jmp kbd_waitForChar_afterCapState       ; Delay and return
 
 kbd_waitForChar_capslock:
-  GET_KEY_STATE KBD_KEY_LEFT_SHIFT
-  jne kbd_waitForChar_capital_withCaps
+  ; Will be here if caps lock is on
+  GET_KEY_STATE KBD_KEY_LEFT_SHIFT        ; Check if left shift is on
+  jne kbd_waitForChar_capital_withCaps    ; If on then handle typing with caps lock and shift
 
-  GET_KEY_STATE KBD_KEY_RIGHT_SHIFT
-  jne kbd_waitForChar_capital_withCaps
+  GET_KEY_STATE KBD_KEY_RIGHT_SHIFT       ; Check if left shift is on
+  jne kbd_waitForChar_capital_withCaps    ; If on then handle typing with caps lock and shift 
 
   mov bl, ds:[kbdAsciiCodes - 1 + di]     ; Get the lower case version of the key, just to check if its between 'a' and 'z'
   
