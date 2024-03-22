@@ -134,8 +134,10 @@ ISR_keyboard_breakNorm:
 
   mov byte ds:[kbdCurrentKeycode], 0      ; Because the key is released set the current keycode to 0
 
-  GET_KEY_STATE KBD_KEY_CAPSLOCK          ; Check if the key released is caps lock
-  jne ISR_keyboard_end                    ; If it is, then no need to unmark it from the keys array
+  cmp al, KBD_KEY_CAPSLOCK                ; Check if the caps lock key was just released
+  je ISR_keyboard_end                     ; If it was then no need to unmark it from the keys array, as its a toggle key
+
+ISR_keyboard_breakNorm_normDisable:
   mov byte ds:[kbdKeys + di - 1], 0       ; Set this key in the keys array to 0 because it is no longer being pressed
 
 ISR_keyboard_end: 

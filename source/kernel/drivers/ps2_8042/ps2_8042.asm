@@ -81,10 +81,31 @@ kbd_waitForChar_waitValid:
   jmp kbd_waitForChar_afterCapState       ; 
 
 kbd_waitForChar_capital:
+  GET_KEY_STATE KBD_KEY_CAPSLOCK
+  jne kbd_waitForChar_capital_withCaps
+
   mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If shift was pressed, then get the capital ascii character for the keycode
   jmp kbd_waitForChar_afterCapState
 
+kbd_waitForChar_capital_withCaps:
+  mov bl, ds:[kbdAsciiCodes - 1 + di]
+
+  cmp bl, 'a'
+  jb kbd_waitForChar_capslock_capAscii
+
+  cmp bl, 'z'
+  ja kbd_waitForChar_capslock_capAscii
+
+  mov al, ds:[kbdAsciiCodes - 1 + di]
+  jmp kbd_waitForChar_afterCapState
+
 kbd_waitForChar_capslock:
+  GET_KEY_STATE KBD_KEY_LEFT_SHIFT
+  jne kbd_waitForChar_capital_withCaps
+
+  GET_KEY_STATE KBD_KEY_RIGHT_SHIFT
+  jne kbd_waitForChar_capital_withCaps
+
   mov bl, ds:[kbdAsciiCodes - 1 + di]     ; Get the lower case version of the key, just to check if its between 'a' and 'z'
   
   cmp bl, 'a'                             ; Check if the key is below 'a'
@@ -93,6 +114,7 @@ kbd_waitForChar_capslock:
   cmp bl, 'z'                             ; Check if the key is above 'z'
   ja kbd_waitForChar_capslock_symbol      ; If above 'z' then its a symbol so process for a symbol
 
+kbd_waitForChar_capslock_capAscii:
   ; Will get here if the key is between 'a' and 'z' (key >= 'a' && key <= 'z')
   mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If it is between 'a' and 'z' then get the capital ascii character of the key in AL
   jmp kbd_waitForChar_afterCapState       ; Delay and return
