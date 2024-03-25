@@ -23,18 +23,70 @@ ps2_8042_waitOutput:
 ; RETURNS
 ;   - AL      => The keycode
 kbd_waitForKeycode:
+  push bp
+  mov bp, sp
+  sub sp, 3
+
   push ds
   mov bx, KERNEL_SEGMENT
   mov ds, bx
   sti
+
+  cmp byte ds:[kbdCurrentKeycode], 0
+  je kbd_waitForKeycode_waitLoop
+
+  cmp byte ds:[kbdIsFirst], 0
+  je kbd_waitForKeycode_delayAndRet
+
+  mov al, ds:[kbdCurrentKeycode]
+  mov [bp - 1], al
+
+  GET_SYS_TIME
+  mov [bp - 3], dx
+
+
+kbd_waitForKeycode_firstDelay:
+  mov al, [bp - 1]
+  cmp al, ds:[kbdCurrentKeycode]
+  je kbd_waitForKeycode_afterSetFirst
+
+  mov byte ds:[kbdIsFirst], 1
+  jmp kbd_waitForKeycode_delayAndRet
+
+kbd_waitForKeycode_afterSetFirst:
+  GET_SYS_TIME
+  sub dx, [bp - 3]
+
+  cmp dx, 12
+  jb kbd_waitForKeycode_firstDelay
+
+  mov byte ds:[kbdIsFirst], 0
+  jmp kbd_waitForKeycode_delayAndRet
+
 kbd_waitForKeycode_waitLoop:
   hlt
   cmp byte ds:[kbdCurrentKeycode], 0
   je kbd_waitForKeycode_waitLoop
 
+  mov byte ds:[kbdIsFirst], 1
+
+kbd_waitForKeycode_delayAndRet:
   mov al, ds:[kbdCurrentKeycode]
+  test al, al
+  jz kbd_waitForKeycode_waitLoop
+
+  push ax
+
+  mov di, 0FFFh
+  mov si, 8
+  call sleep
+
+  pop ax
+
 kbd_waitForKeycode_end:
-  pop ds 
+  pop ds
+  mov sp, bp
+  pop bp
   ret
 
 
@@ -131,11 +183,11 @@ kbd_waitForChar_capslock_symbol:
   mov al, ds:[kbdAsciiCodes - 1 + di]     ; Get the capital ascii code for the key, then delay and return
 
 kbd_waitForChar_afterCapState:
-  push ax                                 ; Save ascii code
-  mov di, 0E000h                          ; Wait 0E000h microseconds, a delay for key presses
-  mov si, 1                               ; 0E000h * 1 = 0E000h
-  call sleep                              ; Sleep n time
-  pop ax                                  ; Restore ascii code
+  ; push ax                                 ; Save ascii code
+  ; mov di, 0E000h                          ; Wait 0E000h microseconds, a delay for key presses
+  ; mov si, 1                               ; 0E000h * 1 = 0E000h
+  ; call sleep                              ; Sleep n time
+  ; pop ax                                  ; Restore ascii code
 
 
 kbd_waitForChar_end:

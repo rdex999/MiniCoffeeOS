@@ -68,7 +68,7 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
   kbdSkipForKey:          db 0            ; Because after a key is released the keyboard sends the same key again. 
                                           ; This variable is used to indicate whether to skip a key event or not. 
                                           ; (This one is used on key codes)
-
+  kbdIsFirst:             db 0
   kbdSkipForScanExt:      db 0            ; The current scan code to skip, same reason as the variable above,
                                           ; but this one is used with scan codes, and only for extended scan codes (The bytes after E0)
 %endif
@@ -78,7 +78,7 @@ helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
 dbgTestTxt:               db "T15     TXT"
-buffer:                   times 512*8 db 97         ;;;;;; DEBUG
+; buffer:                   times 512*8 db 97         ;;;;;; DEBUG
 pathStf:                  db "fld/teSt.txt", 0
 
 ;
@@ -99,25 +99,16 @@ kernelMain:
   call printStr
 
   ;;;;;;;;; DEBUG
-  lea di, [buffer]
-  lea si, [pathStf]
-  call getFullPath
+  ; lea di, [buffer]
+  ; lea si, [pathStf]
+  ; call getFullPath
 
-  lea di, [buffer]
-  call printStr
+  ; lea di, [buffer]
+  ; call printStr
 
 kernel_readCommandsLoop:
   PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
-
-%ifdef KBD_DRIVER  
-  ; call kbd_waitForKeycode
-  call kbd_waitForChar
-  xor ah, ah
-  PRINT_CHAR al
-  ; PRINT_INT16 ax 
-  PRINT_NEWLINE
-%endif
 
 %ifdef GET_ASCII_CODES
   xor ah, ah
@@ -128,7 +119,6 @@ kernel_readCommandsLoop:
 %endif
 
 %ifndef GET_ASCII_CODES
-%ifndef KBD_DRIVER
   lea di, [commandEntered]          ;
   mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
   call read                         ; 
@@ -137,17 +127,16 @@ kernel_readCommandsLoop:
   jz kernel_readCommandsLoop        ;
 
   PRINT_NEWLINE
-  PRINT_NEWLINE
 
   ;;;;; FOR DEBUG
-  lea di, dbgTestTxt
-  lea bx, buffer
-  call readFile
-  test ax, ax
-  jnz kernel_dontPrintFileContent
+  ; lea di, dbgTestTxt
+  ; lea bx, buffer
+  ; call readFile
+  ; test ax, ax
+  ; jnz kernel_dontPrintFileContent
 
-  lea di, buffer                ;;;;;;;; FOR DEBUG
-  call printStr
+  ; lea di, buffer                ;;;;;;;; FOR DEBUG
+  ; call printStr
   
   kernel_dontPrintFileContent:
   PRINT_NEWLINE
@@ -157,7 +146,6 @@ kernel_readCommandsLoop:
   CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
 
   PRINTF_LM errorUnknownCmd, commandEntered
-%endif
 %endif
 
 

@@ -71,8 +71,9 @@ read:
   mov word [bp - 4], 0        ; Store amount of bytes read
 
 read_loop:
-  xor ah, ah                  ;
-  int 16h                     ; int16h/AH=0   // Get character input 
+  ; xor ah, ah                  ;
+  ; int 16h                     ; int16h/AH=0   // Get character input 
+  call kbd_waitForChar
 
   ; Special characters check 
   cmp al, 13                  ; Check for <enter>

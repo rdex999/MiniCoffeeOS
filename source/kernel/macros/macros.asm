@@ -154,6 +154,18 @@
 
 %endmacro
 
+; Gets the current system time
+; Takes to parameters
+; RETURNS
+;   - 0) CX:DX    => Number of clock ticks since midnight (about 18 per second)
+;   - 1) AL       => Midnight counter, advanced each time midnight passes
+%macro GET_SYS_TIME 0
+
+  xor ah, ah
+  int 1Ah
+
+%endmacro
+
 ; Sends an EOI (End Of Interrupt) signal to the PICs.
 %macro PIC8259_SEND_EOI 1
 
