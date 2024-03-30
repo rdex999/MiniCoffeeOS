@@ -61,7 +61,7 @@ kbd_waitForKeycode_afterSetFirst:
   GET_SYS_TIME                              ; Get the current system time
   sub dx, [bp - 3]                          ; currentSysTime - prevSysTime = time in the loop
 
-  cmp dx, 12                                ; Check if the delayed time is above 0.6 seconds
+  cmp dx, KBD_HIGH_DELAY                                ; Check if the delayed time is above 0.6 seconds
   jb kbd_waitForKeycode_firstDelay          ; If its not, then continue delaying
 
   ; Will get here when the delay is finished
@@ -82,19 +82,35 @@ kbd_waitForKeycode_delayAndRet:
   jz kbd_waitForKeycode_waitLoop            ; If not then wait for a key
 
   ; If it is valid then make a short delay and return
-  push ax                                   ; Save key before delay
+  mov [bp - 1], al
 
-  mov di, 0FFFh                             ; Delay of 0.03 seconds
-  mov si, 8                                 ; 
-  call sleep                                ; Delay
+  ; Delay of 0.03 seconds
+  mov word [bp - 3], KBD_LOW_DELAY_COUNT                  ; Set the amount of times to make a super small delay
+kbd_waitForKeycode_delayAndRet_loop:
+  mov si, 0FFh                                            ; A very small delay
+  mov di, 4                                               ; so each time we can check if the same key is still being pressed
+  call sleep                                              ; Perform the delay
 
-  pop ax                                    ; Restore key
+  mov al, [bp - 1]                                        ; Get che keycode in AL
+  cmp al, ds:[kbdCurrentKeycode]                          ; Check if its still the same key
+  je kbd_waitForKeycode_delayAndRet_loopAfterCurrentCheck ; If its still the same then dont mark it as first
+
+  ; If its not the same then mark it as first and return
+  mov byte ds:[kbdIsFirst], 1                             ; Mark as first
+  jmp kbd_waitForKeycode_delayAndRet                      ; Delay again and return
+
+kbd_waitForKeycode_delayAndRet_loopAfterCurrentCheck:
+  dec word [bp - 3]                                       ; Decrement delay counter
+  jnz kbd_waitForKeycode_delayAndRet_loop                 ; If its not zero then continue delaying
+  
+
+  mov al, [bp - 1]                                        ; If zero then get the keycode in AL and return
 
 kbd_waitForKeycode_end:
-  pop ds                                    ; Restore old data segment
-  mov sp, bp                                ;
-  pop bp                                    ; Restore stack frame
-  ret                                       ; Return
+  pop ds                                                  ; Restore old data segment
+  mov sp, bp                                              ;
+  pop bp                                                  ; Restore stack frame
+  ret                                                     ; Return
 
 
 ; Waits for a printable key to be pressed, or multiple keys which correspond to one character
@@ -129,7 +145,7 @@ kbd_waitForChar_waitValid:
   GET_KEY_STATE KBD_KEY_LEFT_SHIFT        ; Check if the left shift key is currently being pressed
   jne kbd_waitForChar_capital             ; If it is, then process for a capital letter
   
-  GET_KEY_STATE KBD_KEY_RIGHT_SHIFT        ; Check if the right shift key is currently being pressed
+  GET_KEY_STATE KBD_KEY_RIGHT_SHIFT       ; Check if the right shift key is currently being pressed
   jne kbd_waitForChar_capital
   
   GET_KEY_STATE KBD_KEY_CAPSLOCK          ; Check if caps lock is on
@@ -137,7 +153,7 @@ kbd_waitForChar_waitValid:
 
   ; Will get here if no shift key is pressed or caps lock, processing for a lower case letter
   mov al, ds:[kbdAsciiCodes - 1 + di]     ; Get lower case letter ascii for keycode
-  jmp kbd_waitForChar_end       ; Delay and return
+  jmp kbd_waitForChar_end                 ; Delay and return
 
 kbd_waitForChar_capital:
   ; Check if shift is on along with caps lock
@@ -146,7 +162,7 @@ kbd_waitForChar_capital:
 
   ; Will be here if caps lock is off
   mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If shift was pressed, then get the capital ascii character for the keycode
-  jmp kbd_waitForChar_end       ; Delay and return
+  jmp kbd_waitForChar_end                 ; Delay and return
 
 kbd_waitForChar_capital_withCaps:
   ; Will get here if shift is pressed when caps lock is on
@@ -162,7 +178,7 @@ kbd_waitForChar_capital_withCaps:
 
   ; Will get here if the key is an alphabetic character
   mov al, bl                              ; Get lower ascii character
-  jmp kbd_waitForChar_end       ; Delay and return
+  jmp kbd_waitForChar_end                 ; Delay and return
 
 kbd_waitForChar_capslock:
   ; Will be here if caps lock is on
@@ -183,7 +199,7 @@ kbd_waitForChar_capslock:
 kbd_waitForChar_capslock_capAscii:
   ; Will get here if the key is between 'a' and 'z' (key >= 'a' && key <= 'z')
   mov al, ds:[kbdAsciiCapCodes - 1 + di]  ; If it is between 'a' and 'z' then get the capital ascii character of the key in AL
-  jmp kbd_waitForChar_end       ; Delay and return
+  jmp kbd_waitForChar_end                 ; Delay and return
 
 kbd_waitForChar_capslock_symbol:
   ; If the key is not between 'a' and 'z' then its a symbol, and capslock on a symbol (<CAPS_ON> + <1> = 1) just gives you the symbol

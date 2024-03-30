@@ -73,7 +73,9 @@ read:
 read_loop:
   ; xor ah, ah                  ;
   ; int 16h                     ; int16h/AH=0   // Get character input 
+  push di
   call kbd_waitForChar
+  pop di
 
   ; Special characters check 
   cmp al, 13                  ; Check for <enter>
