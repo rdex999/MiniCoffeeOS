@@ -7,11 +7,14 @@
 
 %include "kernel/macros/errorCodes.asm"
 %include "kernel/macros/kbdKeyCodes.asm"
+%include "kernel/macros/colors.asm"
 
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
 %define NEWLINE 0Ah
-%define TAB 0Bh
+%define CARRIAGE_RETURN 0Dh
+%define TAB 9
+%define TXT_TAB_SIZE 4
 
 %define KERNEL_SEGMENT 7E0h
 

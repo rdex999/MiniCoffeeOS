@@ -11,49 +11,142 @@
 ; prints a zero terminated string.
 ; PARAMS
 ; 0) const char* (DI) => the string
-printStr:
-  mov al, [di]                    ; AL = character from string
-  cmp al, 0                       ; If the character is 0, then stop writing
-  je printStr_end
+; printStr:
+;   mov al, [di]                    ; AL = character from string
+;   cmp al, 0                       ; If the character is 0, then stop writing
+;   je printStr_end
 
-  cmp al, 0Bh                     ; check for tab
+;   cmp al, 0Bh                     ; check for tab
+;   je printStr_tab
+
+;   cmp al, 0Ah                     ; Check for newline
+;   je printStr_newline
+
+;   mov ah, 0Eh                     ; int10h/AH=0Eh   // Write character from AL and advance the cursor
+;   int 10h
+;   inc di                          ; Increase string pointer
+;   jmp printStr                    ; Continue printing more characters
+
+; printStr_end:
+;   ret
+
+; printStr_tab:       ; loops 4 times and prints a space each time
+;   inc di                      ; Increase string pointer
+;   push di                     ; Save string pointer for now
+;   GET_CURSOR_POSITION 0       ; Get the column in DL
+; printStr_tabLoop:
+;   PRINT_CHAR ' '              ; Print a space
+;   inc dl                      ; Increase column number
+;   mov al, dl                  ; Store copy of column number in AL
+;   mov bl, 4                   ; Because divibing by 4
+;   xor ah, ah                  ; Zero remainder register
+;   div bl                      ; divibe the copy of the column number by 4
+;   test ah, ah                 ; Check if the remainder is 0 (to stop printing spaces)
+;   jnz printStr_tabLoop        ; If the remainder is not zero then continue printing spaces
+
+;   ; Will get here when need to stop printing spaces
+;   pop di                      ; Restore string pointer
+;   jmp printStr                ; Continue printing characters from the string
+
+; printStr_newline:
+;   mov ah, 0Eh                 ; value 10 is in AL
+;   int 10h                     ; print Line Feed character
+;   PRINT_CHAR 0Dh              ; print Carriage Return character
+;   inc di
+;   jmp printStr
+
+
+; Prints a null terminated string
+; PARAMS
+;   - 0) DI       => The color to write (lower 8 bits)
+;   - 1) DS:SI    => Null terminated string
+; Doesnt return anything
+printStr:
+  mov ax, di
+  mov ah, al
+
+  push es
+  push gs
+  mov bx, VGA_SEGMENT
+  mov es, bx
+  mov bx, KERNEL_SEGMENT
+  mov gs, bx
+
+  mov di, gs:[trmIndex]
+  cld
+printStr_loop:
+  lodsb                     ; Load character from DS:SI to AL, and increment SI
+
+  test al, al               ; Check if its the null character
+  jz printStr_end           ; If null then return
+
+  cmp al, NEWLINE           ; Check if its a newline 
+  je printStr_newline       ; If it is then print a newline
+
+  cmp al, CARRIAGE_RETURN
+  je printStr_carriageReturn
+
+  cmp al, TAB
   je printStr_tab
 
-  cmp al, 0Ah                     ; Check for newline
-  je printStr_newline
-
-  mov ah, 0Eh                     ; int10h/AH=0Eh   // Write character from AL and advance the cursor
-  int 10h
-  inc di                          ; Increase string pointer
-  jmp printStr                    ; Continue printing more characters
-
-printStr_end:
-  ret
-
-printStr_tab:       ; loops 4 times and prints a space each time
-  inc di                      ; Increase string pointer
-  push di                     ; Save string pointer for now
-  GET_CURSOR_POSITION 0       ; Get the column in DL
-printStr_tabLoop:
-  PRINT_CHAR ' '              ; Print a space
-  inc dl                      ; Increase column number
-  mov al, dl                  ; Store copy of column number in AL
-  mov bl, 4                   ; Because divibing by 4
-  xor ah, ah                  ; Zero remainder register
-  div bl                      ; divibe the copy of the column number by 4
-  test ah, ah                 ; Check if the remainder is 0 (to stop printing spaces)
-  jnz printStr_tabLoop        ; If the remainder is not zero then continue printing spaces
-
-  ; Will get here when need to stop printing spaces
-  pop di                      ; Restore string pointer
-  jmp printStr                ; Continue printing characters from the string
+  stosw
+  jmp printStr_loop
 
 printStr_newline:
-  mov ah, 0Eh                 ; value 10 is in AL
-  int 10h                     ; print Line Feed character
-  PRINT_CHAR 0Dh              ; print Carriage Return character
-  inc di
-  jmp printStr
+  push ax                   ; Save color (in AH)
+  mov ax, di                ; Get VGA index in AX as we divibe it
+  mov bx, 80*2              ; Divibe by the number of columns in a row
+  xor dx, dx                ; Zero out remainder
+  div bx                    ; index % 80*2 = column
+  sub di, dx                ; Subtract column to get to the start of the line (like '\r')
+  add di, 80*2              ; Get to start of the next line (like normal '\n')
+  pop ax                    ; Restore color
+  jmp printStr_loop         ; Continue printing characters
+
+printStr_carriageReturn:
+  push ax
+  mov ax, di
+  mov bx, 80*2
+  xor dx, dx
+  div bx
+  sub di, dx
+  pop ax
+  jmp printStr_loop         ; Continue printing characters
+
+printStr_tab:
+  push ax                   ; Save color
+  mov ax, di                ; Get 
+
+  inc ax
+
+  mov bx, TXT_TAB_SIZE
+  xor dx, dx
+  div bx
+
+  test dx, dx
+  jz printStr_tab_afterInc
+
+  inc ax
+
+printStr_tab_afterInc:
+  shl ax, 2
+  mov cx, ax 
+  pop ax 
+
+  mov al, ' '
+  sub cx, di
+  repe stosw
+
+  jmp printStr_loop         ; Continue printing characters
+  
+
+printStr_end:
+  mov gs:[trmIndex], di     ; Update the cursor location
+
+  pop gs                    ; Restore GS segment
+  pop es                    ; Restore ES segment
+  ret
+
 
 
 ; reads a string into a buffer with echoing. zero terminates the string.
@@ -71,12 +164,15 @@ read:
   mov word [bp - 4], 0        ; Store amount of bytes read
 
 read_loop:
-  ; xor ah, ah                  ;
-  ; int 16h                     ; int16h/AH=0   // Get character input 
-  push di
-  call kbd_waitForChar
-  pop di
 
+%ifndef KBD_DRIVER
+  xor ah, ah                  ;
+  int 16h                     ; int16h/AH=0   // Get character input 
+%else
+  push di                     ; Save buffer pointer
+  call kbd_waitForChar        ; Wait for a character input
+  pop di                      ; Restor buffer pointer
+%endif
   ; Special characters check 
   cmp al, 13                  ; Check for <enter>
   je read_handleEnter
@@ -92,8 +188,7 @@ read_loop:
   inc di                      ; Increase buffer pointer to point to next available location
   push di                     ; Store buffer pointer
 
-  mov ah, 0Eh                 ;
-  int 10h                     ; int10h/AH=0Eh   // Write character and advance the cursor
+  PRINT_CHAR al               ; Write character and advance the cursor
 
   pop di                      ; Restore buffer pointer
 
