@@ -132,6 +132,50 @@ printStr_end:
   ret
 
 
+; Prints a character at the current cursor position
+; PARAMS
+;   0) DI   => The character, and the color. (character - low 8 bits, color high 8 bits)
+printChar:
+  mov ax, di
+
+  push es
+  push gs
+  mov bx, VGA_SEGMENT
+  mov es, bx
+  mov bx, KERNEL_SEGMENT
+  mov gs, bx
+  mov di, gs:[trmIndex]
+
+  cmp al, NEWLINE
+  je printChar_newline
+
+  cmp al, CARRIAGE_RETURN
+  je printChar_carriageReturn
+
+  cmp al, TAB
+  je printChar_tab
+
+  cld
+  stosw
+  jmp printChar_end
+
+printChar_newline:
+  PRINT_NEWLINE_ROUTINE
+  jmp printChar_end 
+
+printChar_carriageReturn:
+  PRINT_CARRIAGE_RETURN_ROUTINE
+  jmp printChar_end 
+
+printChar_tab:
+  mov si, ax
+  call printTabRoutine
+
+printChar_end:
+  mov gs:[trmIndex], di
+  pop gs
+  pop es
+  ret
 
 ; reads a string into a buffer with echoing. zero terminates the string.
 ; PARAMS

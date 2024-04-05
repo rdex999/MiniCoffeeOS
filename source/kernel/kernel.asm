@@ -93,6 +93,9 @@ pathStf:                  db "fld/teSt.txt", 0
 kernelMain:
   call clear
 
+  mov di, COLOR_CHR('a', VGA_TXT_DARK_BLUE, VGA_TXT_LIGHT_CYAN)
+  call printChar
+
   mov ch, 6               ;
   mov cl, 7               ; Show blinking text cursor
   mov ah, 1               ;

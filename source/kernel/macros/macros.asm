@@ -75,6 +75,9 @@
 %define KBD_SCANCODE_SPECIAL 0E0h
 
 
+%define COLOR(txtColor, bkgColor) (txtColor | (bkgColor << 4))
+%define COLOR_CHR(char, txtColor, bkgColor) (char | (COLOR(txtColor, bkgColor)) << 8)
+
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3
 
@@ -300,7 +303,9 @@
 
 %endmacro
 
-; prints a single character
+; Prints a character at the cursor position
+; PARAMS
+;   0) The character
 %macro PRINT_CHAR 1
 
   mov ah, 0Eh
