@@ -8,53 +8,68 @@
 %include "kernel/macros/macros.asm"
 %include "kernel/io/printf.asm"
 
-; prints a zero terminated string.
+; Prints a newline character at the given position in VGA
+; USE THIS MACRO ONLY IN printStr AND printChar
 ; PARAMS
-; 0) const char* (DI) => the string
-; printStr:
-;   mov al, [di]                    ; AL = character from string
-;   cmp al, 0                       ; If the character is 0, then stop writing
-;   je printStr_end
+;   0) The color, expected to be in AH
+;   1) The VGA and the index in it, expected to be in ES:DI
+%macro PRINT_NEWLINE_ROUTINE 0
 
-;   cmp al, 0Bh                     ; check for tab
-;   je printStr_tab
+  push ax                   ; Save color (in AH)
+  mov ax, di                ; Get VGA index in AX as we divibe it
+  mov bx, 80*2              ; Divibe by the number of columns in a row
+  xor dx, dx                ; Zero out remainder
+  div bx                    ; index % 80*2 = column
+  sub di, dx                ; Subtract column to get to the start of the line (like '\r')
+  add di, 80*2              ; Get to start of the next line (like normal '\n')
+  pop ax                    ; Restore color
 
-;   cmp al, 0Ah                     ; Check for newline
-;   je printStr_newline
+%endmacro
 
-;   mov ah, 0Eh                     ; int10h/AH=0Eh   // Write character from AL and advance the cursor
-;   int 10h
-;   inc di                          ; Increase string pointer
-;   jmp printStr                    ; Continue printing more characters
+; Prints a carriage return character at a given index in VGA
+; USE THIS MACRO ONLY IN printStr AND printChar
+%macro PRINT_CARRIAGE_RETURN_ROUTINE 0
 
-; printStr_end:
-;   ret
+  push ax                   ; Save color
+  mov ax, di                ; Get index in AX as we divibe it
+  mov bx, 80*2              ; Divibe by the number of columns per column
+  xor dx, dx                ; Zero out remainder
+  div bx                    ; index % 80*2
+  sub di, dx                ; Subtract result from index to get to the start of the line
+  pop ax                    ; Restore color
 
-; printStr_tab:       ; loops 4 times and prints a space each time
-;   inc di                      ; Increase string pointer
-;   push di                     ; Save string pointer for now
-;   GET_CURSOR_POSITION 0       ; Get the column in DL
-; printStr_tabLoop:
-;   PRINT_CHAR ' '              ; Print a space
-;   inc dl                      ; Increase column number
-;   mov al, dl                  ; Store copy of column number in AL
-;   mov bl, 4                   ; Because divibing by 4
-;   xor ah, ah                  ; Zero remainder register
-;   div bl                      ; divibe the copy of the column number by 4
-;   test ah, ah                 ; Check if the remainder is 0 (to stop printing spaces)
-;   jnz printStr_tabLoop        ; If the remainder is not zero then continue printing spaces
+%endmacro
 
-;   ; Will get here when need to stop printing spaces
-;   pop di                      ; Restore string pointer
-;   jmp printStr                ; Continue printing characters from the string
 
-; printStr_newline:
-;   mov ah, 0Eh                 ; value 10 is in AL
-;   int 10h                     ; print Line Feed character
-;   PRINT_CHAR 0Dh              ; print Carriage Return character
-;   inc di
-;   jmp printStr
+; Prints a tab at the given index in VGA memory
+; USE THIS FUNCTION ONLY IN printStr AND printChar
+; PARAMS
+;   0) ES:DI  => The VGA and the index in it
+;   1) SI     => The color, high 8 bits
+printTabRoutine:
+  mov ax, di                ; Get index in AX as we divibe it
 
+  inc ax                    ; Increase index so tab will allways have an effect
+
+  ; Closest high dividable number => num * ceil(num / 4)
+  mov bx, TXT_TAB_SIZE      ; Divibe by the tab size
+  xor dx, dx                ; Zero out remainder
+  div bx                    ;
+
+  test dx, dx               ; Check if the remainder
+  jz printTabRoutine_afterInc  ; If the remainder is zero then dont increment result
+
+  inc ax                    ; If remainder is not zero then increment result
+
+printTabRoutine_afterInc:
+  shl ax, 2                 ; log2(4) = 2   // Multiply by 4 (TXT_TAB_SIZE)
+  mov cx, ax                ; Get the nearest dividable number in CX
+  mov ax, si
+
+  mov al, ' '               ; Fill the rest of the space with spaces with the color
+  sub cx, di                ; The amount of spaces to print (CX is the high pointer, DI is the low pointer)
+  repe stosw                ; Store AX at ES:DI, increment DI, and repeat until CX is zero
+  ret
 
 ; Prints a null terminated string
 ; PARAMS
@@ -93,50 +108,18 @@ printStr_loop:
   jmp printStr_loop         ; Continue printing characters
 
 printStr_newline:
-  push ax                   ; Save color (in AH)
-  mov ax, di                ; Get VGA index in AX as we divibe it
-  mov bx, 80*2              ; Divibe by the number of columns in a row
-  xor dx, dx                ; Zero out remainder
-  div bx                    ; index % 80*2 = column
-  sub di, dx                ; Subtract column to get to the start of the line (like '\r')
-  add di, 80*2              ; Get to start of the next line (like normal '\n')
-  pop ax                    ; Restore color
+  PRINT_NEWLINE_ROUTINE 
   jmp printStr_loop         ; Continue printing characters
 
 printStr_carriageReturn:
-  push ax                   ; Save color
-  mov ax, di                ; Get index in AX as we divibe it
-  mov bx, 80*2              ; Divibe by the number of columns per column
-  xor dx, dx                ; Zero out remainder
-  div bx                    ; index % 80*2
-  sub di, dx                ; Subtract result from index to get to the start of the line
-  pop ax                    ; Restore color
+  PRINT_CARRIAGE_RETURN_ROUTINE 
   jmp printStr_loop         ; Continue printing characters
 
 printStr_tab:
-  push ax                   ; Save color
-  mov ax, di                ; Get index in AX as we divibe it
-
-  inc ax                    ; Increase index so tab will allways have an effect
-
-  ; Closest high dividable number => num * ceil(num / 4)
-  mov bx, TXT_TAB_SIZE      ; Divibe by the tab size
-  xor dx, dx                ; Zero out remainder
-  div bx                    ;
-
-  test dx, dx               ; Check if the remainder
-  jz printStr_tab_afterInc  ; If the remainder is zero then dont increment result
-
-  inc ax                    ; If remainder is not zero then increment result
-
-printStr_tab_afterInc:
-  shl ax, 2                 ; log2(4) = 2   // Multiply by 4 (TXT_TAB_SIZE)
-  mov cx, ax                ; Get the nearest dividable number in CX
-  pop ax                    ; Restore color
-
-  mov al, ' '               ; Fill the rest of the space with spaces with the color
-  sub cx, di                ; The amount of spaces to print (CX is the high pointer, DI is the low pointer)
-  repe stosw                ; Store AX at ES:DI, increment DI, and repeat until CX is zero
+  push si
+  mov si, ax
+  call printTabRoutine 
+  pop si
 
   jmp printStr_loop         ; Continue printing characters
   
