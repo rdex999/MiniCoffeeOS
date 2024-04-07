@@ -5,6 +5,9 @@
 %ifndef COLORS_ASM
 %define COLORS_ASM
 
+%define COLOR(txtColor, bkgColor) (txtColor | (bkgColor << 4))
+%define COLOR_CHR(char, txtColor, bkgColor) (char | (COLOR(txtColor, bkgColor)) << 8)
+
 %define VGA_TXT_BLACK 0
 %define VGA_TXT_DARK_BLUE 1
 %define VGA_TXT_DARK_GREEN 2

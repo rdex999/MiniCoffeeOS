@@ -9,66 +9,59 @@
 %include "kernel/io/printf.asm"
 
 ; Prints a newline character at the given position in VGA
-; USE THIS MACRO ONLY IN printStr AND printChar
+; USE THIS FUNCITON ONLY IN printStr AND printChar
 ; PARAMS
-;   0) The color, expected to be in AH
-;   1) The VGA and the index in it, expected to be in ES:DI
-%macro PRINT_NEWLINE_ROUTINE 0
-
-  push ax                   ; Save color (in AH)
+;   - 0) ES:DI  => The VGA and the index in it
+; RETURNS
+;   - In DI, the new index in VGA
+printNewlineRoutine:
   mov ax, di                ; Get VGA index in AX as we divibe it
   mov bx, 80*2              ; Divibe by the number of columns in a row
   xor dx, dx                ; Zero out remainder
   div bx                    ; index % 80*2 = column
   sub di, dx                ; Subtract column to get to the start of the line (like '\r')
   add di, 80*2              ; Get to start of the next line (like normal '\n')
-  pop ax                    ; Restore color
-
-%endmacro
+  ret
 
 ; Prints a carriage return character at a given index in VGA
-; USE THIS MACRO ONLY IN printStr AND printChar
-%macro PRINT_CARRIAGE_RETURN_ROUTINE 0
-
-  push ax                   ; Save color
+; USE THIS FUNCTION ONLY IN printStr AND printChar
+; PARAMS
+;   - 0) ES:DI  => The VGA and the index in it
+; RETURNS
+;   - In DI, the new index in VGA
+printCarriageReturnRoutine:
   mov ax, di                ; Get index in AX as we divibe it
   mov bx, 80*2              ; Divibe by the number of columns per column
   xor dx, dx                ; Zero out remainder
   div bx                    ; index % 80*2
   sub di, dx                ; Subtract result from index to get to the start of the line
-  pop ax                    ; Restore color
-
-%endmacro
+  ret
 
 
 ; Prints a tab at the given index in VGA memory
 ; USE THIS FUNCTION ONLY IN printStr AND printChar
 ; PARAMS
 ;   0) ES:DI  => The VGA and the index in it
-;   1) SI     => The color, high 8 bits
+; RETURNS
+;   - In DI, the new index in VGA
 printTabRoutine:
-  mov ax, di                ; Get index in AX as we divibe it
+  mov ax, di                  ; Get index in AX as we divibe it
 
-  inc ax                    ; Increase index so tab will allways have an effect
+  add ax, 2                   ; Increase character location by 1 (each character is two bytes) so tab will always have an effect
 
   ; Closest high dividable number => num * ceil(num / 4)
-  mov bx, TXT_TAB_SIZE      ; Divibe by the tab size
-  xor dx, dx                ; Zero out remainder
-  div bx                    ;
+  mov bx, TXT_TAB_SIZE        ; Divibe by the tab size
+  xor dx, dx                  ; Zero out remainder
+  div bx                      ;
 
-  test dx, dx               ; Check if the remainder
-  jz printTabRoutine_afterInc  ; If the remainder is zero then dont increment result
+  test dx, dx                 ; Check if the remainder
+  jz printTabRoutine_afterInc ; If the remainder is zero then dont increment result
 
-  inc ax                    ; If remainder is not zero then increment result
+  add ax, 2                   ; Increase character location by 1 (each character is two bytes)
 
 printTabRoutine_afterInc:
-  shl ax, 2                 ; log2(4) = 2   // Multiply by 4 (TXT_TAB_SIZE)
-  mov cx, ax                ; Get the nearest dividable number in CX
-  mov ax, si
-
-  mov al, ' '               ; Fill the rest of the space with spaces with the color
-  sub cx, di                ; The amount of spaces to print (CX is the high pointer, DI is the low pointer)
-  repe stosw                ; Store AX at ES:DI, increment DI, and repeat until CX is zero
+  shl ax, 2                   ; log2(4) = 2   // Multiply by 4 (TXT_TAB_SIZE)
+  mov di, ax                  ; Get the new index in VGA in DI
   ret
 
 ; Prints a null terminated string
@@ -108,19 +101,21 @@ printStr_loop:
   jmp printStr_loop         ; Continue printing characters
 
 printStr_newline:
-  PRINT_NEWLINE_ROUTINE 
+  push ax
+  call printNewlineRoutine 
+  pop ax
   jmp printStr_loop         ; Continue printing characters
 
 printStr_carriageReturn:
-  PRINT_CARRIAGE_RETURN_ROUTINE 
+  push ax
+  call printCarriageReturnRoutine 
+  pop ax
   jmp printStr_loop         ; Continue printing characters
 
 printStr_tab:
-  push si
-  mov si, ax
+  push ax
   call printTabRoutine 
-  pop si
-
+  pop ax
   jmp printStr_loop         ; Continue printing characters
   
 
@@ -134,7 +129,7 @@ printStr_end:
 
 ; Prints a character at the current cursor position
 ; PARAMS
-;   0) DI   => The character, and the color. (character - low 8 bits, color high 8 bits)
+;   - 0) DI   => The character, and the color. (character - low 8 bits, color high 8 bits)
 printChar:
   mov ax, di
 
@@ -160,15 +155,14 @@ printChar:
   jmp printChar_end
 
 printChar_newline:
-  PRINT_NEWLINE_ROUTINE
+  call printNewlineRoutine 
   jmp printChar_end 
 
 printChar_carriageReturn:
-  PRINT_CARRIAGE_RETURN_ROUTINE
+  call printCarriageReturnRoutine 
   jmp printChar_end 
 
 printChar_tab:
-  mov si, ax
   call printTabRoutine
 
 printChar_end:

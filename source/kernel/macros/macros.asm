@@ -74,10 +74,6 @@
 %define KBD_SCANCODE_NORM_BREAK 0F0h
 %define KBD_SCANCODE_SPECIAL 0E0h
 
-
-%define COLOR(txtColor, bkgColor) (txtColor | (bkgColor << 4))
-%define COLOR_CHR(char, txtColor, bkgColor) (char | (COLOR(txtColor, bkgColor)) << 8)
-
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3
 
