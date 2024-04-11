@@ -18,6 +18,8 @@
 
 %define KERNEL_SEGMENT 7E0h
 
+%define IO_NEWLINE_SPACES
+
 %define KBD_DRIVER
 
 %define KBD_HIGH_DELAY 10
@@ -228,7 +230,7 @@
 %endmacro
 
 ; USE THIS CRAP ONLY FOR DEBUGGING
-%macro PRINT_REGISTERS 0
+%macro PRINT_REGS 0
 
   pusha
   PRINTF_M `AX: %x\n`, ax

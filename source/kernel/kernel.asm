@@ -102,12 +102,12 @@ kernelMain:
   call printChar
   
   INIT_KERNEL             ; Initialize kernel.
-
-  lea si, [welcomeMsg] 
-  mov di, VGA_TXT_DARK_CYAN | (VGA_TXT_WHITE << 4)
+  
+  lea si, [welcomeMsg]
+  mov di, COLOR(VGA_TXT_DARK_CYAN, VGA_TXT_YELLOW)
   call printStr
-  
-  
+
+
   PRINT_NEWLINE
   ;;;;;;;;; DEBUG
   ; lea di, [buffer]
