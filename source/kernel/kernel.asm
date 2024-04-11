@@ -78,6 +78,7 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
 ; row => trmIndex / 80
 ; col => trmIndex % 80
 trmIndex:                 dw 0
+trmColor:                 db COLOR(VGA_TXT_LIGHT_GRAY, VGA_TXT_BLACK)
 
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0

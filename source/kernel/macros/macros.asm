@@ -304,13 +304,28 @@
 ; Prints a character at the cursor position
 ; PARAMS
 ;   0) The character
-%macro PRINT_CHAR 1
+;   1) The color (optional)
+%macro PRINT_CHAR 1-2
 
-  mov ah, 0Eh
-%if %1 != al 
-  mov al, %1
-%endif
-  int 10h
+  ; If there two arguments, then the first one is the character and the second one is the color
+  %if %0 == 2
+    %if %1 != al  
+      mov al, %1
+    %endif
+
+    %if %2 != ah
+      mov ah, %2
+    %endif
+    mov di, ax
+  %else
+  ; If there is only one arguments, then it must be a 16 bit register/value. 
+  ; We assume that the character is in the low 8 bits the color is in the high 8 bits.
+    %if %1 != di
+      mov di, %1
+    %endif
+  %endif
+  call printChar              ; Print the character with the color at DI(high8) and the character at DI(low8)
+
 
 %endmacro
 
