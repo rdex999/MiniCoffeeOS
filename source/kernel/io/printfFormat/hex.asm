@@ -8,11 +8,11 @@
 printf_format_hex:
   push si
 
-  mov si, [bp - 2]              ; Get the array pointer in SI
-  add word [bp - 2], 2          ; Make argument pointer point to next argument
-  lea di, [bp - 3]
+  mov si, [bp - 2]                          ; Get the array pointer in SI
+  add word [bp - 2], PRINTF_ARGUMENT_SIZE   ; Make argument pointer point to next argument
+  lea di, [bp - PRINTF_BUFFER_START]
 
-  mov si, ss:[si]               ; Get the number to print in SI
+  mov si, ss:[si]                           ; Get the number to print in SI
 
 printf_format_hexDigitsLoop:
   mov ax, si
@@ -33,16 +33,21 @@ printf_format_hexSkipLetter:
   test si, si
   jnz printf_format_hexDigitsLoop
 
-  lea cx, [bp - 3]
+  lea cx, [bp - PRINTF_BUFFER_START]
   sub cx, di                          ; Get how many digits were found
 printf_format_hexPrintLoop:
   inc di
+  push di
+  push cx
   mov al, ss:[di]
-  PRINT_CHAR al
+  mov ah, es:trmColor
+  PRINT_CHAR al, ah
+  pop cx
+  pop di
+
   loop printf_format_hexPrintLoop
 
   pop si
-  inc si
   jmp printf_printLoop
 
 %endif

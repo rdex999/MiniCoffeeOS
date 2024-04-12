@@ -89,8 +89,8 @@ printf_checkFormat:
   cmp al, 's'
   je printf_format_string
 
-  ; cmp al, 'x'
-  ; je printf_format_hex
+  cmp al, 'x'
+  je printf_format_hex
 
   push ds
   mov bx, es
@@ -107,6 +107,6 @@ printf_checkFormat:
   %include "kernel/io/printfFormat/int.asm"
   %include "kernel/io/printfFormat/char.asm"
   %include "kernel/io/printfFormat/string.asm"
-  ; %include "kernel/io/printfFormat/hex.asm"
+  %include "kernel/io/printfFormat/hex.asm"
 
 %endif
