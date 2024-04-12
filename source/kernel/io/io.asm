@@ -67,7 +67,63 @@ printStr_end:
   ret
 
 
+; Print a string, with fixed length. Meaning it takes the string length as a parameter so no need for a NULL character. (NULL is ignored)
+; PARAMS
+;   - 0) DI     => The color to print with. Lower 8 bits only
+;   - 1) DS:SI  => The string
+;   - 2) DX     => String length (The index of the last byte + 1)
+; Doesnt return anything
+printStrLen:
 
+  push es
+  push gs
+  mov bx, VGA_SEGMENT
+  mov es, bx
+  mov bx, KERNEL_SEGMENT
+  mov gs, bx
+
+  mov ax, di
+  mov ah, al
+
+  mov di, gs:[trmIndex]
+  inc dx
+
+  cld
+printStrLen_loop:
+  dec dx
+  jz printStrLen_end
+
+  lodsb
+
+  cmp al, NEWLINE
+  je printStrLen_newline
+
+  cmp al, CARRIAGE_RETURN
+  je printStrLen_carriageReturn
+
+  cmp al, TAB
+  je printStrLen_tab
+
+  stosw
+  jmp printStrLen_loop
+
+printStrLen_newline:
+  PRINT_STR_LEN_SPECIAL_CHAR_STUB printNewlineRoutine
+  jmp printStrLen_loop
+printStrLen_carriageReturn:
+  PRINT_STR_LEN_SPECIAL_CHAR_STUB printCarriageReturnRoutine
+  jmp printStrLen_loop
+
+printStrLen_tab:
+  PRINT_STR_LEN_SPECIAL_CHAR_STUB printTabRoutine
+  jmp printStrLen_loop
+
+printStrLen_end:
+  mov gs:[trmIndex], di
+
+  pop gs
+  pop es 
+  ret
 
 
 ; Prints a character at the current cursor position

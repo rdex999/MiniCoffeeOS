@@ -329,10 +329,14 @@
 
 %endmacro
 
+
 ; Not the best, but good enough for debugging
 %macro PRINT_INT16 1
 
   pusha                             ; Save all registers
+  push es
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
 
   mov si, sp
   sub sp, 6                         ; Allocate 6 bytes on stack
@@ -359,12 +363,14 @@
   cmp byte ss:[si], 0               ; Check for null character, so dont print it
   je %%stopPrint                    ; If null the stop printing
   mov al, ss:[si]                   ; Get character in AL
-  PRINT_CHAR al 
+  mov ah, es:[trmColor]
+  PRINT_CHAR al, ah
   inc si                            ; Increase buffer pointer
   jmp %%printLoop                   ; Continue printing
 
 %%stopPrint:
   add sp, 6                         ; Free 6 bytes
+  pop es 
   popa                              ; Restore registers
 
 %endmacro
@@ -468,6 +474,26 @@
   mov sp, bp
   pop bp
   popa
+
+%endmacro
+
+; PARAMS
+;   - 0) The function to call (a lable)
+;   - 1..) The registers to save
+%macro SAVE_BEFORE_CALL 1-*
+
+  %rep %0 - 1
+    %rotate 1
+    push %1
+  %endrep
+  
+  %rotate 1 
+  call %1
+
+  %rep %0 - 1
+    %rotate -1
+    pop %1
+  %endrep
 
 %endmacro
 

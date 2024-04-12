@@ -78,6 +78,8 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
 ; row => trmIndex / 80
 ; col => trmIndex % 80
 trmIndex:                 dw 0
+
+; Low 4 bits are the text color, and the high 4 bits are the background color
 trmColor:                 db COLOR(VGA_TXT_LIGHT_GRAY, VGA_TXT_BLACK)
 
 helpCmd:                  db "help", 0
@@ -99,14 +101,23 @@ kernelMain:
   mov ah, 1               ;
   int 10h                 ;
 
+  lea di, [welcomeMsg]
+  call strlen
+
+  mov dx, ax
+  lea si, [welcomeMsg]
+  mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_YELLOW)
+  call printStrLen
+
+
   mov di, COLOR_CHR('a', VGA_TXT_DARK_BLUE, VGA_TXT_LIGHT_CYAN)
   call printChar
   
   INIT_KERNEL             ; Initialize kernel.
   
-  lea si, [welcomeMsg]
-  mov di, COLOR(VGA_TXT_DARK_CYAN, VGA_TXT_YELLOW)
-  call printStr
+  ; lea si, [welcomeMsg]
+  ; mov di, COLOR(VGA_TXT_DARK_CYAN, VGA_TXT_YELLOW)
+  ; call printStr
 
 
   PRINT_NEWLINE
