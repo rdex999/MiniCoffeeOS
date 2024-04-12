@@ -10,9 +10,8 @@ jmp kernelMain    ; skip data and function declaration section
 
 %include "kernel/macros/macros.asm"
 %include "kernel/io/io.asm"
-%include "kernel/screen/screen.asm"
 %include "kernel/string/string.asm"
-%include "kernel/basicCommands/basicCommands.asm"
+%include "kernel/trmCommands/trmCommands.asm"
 %include "kernel/filesystem/filesystem.asm"
 %include "kernel/isr/isr.asm"
 %include "kernel/time/time.asm"
@@ -114,7 +113,6 @@ kernelMain:
   call printStr
 
 
-  PRINT_NEWLINE
   ;;;;;;;;; DEBUG
   ; lea di, [buffer]
   ; lea si, [pathStf]
@@ -124,11 +122,7 @@ kernelMain:
   ; call printStr
 
 kernel_readCommandsLoop:
-  PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
-  ; lea si, [shellStr]
-  ; mov di, [trmColor]
-  ; call printStr
 
 %ifdef GET_ASCII_CODES
   xor ah, ah

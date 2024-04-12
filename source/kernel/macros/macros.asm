@@ -100,13 +100,12 @@
 ; prints 10 and 13 (ascii codes). goes down a line
 %macro PRINT_NEWLINE 0
 
-  mov ah, 0Eh
-  mov al, 10
-  int 10h
-
-  mov ah, 0Eh
-  mov al, 13
-  int 10h
+  push es
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
+  mov ah, es:[trmColor]
+  PRINT_CHAR NEWLINE, ah
+  pop es
 
 %endmacro
 
