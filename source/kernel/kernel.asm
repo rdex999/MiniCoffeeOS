@@ -101,7 +101,7 @@ kernelMain:
   mov ah, 1               ;
   int 10h                 ;
 
-  PRINTF_M "heyy %u %u", 6666, 1234
+  PRINTF_M "heyy %u %d", 6666, -1
 
 
   mov di, COLOR_CHR('a', VGA_TXT_DARK_BLUE, VGA_TXT_LIGHT_CYAN)

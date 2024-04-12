@@ -80,8 +80,8 @@ printf_checkFormat:
   cmp al, 'u'
   je printf_format_uInt
 
-  ; cmp al, 'd'
-  ; je printf_format_signedInt
+  cmp al, 'd'
+  je printf_format_signedInt
 
   ; cmp al, 'c'
   ; je printf_format_char
@@ -104,7 +104,7 @@ printf_checkFormat:
   printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
 
   %include "kernel/io/printfFormat/uInt.asm"
-  ; %include "kernel/io/printfFormat/int.asm"
+  %include "kernel/io/printfFormat/int.asm"
   ; %include "kernel/io/printfFormat/char.asm"
   ; %include "kernel/io/printfFormat/string.asm"
   ; %include "kernel/io/printfFormat/hex.asm"
