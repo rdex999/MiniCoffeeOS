@@ -83,8 +83,8 @@ printf_checkFormat:
   cmp al, 'd'
   je printf_format_signedInt
 
-  ; cmp al, 'c'
-  ; je printf_format_char
+  cmp al, 'c'
+  je printf_format_char
 
   ; cmp al, 's'
   ; je printf_format_string
@@ -105,7 +105,7 @@ printf_checkFormat:
 
   %include "kernel/io/printfFormat/uInt.asm"
   %include "kernel/io/printfFormat/int.asm"
-  ; %include "kernel/io/printfFormat/char.asm"
+  %include "kernel/io/printfFormat/char.asm"
   ; %include "kernel/io/printfFormat/string.asm"
   ; %include "kernel/io/printfFormat/hex.asm"
 

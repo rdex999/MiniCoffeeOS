@@ -7,13 +7,14 @@
 
 printf_format_char:
   mov di, [bp - 2]
-  add word [bp - 2], 2
+  add word [bp - 2], PRINTF_ARGUMENT_SIZE
 
+  push si
   mov ax, ss:[di]
-  PRINT_CHAR al
+  mov ah, es:[trmColor]
+  PRINT_CHAR al, ah
+  pop si
 
-  inc si
   jmp printf_printLoop
-
 
 %endif
