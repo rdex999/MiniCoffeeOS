@@ -101,13 +101,7 @@ kernelMain:
   mov ah, 1               ;
   int 10h                 ;
 
-  lea di, [welcomeMsg]
-  call strlen
-
-  mov dx, ax
-  lea si, [welcomeMsg]
-  mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_YELLOW)
-  call printStrLen
+  PRINTF_M "heyy %u %u", 6666, 1234
 
 
   mov di, COLOR_CHR('a', VGA_TXT_DARK_BLUE, VGA_TXT_LIGHT_CYAN)
@@ -115,9 +109,9 @@ kernelMain:
   
   INIT_KERNEL             ; Initialize kernel.
   
-  ; lea si, [welcomeMsg]
-  ; mov di, COLOR(VGA_TXT_DARK_CYAN, VGA_TXT_YELLOW)
-  ; call printStr
+  lea si, [welcomeMsg]
+  mov di, COLOR(VGA_TXT_DARK_CYAN, VGA_TXT_YELLOW)
+  call printStr
 
 
   PRINT_NEWLINE
@@ -132,6 +126,9 @@ kernelMain:
 kernel_readCommandsLoop:
   PRINT_NEWLINE                     ;
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
+  ; lea si, [shellStr]
+  ; mov di, [trmColor]
+  ; call printStr
 
 %ifdef GET_ASCII_CODES
   xor ah, ah

@@ -6,16 +6,16 @@
 %define IO_PRINTF_UINT
 
 printf_format_uInt:
-  push si                         ; Save string pointer
+  push si                                 ; Save string pointer
 
-  mov si, [bp - 2]                ; Get pointer to arguments in SI
-  add word [bp - 2], 2            ; Increase the argument point (+2 because each arg is two bytes)
+  mov si, [bp - 2]                        ; Get pointer to arguments in SI
+  add word [bp - 2], PRINTF_ARGUMENT_SIZE ; Increase the argument pointer (+2 because each arg is two bytes)
 
-  lea di, [bp - 3]                ; Get pointer to first byte of buffer
+  lea di, [bp - PRINTF_BUFFER_START]      ; Get pointer to first byte of buffer
 
-  mov ax, ss:[si]                   ; Get formatting argument in AX
+  mov ax, ss:[si]                         ; Get formatting argument in AX
   
-  xor cx, cx                        ; Zero out digits counter (for printing the string later)
+  xor cx, cx                              ; Zero out digits counter (for printing the string later)
 printf_format_uIntDigitsLoop:
   xor dx, dx                        ; Zero out remainder register
   mov bx, 10                        ; For divibing by 10
@@ -29,12 +29,16 @@ printf_format_uIntDigitsLoop:
 
 printf_format_uIntPrintLoop:
   mov al, ss:[di + 1]                 ; Get character in AL
-  PRINT_CHAR al                       ; Print AL
+  mov ah, es:[trmColor]
+  push di
+  push cx
+  PRINT_CHAR al, ah                   ; Print AL
+  pop cx
+  pop di 
   inc di                              ; Increase pointer
   loop printf_format_uIntPrintLoop    ; Print characters from DI as long as CX > 0
 
   pop si                              ; Restore string pointer
-  inc si                              ; Increase string pointer to point to character after the formatting option
   jmp printf_printLoop                ; Continue printing characters from string
 
 %endif
