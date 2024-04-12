@@ -17,7 +17,7 @@
 ;   - 1..)  formating args (the number for %d for example)
 printf:
   %define PRINTF_ARGUMENT_SIZE 2
-  %define PRINTF_ARGUMENT_POINTER_SIZE 4
+  %define PRINTF_ARGUMENT_POINTER_SIZE 2
   %define PRINTF_BUFFER_START 9
 
   push bp
@@ -86,8 +86,8 @@ printf_checkFormat:
   cmp al, 'c'
   je printf_format_char
 
-  ; cmp al, 's'
-  ; je printf_format_string
+  cmp al, 's'
+  je printf_format_string
 
   ; cmp al, 'x'
   ; je printf_format_hex
@@ -106,7 +106,7 @@ printf_checkFormat:
   %include "kernel/io/printfFormat/uInt.asm"
   %include "kernel/io/printfFormat/int.asm"
   %include "kernel/io/printfFormat/char.asm"
-  ; %include "kernel/io/printfFormat/string.asm"
+  %include "kernel/io/printfFormat/string.asm"
   ; %include "kernel/io/printfFormat/hex.asm"
 
 %endif
