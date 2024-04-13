@@ -8,42 +8,44 @@
 ; Enables the cursor, also initializes it with a scanline (cursor size).
 ; The highest scanline (size) is 0, and the lowest is 15
 ; PARAMS
-;   - 0) DI   => Cursor start size (lower 8 bits)
-;   - 1) SI   => Cursor end size (lower 8 bits)
+;   - 0) DI   => Cursor start size (bits 0-4)
+;   - 1) SI   => Cursor end size (bits 0-4)
 ; Doesnt return anything
 cursorEnable:
-  ; To enable the cursor, we just set its size to a visible size.
-  mov al, 0Ah
-  mov dx, 3D4h
-  out dx, al
+  ; Tell VGA we want to set the cursor start scanline
+  mov al, 0Ah               ; Prepare register 0Ah - cursor start scanline
+  mov dx, VGA_CRTC_CMD      ; Send command on CRTC command port
+  out dx, al                ; Tell VGA to prepare register 0Ah at CRTC data port
 
-  inc dx 
-  in al, dx
-  and al, 0C0h
-  or ax, di
+  ; Set the cursor start scanline, and enable it
+  inc dx                    ; DX = 3D5h - CRTC data register
+  mov ax, di                ; The cursor start scanline parameter
+  and al, 0001_1111b        ; Clear bit 5, which determins if the cursor is enabled or disabled (0 for enabled, 1 for disabled)
+  out dx, al                ; Write changes to CRTC data register
 
-  out dx, al
+  ; Tell VGA we want to set the cursor end scanline
+  dec dx                    ; DX = 3D4h - CRTC command register
+  mov al, 0Bh               ; Prepare register 0Bh - cursor end scanline
+  out dx, al                ; Tell VGA to prepare register 0Bh at CRTC data port
 
-  dec dx 
-  mov al, 0Bh
-  out dx, al
-
-  inc dx 
-  in al, dx
-  and al, 0E0h
-  or ax, si
-
-  out dx, al
+  ; Set the cursor end scanline, and set the cursor skew bits to 1 
+  inc dx                    ; DX = 3D5h - CRTC data register
+  mov ax, si                ; The cursor end scanline parameter
+  or ax, 0110_0000b         ; Make sure bits 5 and 6 are set (cursor skew) so there wont be problems with the cursor disappeating
+  out dx, al                ; Write changes to CRTC data register
+  
   ret
 
 cursorDisable:
-  mov dx, 3D4h
-  mov al, 0Ah 
-  out dx, al
+  ; Tell VGA we want to change cursor scanline (which holds the option to disable the cursor)
+  mov dx, VGA_CRTC_CMD      ; Send byte on VGA CRTC port
+  mov al, 0Ah               ; Prepare register 0Ah - Cursor start scanline register
+  out dx, al                ; Tell VGA CRTC to prepare register 0Ah on CRTC data port
 
-  inc dx
-  mov al, 0010_0000b
-  out dx, al
+  ; Bit 6 of the cursor start scanline registers controles whether the cursor is enabled or disabled (0 - enabled, 1 disabled)
+  inc dx                    ; DX = 3D5h - VGA CRTC command port
+  mov al, 0010_0000b        ; Turn bit 7 of cursor start scanline register on
+  out dx, al                ; Write changes to cursor start scanline register
   ret
 
 
