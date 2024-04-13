@@ -31,7 +31,7 @@ jmp kernelMain    ; skip data and function declaration section
 bpbStart:
 %include "bootloader/bpbStruct/bpbStruct.asm"
 
-welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info.", TAB, "hey", NEWLINE, TAB, "hey again", NEWLINE, 0
+welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, NEWLINE, 0
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
@@ -85,7 +85,7 @@ helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
 dbgTestTxt:               db "T15     TXT"
-; buffer:                   times 512*8 db 97         ;;;;;; DEBUG
+buffer:                   times 64 db 97         ;;;;;; DEBUG
 pathStf:                  db "fld/teSt.txt", 0
 
 ;
@@ -100,26 +100,20 @@ kernelMain:
   mov ah, 1               ;
   int 10h                 ;
 
-  PRINTF_M "heyy %u %d %c %s %x", 6666, -1, 'q', helpCmd, 0ABCh
-
-
-  mov di, COLOR_CHR('a', VGA_TXT_DARK_BLUE, VGA_TXT_LIGHT_CYAN)
-  call printChar
-  
   INIT_KERNEL             ; Initialize kernel.
-  
+
   lea si, [welcomeMsg]
-  mov di, COLOR(VGA_TXT_DARK_CYAN, VGA_TXT_YELLOW)
+  mov di, es:[trmColor]
   call printStr
 
-
   ;;;;;;;;; DEBUG
-  ; lea di, [buffer]
-  ; lea si, [pathStf]
-  ; call getFullPath
+  lea di, [buffer]
+  lea si, [pathStf]
+  call getFullPath
 
-  ; lea di, [buffer]
-  ; call printStr
+  lea si, [buffer]
+  mov di, es:[trmColor] 
+  call printStr
 
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell

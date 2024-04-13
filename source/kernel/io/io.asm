@@ -10,6 +10,41 @@
 %include "kernel/io/printSubRoutines.asm"
 
 
+; Just prints a character, doesnt advance the cursor.
+; If its a special character (newline, tab, carriage return) then the function saves AX, DI, SI, DX
+; USE ONLY IN PRINT FUNCTIONS (printStr, printStrLen, printChar)
+; PARAMS
+;   - 0) AL     => The character
+;   - 1) AH     => The color
+;   - 2) ES:DI  => The VGA and the index in it
+; RETURNS
+;   -    ES:DI  => The new index in the VGA
+printCharRoutine:
+  cmp al, NEWLINE
+  je printCharRoutine_newline
+
+  cmp al, CARRIAGE_RETURN
+  je printCharRoutine_carriageReturn
+
+  cmp al, TAB
+  je printCharRoutine_tab
+
+  cld
+  stosw
+  ret
+
+printCharRoutine_newline:
+  PRINT_SPECIAL_SAVE_REGS printNewlineRoutine
+  ret
+
+printCharRoutine_carriageReturn:
+  PRINT_SPECIAL_SAVE_REGS printCarriageReturnRoutine
+  ret
+
+printCharRoutine_tab:
+  PRINT_SPECIAL_SAVE_REGS printTabRoutine
+  ret
+
 ; Prints a null terminated string
 ; PARAMS
 ;   - 0) DI       => The color to write (lower 8 bits)
@@ -34,30 +69,8 @@ printStr_loop:
   test al, al                       ; Check if its the null character
   jz printStr_end                   ; If null then return
 
-  cmp al, NEWLINE                   ; Check if its a newline 
-  je printStr_newline               ; If it is then print a newline
-
-  cmp al, CARRIAGE_RETURN           ; Check if its a carriage return character
-  je printStr_carriageReturn        ; If it is then handle it
-
-  cmp al, TAB                       ; Check if its a tab
-  je printStr_tab                   ; If it is then handle it
-
-  stosw                             ; If its not a special character then store AX in ES:DI, and increment DI
+  call printCharRoutine 
   jmp printStr_loop                 ; Continue printing characters
-
-printStr_newline:
-  PRINT_STR_SPECIAL_CHAR_STUB printNewlineRoutine
-  jmp printStr_loop                 ; Continue printing characters
-
-printStr_carriageReturn:
-  PRINT_STR_SPECIAL_CHAR_STUB printCarriageReturnRoutine
-  jmp printStr_loop                 ; Continue printing characters
-
-printStr_tab:
-  PRINT_STR_SPECIAL_CHAR_STUB printTabRoutine
-  jmp printStr_loop                 ; Continue printing characters
-  
 
 printStr_end:
   mov gs:[trmIndex], di             ; Update the cursor location
@@ -75,54 +88,32 @@ printStr_end:
 ; Doesnt return anything
 printStrLen:
 
-  push es
-  push gs
-  mov bx, VGA_SEGMENT
-  mov es, bx
-  mov bx, KERNEL_SEGMENT
-  mov gs, bx
+  push es                         ; Save old segments
+  push gs                         ; 
+  mov bx, VGA_SEGMENT             ; Set ES segment to VGA segment
+  mov es, bx                      ;
+  mov bx, KERNEL_SEGMENT          ; Set GS segment to kernel segment
+  mov gs, bx                      ;
 
-  mov ax, di
-  mov ah, al
+  mov ax, di                      ; DI is the color (the lower 8 bits)
+  mov ah, al                      ; We need to color in AH
 
-  mov di, gs:[trmIndex]
-  inc dx
+  mov di, gs:[trmIndex]           ; Get the current cursor location
 
-  cld
+  cld                             ; Clear direction flag, so LODSB will increment SI and STOSW will increment DI
 printStrLen_loop:
-  dec dx
-  jz printStrLen_end
+  lodsb                           ; Get a byte from DS:SI to AL (faster than MOV)
 
-  lodsb
+  call printCharRoutine           ; Print the character and perform checks (if its a special character)
 
-  cmp al, NEWLINE
-  je printStrLen_newline
-
-  cmp al, CARRIAGE_RETURN
-  je printStrLen_carriageReturn
-
-  cmp al, TAB
-  je printStrLen_tab
-
-  stosw
-  jmp printStrLen_loop
-
-printStrLen_newline:
-  PRINT_STR_LEN_SPECIAL_CHAR_STUB printNewlineRoutine
-  jmp printStrLen_loop
-printStrLen_carriageReturn:
-  PRINT_STR_LEN_SPECIAL_CHAR_STUB printCarriageReturnRoutine
-  jmp printStrLen_loop
-
-printStrLen_tab:
-  PRINT_STR_LEN_SPECIAL_CHAR_STUB printTabRoutine
-  jmp printStrLen_loop
+  dec dx                          ; Decrement bytes counter
+  jnz printStrLen_loop            ; As long as the bytes counter is not zero continue printing characters
 
 printStrLen_end:
-  mov gs:[trmIndex], di
+  mov gs:[trmIndex], di           ; Update the cursor location
 
-  pop gs
-  pop es 
+  pop gs                          ; Restore old GS segment
+  pop es                          ; Restore old ES segment
   ret
 
 
@@ -140,30 +131,7 @@ printChar:
   mov gs, bx                          ;
   mov di, gs:[trmIndex]               ; Get the current index in VGA (the cursor location) in DI
 
-  ; Check for special characters, otherwise just print the character as is
-  cmp al, NEWLINE                     ; Check for a newline character
-  je printChar_newline                ; If it is then print a new line
-
-  cmp al, CARRIAGE_RETURN             ; Check for a carriage return character
-  je printChar_carriageReturn         ; If it is then print a carriage return character
-
-  cmp al, TAB                         ; Check for a tab
-  je printChar_tab                    ; If tab then print it
-
-  cld                                 ; Clear direction flag so STOSW will increment DI 
-  stosw                               ; If its not a special character then just write it to VGA memory
-  jmp printChar_end                   ; Return and set new VGA index
-
-printChar_newline:
-  call printNewlineRoutine            ; Print new line
-  jmp printChar_end                   ; Update VGA index and return
-
-printChar_carriageReturn:
-  call printCarriageReturnRoutine     ; Print carriage return
-  jmp printChar_end                   ; Update VGA index and return
-
-printChar_tab:
-  call printTabRoutine                ; Print tab
+  call printCharRoutine
 
 printChar_end:
   mov gs:[trmIndex], di               ; Update to new VGA index

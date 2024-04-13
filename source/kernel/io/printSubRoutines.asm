@@ -5,44 +5,21 @@
 %ifndef PRINT_SUB_ROUTINES_ASM
 %define PRINT_SUB_ROUTINES_ASM
 
-%macro PRINT_STR_SPECIAL_CHAR_STUB 1
+; Saves AX, DX, SI, before calling the function
+; PARAMS
+;   - 0) The function to call (a lable)
+%macro PRINT_SPECIAL_SAVE_REGS 1
 
-  ; Save the color, then save the string pointer if need to use it as a parameter (if printing spaces in newlines is enabled)
-  push ax                       ; Save color
-
-  ; If should print spaces in newlines/tabs, then save SI as it will be the second parameter, as the color
-%ifdef IO_NEWLINE_SPACES
-  push si                       ; Save string pointer
-  mov si, ax                    ; Set second argument to color (high 8 bits)
-%endif
-  call %1                       ; Call the special char handler function
-%ifdef IO_NEWLINE_SPACES
-  pop si                        ; Restore string pointer if it was used
-%endif
-  pop ax                        ; Restore color
-
-%endmacro
-
-%macro PRINT_STR_LEN_SPECIAL_CHAR_STUB 1
-  
-  ; Save the color, then save the string pointer if need to use it as a parameter (if printing spaces in newlines is enabled)
-  push ax                       ; Save color
+  push ax
   push dx
-
-  ; If should print spaces in newlines/tabs, then save SI as it will be the second parameter, as the color
-%ifdef IO_NEWLINE_SPACES
-  push si                       ; Save string pointer
-  mov si, ax                    ; Set second argument to color (high 8 bits)
-%endif
-  call %1                       ; Call the special char handler function
-%ifdef IO_NEWLINE_SPACES
-  pop si                        ; Restore string pointer if it was used
-%endif
+  push si
+  mov si, ax
+  call %1
+  pop si
   pop dx
-  pop ax                        ; Restore color
+  pop ax
 
 %endmacro
-
 
 ; Prints a newline character at the given position in VGA
 ; USE THIS FUNCITON ONLY IN printStr AND printChar
