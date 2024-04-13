@@ -55,11 +55,9 @@ cursorDisable:
 
 ; Sets the cursor location from an index in VGA, on the 80x25 screen
 ; PARAMS
-;   - 0) DI   => The VGA index, while each character is 2 bytes.
+;   - 0) DI   => The VGA index
 ; Doesnt return anything
 setCursorIndex:
-  shr di, 1               ; Divide the index by 2, as the VGA expects the index to be in ( row*80 + col ) and not  ( 2*(row*80 + col ) )
-
   ; Tell VGA we want to set the cursor location (low 8 bits)
   mov dx, VGA_CRTC_CMD    ; Send command to VGA at command port (prepare register)
   mov al, 0Fh             ; Register on index 0Fh - Cursor location low 8 bits register 
@@ -110,7 +108,6 @@ getCursorIndex:
   mov bh, al                            ; Set high 8 bits of cursor location in high part of BX, because the low 8 bits are already in there
 
   mov ax, bx                            ; Return value in AX
-  shl ax, 1                             ; Multiply cursor location by 2, because each character in VGA is 2 bytes
   ret
 
 %endif

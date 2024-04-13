@@ -94,9 +94,6 @@ kernelMain:
   mov si, 15
   call cursorEnable
 
-  ; mov di, GET_CURSOR_INDEX(20, 78)
-  ; call setCursorIndex
-
   INIT_KERNEL             ; Initialize kernel.
 
   lea si, [welcomeMsg]

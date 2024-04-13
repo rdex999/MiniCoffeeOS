@@ -14,6 +14,7 @@
 %define NEWLINE 0Ah
 %define CARRIAGE_RETURN 0Dh
 %define TAB 9
+%define BACKSPACE 8
 %define TXT_TAB_SIZE 4
 
 %define KERNEL_SEGMENT 7E0h

@@ -61,6 +61,7 @@ printStr:
   push ax                   ; Save color
   push si                   ; Save string pointer
   call getCursorIndex
+  shl ax, 1
   mov di, ax                ; VGA index in DI
   pop si                    ; Restore string pointer
   pop ax                    ; Restore color
@@ -76,6 +77,7 @@ printStr_loop:
   jmp printStr_loop                 ; Continue printing characters
 
 printStr_end:
+  shr di, 1
   call setCursorIndex
   pop es                            ; Restore ES segment
   ret
@@ -100,6 +102,7 @@ printStrLen:
   push si
   push dx
   call getCursorIndex
+  shl ax, 1
   mov di, ax
   pop dx
   pop si
@@ -115,12 +118,13 @@ printStrLen_loop:
   jnz printStrLen_loop            ; As long as the bytes counter is not zero continue printing characters
 
 printStrLen_end:
+  shr di, 1
   call setCursorIndex
   pop es                          ; Restore old ES segment
   ret
 
 
-; Prints a character at the current cursor position
+; Prints a character at the current cursor position, and advances the cursor
 ; PARAMS
 ;   - 0) DI   => The character, and the color. (character - low 8 bits, color high 8 bits)
 printChar:
@@ -132,111 +136,121 @@ printChar:
 
   push ax
   call getCursorIndex
+  shl ax, 1
+  mov di, ax
   pop ax
 
   call printCharRoutine
 
+  shr di, 1
   call setCursorIndex
 
 printChar_end:
   pop es                              ; Restore ES segment
   ret
 
+
+; Prints a character at the current cursor position, but doesnt advance the cursor
+; PARAMS
+;   - 0) DI   => The character, and the color. (character - low 8 bits, color high 8 bits)
+; Doesnt return anything
+printCharNoAdvance:
+  mov ax, di
+
+  push es
+  mov bx, VGA_SEGMENT
+  mov es, bx
+
+  push ax
+  call getCursorIndex
+  shl ax, 1
+  mov di, ax
+  pop ax
+
+  call printCharRoutine
+
+printCharNoAdvance_end:
+  pop es
+  ret
+
+
 ; reads a string into a buffer with echoing. zero terminates the string.
 ; PARAMS
-; 0) char* (DI) => buffer
-; 1) int16 (SI) => length to read
+;   - 0) ES:DI  => buffer
+;   - 1) SI     => length to read
 ; RETURNS
-; int16 => number of bytes read
+;   - AX  => number of bytes read
 read:
   push bp
   mov bp, sp
-  sub sp, 6                   ; Allocate 4 bytes
+  sub sp, 4
 
-  mov [bp - 2], si            ; Store bytes left to read
-  mov word [bp - 4], 0        ; Store amount of bytes read
-  mov [bp - 6], gs            ; Store old GS segment
+  mov [bp - 2], gs
   mov bx, KERNEL_SEGMENT
   mov gs, bx
 
-read_loop:
+  mov word [bp - 4], 0
 
-%ifndef KBD_DRIVER
-  xor ah, ah                  ;
-  int 16h                     ; int16h/AH=0   // Get character input 
-%else
-  push di                     ; Save buffer pointer
-  call kbd_waitForChar        ; Wait for a character input
-  pop di                      ; Restor buffer pointer
-%endif
-  ; Special characters check 
-  cmp al, 13                  ; Check for <enter>
+read_loop:
+  SAVE_BEFORE_CALL kbd_waitForChar, di, si
+
+  cmp al, CARRIAGE_RETURN
   je read_handleEnter
-  cmp al, 8                   ; Check for <backspace>
+
+  cmp al, BACKSPACE
   je read_handleBackspace
 
-  ; If the character entered was not <enter> or <backspace>,
-  ; and the amount of characters left to read is 0 then dont allow to read more 
-  cmp word [bp - 2], 0        ; If the amount of bytes left to read is 0 then dont read more characters
-  je read_loop
+  test si, si
+  jz read_loop
+  dec si
 
-  mov [di], al                ; Store character in buffer
-  inc di                      ; Increase buffer pointer to point to next available location
-  push di                     ; Store buffer pointer
+  cld
+  stosb
 
+  inc word [bp - 4]
+  push di
+  push si
   mov ah, gs:[trmColor]
-  PRINT_CHAR al, ah           ; Write character and advance the cursor
-
-  pop di                      ; Restore buffer pointer
-
-  inc word [bp - 4]           ; Increase the amount of bytes read
-  dec word [bp - 2]           ; Decrement the amount of bytes left to read
-  jmp read_loop               ; Continue reading characters
-
-read_handleEnter:
-  mov byte [di], 0            ; zero terminate the string
-  mov ax, [bp - 4]            ; Return the amount of bytes read
-
-  mov gs, [bp - 6]            ; Rstore old GS
-  mov sp, bp                  ;
-  pop bp                      ; Restore stack frame
-  ret
-
-read_handleBackspace:
-  cmp word [bp - 4], 0          ; Compare the amount of bytes read to 0, to check if can delete more characters
-  je read_loop                  ; If the amount of bytes read is 0, then dont allow to delete more
-
-  dec di                        ; Decrement buffer pointer
-  dec word [bp - 4]             ; Decrement bytes read so far
-  inc word [bp - 2]             ; Increase number of bytes left to read
-
-  push di                       ; Save buffer pointer for now
-
-  GET_CURSOR_POSITION 0         ; Get the cursor position on page 0. DL => column, DH => row
-  test dl, dl                               ; Check if the column is 0
-  jnz read_handleBackspace_decCol           ; If the column is not zero then decrement it
-
-  ; If the column is zero then decrement the row and set column to 79
-  dec dh                                    ; Decrement row
-  mov dl, 80-1                              ; Set column to 79
-  jmp read_handleBackspace_setCursorPos     ; Skip next line
-
-read_handleBackspace_decCol:
-  ; If the column is not zero then decrement it
-  dec dl                                  ; Decrement column
-
-read_handleBackspace_setCursorPos:
-  xor bh, bh                              ; Set page number to 0
-  mov ah, 2                               ;
-  int 10h                                 ; int10h/AH=2   // Set cursor position, DL => col, DH => row (DL, DH allready set)
-
-  mov cx, 1                               ; Write the character one time
-  xor bh, bh                              ; Write on page zero
-  mov al, ' '                             ; Write a space to delete previous character
-  mov ah, 0Ah                             ; int10h/AH=0Ah   // Write character from AL without advancing the cursor 
-  int 10h
-
-  pop di                                  ; Restore buffer pointer
+  mov di, ax
+  call printChar
+  pop si
+  pop di
   jmp read_loop
 
+read_handleBackspace:
+  cmp word [bp - 4], 0
+  je read_loop
+  
+  SAVE_BEFORE_CALL getCursorIndex, di, si
+  test ax, ax
+  jz read_loop
+
+  dec ax
+  push di
+  push si
+  mov di, ax
+  call setCursorIndex
+
+  mov ah, gs:[trmColor]
+  mov al, ' '
+  mov di, ax
+  call printCharNoAdvance
+
+  pop si
+  pop di
+
+  dec di
+  dec word [bp - 4]
+  inc si
+  jmp read_loop
+
+read_handleEnter:
+  mov byte es:[di], 0
+  mov ax, [bp - 4]
+
+read_end:
+  mov gs, [bp - 2]
+  mov sp, bp
+  pop bp
+  ret
 %endif
