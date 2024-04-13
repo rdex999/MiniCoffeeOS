@@ -9,7 +9,6 @@
 %include "kernel/io/printf.asm"
 %include "kernel/io/printSubRoutines.asm"
 
-
 ; Just prints a character, doesnt advance the cursor.
 ; If its a special character (newline, tab, carriage return) then the function saves AX, DI, SI, DX
 ; USE ONLY IN PRINT FUNCTIONS (printStr, printStrLen, printChar)

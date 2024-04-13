@@ -15,6 +15,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "kernel/filesystem/filesystem.asm"
 %include "kernel/isr/isr.asm"
 %include "kernel/time/time.asm"
+%include "kernel/drivers/vga/vga.asm"
 
 %ifdef KBD_DRIVER
   %include "kernel/drivers/ps2_8042/ps2_8042.asm"
@@ -79,7 +80,7 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
 trmIndex:                 dw 0
 
 ; Low 4 bits are the text color, and the high 4 bits are the background color
-trmColor:                 db COLOR(VGA_TXT_LIGHT_GRAY, VGA_TXT_BLACK)
+trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
@@ -95,15 +96,17 @@ pathStf:                  db "fld/teSt.txt", 0
 kernelMain:
   call clear
 
-  mov ch, 6               ;
-  mov cl, 7               ; Show blinking text cursor
-  mov ah, 1               ;
-  int 10h                 ;
+  mov di, 13
+  mov si, 15
+  call cursorEnable
+
+  mov di, GET_CURSOR_INDEX(20, 78)
+  call setCursorIndex
 
   INIT_KERNEL             ; Initialize kernel.
 
   lea si, [welcomeMsg]
-  mov di, es:[trmColor]
+  mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
   ;;;;;;;;; DEBUG

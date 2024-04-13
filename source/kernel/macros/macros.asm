@@ -18,7 +18,7 @@
 
 %define KERNEL_SEGMENT 7E0h
 
-%define IO_NEWLINE_SPACES
+; %define IO_NEWLINE_SPACES
 
 %define KBD_DRIVER
 
@@ -36,6 +36,9 @@
 %define MAX_PATH_FORMATTED_LENGTH 256
 
 %define VGA_SEGMENT 0B800h
+
+%define VGA_CRTC_CMD 3D4h
+%define VGA_CRTC_DATA 3D5h
 
 %define PIC_MASTER_CMD 20h
 %define PIC_MASTER_DATA 21h
@@ -75,6 +78,7 @@
 
 %define KBD_SCANCODE_NORM_BREAK 0F0h
 %define KBD_SCANCODE_SPECIAL 0E0h
+%define GET_CURSOR_INDEX(row, col) (2 * (80 * row + col))
 
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3
