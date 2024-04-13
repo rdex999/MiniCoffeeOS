@@ -12,14 +12,14 @@
 ;   - 0) DI   => Port to write
 ;   - 1) SI   => Register index (lower 8 bits)
 ;   - 2) DL   => Data
-vgaWriteData:
-  mov dx, di
-  mov ax, si
-  out dx, al
+; vgaWriteData:
+;   mov dx, di
+;   mov ax, si
+;   out dx, al
 
-  inc dx
-  mov al, dl
-  out dx, al
-  ret
+;   inc dx
+;   mov al, dl
+;   out dx, al
+;   ret
 
 %endif
