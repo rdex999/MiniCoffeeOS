@@ -73,12 +73,6 @@ errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has fa
                                           ; but this one is used with scan codes, and only for extended scan codes (The bytes after E0)
 %endif
 
-; The cursors location as an index in VGA memory
-; Get the X, Y (col, row) using the formula:
-; row => trmIndex / 80
-; col => trmIndex % 80
-trmIndex:                 dw 0
-
 ; Low 4 bits are the text color, and the high 4 bits are the background color
 trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 
@@ -100,8 +94,8 @@ kernelMain:
   mov si, 15
   call cursorEnable
 
-  mov di, GET_CURSOR_INDEX(20, 78)
-  call setCursorIndex
+  ; mov di, GET_CURSOR_INDEX(20, 78)
+  ; call setCursorIndex
 
   INIT_KERNEL             ; Initialize kernel.
 

@@ -55,13 +55,16 @@ printStr:
   mov ah, al                ; Color should be in high 8 bits
 
   push es                   ; Save segments
-  push gs                   ;
   mov bx, VGA_SEGMENT       ; Set ES to VGA segment (0B8000h) so we write to the VGA memory
   mov es, bx                ;
-  mov bx, KERNEL_SEGMENT    ; Set GS to kernel segment to read corect trmIndex
-  mov gs, bx                ;
 
-  mov di, gs:[trmIndex]     ; Get the index of the VGA in DI, as we use ES:DI to write to the VGA
+  push ax                   ; Save color
+  push si                   ; Save string pointer
+  call getCursorIndex
+  mov di, ax                ; VGA index in DI
+  pop si                    ; Restore string pointer
+  pop ax                    ; Restore color
+
   cld                       ; Clear direction flag so LODSB and STOSW will increment registers (SI and DI, respectively)
 printStr_loop:
   lodsb                     ; Load character from DS:SI to AL, and increment SI
@@ -73,9 +76,7 @@ printStr_loop:
   jmp printStr_loop                 ; Continue printing characters
 
 printStr_end:
-  mov gs:[trmIndex], di             ; Update the cursor location
-
-  pop gs                            ; Restore GS segment
+  call setCursorIndex
   pop es                            ; Restore ES segment
   ret
 
@@ -89,16 +90,20 @@ printStr_end:
 printStrLen:
 
   push es                         ; Save old segments
-  push gs                         ; 
   mov bx, VGA_SEGMENT             ; Set ES segment to VGA segment
   mov es, bx                      ;
-  mov bx, KERNEL_SEGMENT          ; Set GS segment to kernel segment
-  mov gs, bx                      ;
 
   mov ax, di                      ; DI is the color (the lower 8 bits)
   mov ah, al                      ; We need to color in AH
 
-  mov di, gs:[trmIndex]           ; Get the current cursor location
+  push ax
+  push si
+  push dx
+  call getCursorIndex
+  mov di, ax
+  pop dx
+  pop si
+  pop ax
 
   cld                             ; Clear direction flag, so LODSB will increment SI and STOSW will increment DI
 printStrLen_loop:
@@ -110,9 +115,7 @@ printStrLen_loop:
   jnz printStrLen_loop            ; As long as the bytes counter is not zero continue printing characters
 
 printStrLen_end:
-  mov gs:[trmIndex], di           ; Update the cursor location
-
-  pop gs                          ; Restore old GS segment
+  call setCursorIndex
   pop es                          ; Restore old ES segment
   ret
 
@@ -124,18 +127,18 @@ printChar:
   mov ax, di                          ; Get the character and color in AX, as it has a low and a high part
 
   push es                             ; Save segments
-  push gs                             ;
   mov bx, VGA_SEGMENT                 ; Set ES to VGA segment
   mov es, bx                          ;
-  mov bx, KERNEL_SEGMENT              ; Set GS to kernel segment
-  mov gs, bx                          ;
-  mov di, gs:[trmIndex]               ; Get the current index in VGA (the cursor location) in DI
+
+  push ax
+  call getCursorIndex
+  pop ax
 
   call printCharRoutine
 
+  call setCursorIndex
+
 printChar_end:
-  mov gs:[trmIndex], di               ; Update to new VGA index
-  pop gs                              ; Restore GS segment
   pop es                              ; Restore ES segment
   ret
 

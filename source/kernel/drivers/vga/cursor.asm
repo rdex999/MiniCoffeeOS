@@ -2,6 +2,10 @@
 ; ---------- [ FUNCTIONS FOR MANIPULATING THE CURSOR ] ----------
 ;
 
+; Get the X, Y (col, row) using the formula:
+; row => cursorIndex / 80
+; col => cursorIndex % 80
+
 %ifndef CURSOR_ASM
 %define CURSOR_ASM
 
@@ -76,6 +80,37 @@ setCursorIndex:
   mov ax, di              ; Get cursor location parameter in AX
   mov al, ah              ; We want to set the high 8 bits of the cursor location
   out dx, al              ; Set the high 8 bits of the cursor location
+  ret
+
+
+; Get the cursor index in VGA (while each character is two bytes)
+; Takes no parameters
+; RETURNS
+;   - In AX, the cursor index in VGA
+getCursorIndex:
+
+  ; Prepare cursor location low 8 bits on CRTC data port
+  mov dx, VGA_CRTC_CMD                  ; Send command on CRTC command port
+  mov al, VGA_CRTC_CURSOR_LOC_LOW       ; Prepare low 8 bits of cursor location
+  out dx, al                            ; Tell VGA to prepare low part of cursor location on CRTC data port
+
+  ; Get lower 8 bits of cursor location
+  inc dx                                ; DX = 3D5h - CRTC data port
+  in al, dx                             ; Read from CRTC data port, get the low 8 bits of the cursor location
+  mov bl, al                            ; Because AL will be used store it for now in BL
+
+  ; Prepare high 8 bits of cursor location in CRTC data port
+  dec dx                                ; DX = 3D4h - CRTC command port
+  mov al, VGA_CRTC_CURSOR_LOC_HIGH      ; Prepare high 8 bits of cursor location on CRTC data port
+  out dx, al                            ; Tell VGA to prepare high 8 bits of cursor location on CRTC data port
+
+  ; Get high 8 bits of cursor location
+  inc dx                                ; DX = 3D5h - CRTC data port
+  in al, dx                             ; Read from data port, get high 8 bits of cursor location
+  mov bh, al                            ; Set high 8 bits of cursor location in high part of BX, because the low 8 bits are already in there
+
+  mov ax, bx                            ; Return value in AX
+  shl ax, 1                             ; Multiply cursor location by 2, because each character in VGA is 2 bytes
   ret
 
 %endif

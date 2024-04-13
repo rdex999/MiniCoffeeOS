@@ -15,7 +15,8 @@ clear:
   mov bx, KERNEL_SEGMENT
   mov es, bx
 
-  mov word es:[trmIndex], 0
+  xor di, di
+  call setCursorIndex 
   mov word [bp - 2], 80*25
 
 clear_loop:
@@ -25,7 +26,8 @@ clear_loop:
   dec word [bp - 2]
   jnz clear_loop
 
-  mov word es:[trmIndex], 0
+  xor di, di
+  call setCursorIndex
 
   pop es
   mov sp, bp
