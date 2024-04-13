@@ -10,14 +10,14 @@
 ;   - 0) The function to call (a lable)
 %macro PRINT_SPECIAL_SAVE_REGS 1
 
-  push ax
-  push dx
-  push si
-  mov si, ax
-  call %1
-  pop si
-  pop dx
-  pop ax
+  push ax                         ; Save color
+  push dx                         ; Save bytes counter
+  push si                         ; Save string pointer
+  mov si, ax                      ; second argument, the color (in AH, which goes to high part of SI)
+  call %1                         ; Call handler function
+  pop si                          ; Restore string pointer
+  pop dx                          ; Restore bytes counter
+  pop ax                          ; Restore color
 
 %endmacro
 

@@ -22,11 +22,11 @@ printf:
 
   push bp
   mov bp, sp
-  sub sp, 8+6
+  sub sp, 8+6                   ; Allocte space for local variables, and a buffer of 6 bytes
 
   mov [bp - 8], es              ; *(bp - 8) will hold the old ES
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
+  mov bx, KERNEL_SEGMENT        ; Set ES to kernel segment
+  mov es, bx                    ; 
 
   lea ax, [bp + 6]              ; *(bp + 6) is the second argument
   mov [bp - 2], ax              ; *(bp - 2) will be used as a pointer to the next argument on the stack
@@ -41,42 +41,43 @@ printf:
 
 printf_printLoop:
 
-  cld 
-  lodsb
+  cld                           ; Clear direction flag so LODSB will increase SI
+  lodsb                         ; Load byte from DS:SI to AL, and increase SI
 
-  cmp al, '%'
-  je printf_checkFormat
+  cmp al, '%'                   ; Check if the character is a '%' (so should format)
+  je printf_checkFormat         ; If it is then process it
 
-  test al, al
-  jz printf_nullChar
+  test al, al                   ; Check if its the end of the string
+  jz printf_nullChar            ; If it is then return
 
-  inc word [bp - 6] 
-  jmp printf_printLoop
+  inc word [bp - 6]             ; Increase current string part length
+  jmp printf_printLoop          ; Continue checking characters
 
 printf_nullChar:
-  mov si, [bp - 4]
-  mov dx, [bp - 6]
-  mov di, es:[trmColor]
-  call printStrLen
+  mov si, [bp - 4]              ; Get the start of the current string part
+  mov dx, [bp - 6]              ; Get the length of the current string part
+  mov di, es:[trmColor]         ; Get the terminal color
+  call printStrLen              ; Print the current string part
 
 printf_end:
-  mov es, [bp - 8]
-  mov sp, bp
-  pop bp
+  mov es, [bp - 8]              ; Restore old ES
+  mov sp, bp                    ; Restore stack frame
+  pop bp                        ;
   ret
 
 printf_checkFormat:
-  push si 
-  mov si, [bp - 4]
-  mov dx, [bp - 6]
-  mov di, es:[trmColor]
-  call printStrLen
-  pop si
+  push si                       ; Save string pointer
+  mov si, [bp - 4]              ; Get start of current string part
+  mov dx, [bp - 6]              ; Get current string part length
+  mov di, es:[trmColor]         ; Get terminal color
+  call printStrLen              ; Print current string part
+  pop si                        ; Restore string pointer
 
-  lodsb
-  mov [bp - 4], si
-  mov word [bp - 6], 0
+  lodsb                         ; Load the next character (formatting option) from DS:SI, and increment SI 
+  mov [bp - 4], si              ; SI now points to the character after the formatting option, so set that as the current string beginning
+  mov word [bp - 6], 0          ; Reset the current string part length counter
 
+  ; Check formatting options
   cmp al, 'u'
   je printf_format_uInt
 
@@ -92,14 +93,15 @@ printf_checkFormat:
   cmp al, 'x'
   je printf_format_hex
 
-  push ds
-  mov bx, es
-  mov ds, bx
-  lea si, [printf_errorFormat]
-  mov di, es:[trmColor]
-  call printStr
-  pop ds
-  jmp printf_end
+  ; If none of the above then print an error message saying thats an invalid formatting option 
+  push ds                                         ; Save old DS segment
+  mov bx, es                                      ; Set DS segment to kernel segment
+  mov ds, bx                                      ; (ES if already set to kernel segment)
+  lea si, [printf_errorFormat]                    ; Get pointer to string in SI (second argument)
+  mov di, COLOR(VGA_TXT_RED, VGA_TXT_DARK_GRAY)   ; Print the message in red with a dark gray background
+  call printStr                                   ; Print the error message
+  pop ds                                          ; Restore old DS segment
+  jmp printf_end                                  ; Return
 
   printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
 

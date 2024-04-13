@@ -20,29 +20,30 @@
 ; RETURNS
 ;   -    ES:DI  => The new index in the VGA
 printCharRoutine:
-  cmp al, NEWLINE
-  je printCharRoutine_newline
+  ; Check for special characters, If special than handle it, if not then just print it
+  cmp al, NEWLINE                               ; Check for newline character
+  je printCharRoutine_newline                   ; If newline then handle it
 
-  cmp al, CARRIAGE_RETURN
-  je printCharRoutine_carriageReturn
+  cmp al, CARRIAGE_RETURN                       ; Check for carriage return character
+  je printCharRoutine_carriageReturn            ; If carriage return then handle it
 
-  cmp al, TAB
-  je printCharRoutine_tab
+  cmp al, TAB                                   ; Check for tab character
+  je printCharRoutine_tab                       ; If tab then handle it
 
-  cld
-  stosw
+  cld                                           ; Clear direction flag so STOSW will increase DI
+  stosw                                         ; Store AX in the address of ES:DI ( *(ES:DI) ) and increase DI by 2
   ret
 
 printCharRoutine_newline:
-  PRINT_SPECIAL_SAVE_REGS printNewlineRoutine
+  PRINT_SPECIAL_SAVE_REGS printNewlineRoutine         ; Save registers and call printNewlineRoutine
   ret
 
 printCharRoutine_carriageReturn:
-  PRINT_SPECIAL_SAVE_REGS printCarriageReturnRoutine
+  PRINT_SPECIAL_SAVE_REGS printCarriageReturnRoutine  ; Save registers and call printCarriageReturnRoutine
   ret
 
 printCharRoutine_tab:
-  PRINT_SPECIAL_SAVE_REGS printTabRoutine
+  PRINT_SPECIAL_SAVE_REGS printTabRoutine             ; Save registers and call printTabnRoutine
   ret
 
 ; Prints a null terminated string
@@ -194,9 +195,9 @@ read_handleEnter:
   mov byte [di], 0            ; zero terminate the string
   mov ax, [bp - 4]            ; Return the amount of bytes read
 
-  mov gs, [bp - 6]
-  mov sp, bp
-  pop bp
+  mov gs, [bp - 6]            ; Rstore old GS
+  mov sp, bp                  ;
+  pop bp                      ; Restore stack frame
   ret
 
 read_handleBackspace:

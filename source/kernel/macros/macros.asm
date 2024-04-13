@@ -540,7 +540,9 @@
   %endrep
   push %{-1:-1}      ; Push the string buffer, as its the first argument for printf
   call printf           ; Call printf and print the formatted string
-  add sp, %0 * 2        ; Free stack space
+  %if %0 * 2 != 0
+    add sp, %0 * 2        ; Free stack space
+  %endif
 
 %endmacro
 
