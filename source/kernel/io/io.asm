@@ -90,10 +90,12 @@ printStr_end:
 ;   - 2) DX     => String length (The index of the last byte + 1)
 ; Doesnt return anything
 printStrLen:
-
   push es                         ; Save old segments
   mov bx, VGA_SEGMENT             ; Set ES segment to VGA segment
   mov es, bx                      ;
+  
+  test dx, dx
+  jz printStrLen_end
 
   mov ax, di                      ; DI is the color (the lower 8 bits)
   mov ah, al                      ; We need to color in AH
@@ -116,10 +118,11 @@ printStrLen_loop:
 
   dec dx                          ; Decrement bytes counter
   jnz printStrLen_loop            ; As long as the bytes counter is not zero continue printing characters
-
-printStrLen_end:
+  
   shr di, 1
   call setCursorIndex
+
+printStrLen_end:
   pop es                          ; Restore old ES segment
   ret
 

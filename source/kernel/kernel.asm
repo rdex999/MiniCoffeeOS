@@ -109,6 +109,8 @@ kernelMain:
   mov di, es:[trmColor] 
   call printStr
 
+  PRINTF_M `\nkend %x`, kernelEnd
+
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 
