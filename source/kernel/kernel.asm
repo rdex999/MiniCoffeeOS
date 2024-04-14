@@ -16,6 +16,7 @@ jmp kernelMain    ; skip data and function declaration section
 %include "kernel/isr/isr.asm"
 %include "kernel/time/time.asm"
 %include "kernel/drivers/vga/vga.asm"
+%include "kernel/memory/memory.asm"
 
 %ifdef KBD_DRIVER
   %include "kernel/drivers/ps2_8042/ps2_8042.asm"
@@ -109,7 +110,12 @@ kernelMain:
   mov di, es:[trmColor] 
   call printStr
 
-  PRINTF_M `\nkend %x`, kernelEnd
+  PRINTF_M `\n\ncurrent\t=> %x:%x\n`, KERNEL_SEGMENT, kernelEnd
+  mov di, kernelEnd
+  call getNextSegOff
+  PRINTF_M `new \t=> %x:%x\n`, es, di
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
 
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell

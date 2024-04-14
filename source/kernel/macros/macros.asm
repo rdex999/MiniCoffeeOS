@@ -33,6 +33,22 @@
 ; 512 * 32 = 16384   // 512 => root directory entries // 32 bytes per entry
 %define ROOT_DIRECTORY_SIZE 16384
 
+; struct heapChunk {
+;   uint16_t segment;
+;   uint16_t offset;
+;   uint16_t size;
+; };
+
+; ALC stands for "allocated"
+
+; The offset of the segment in the heap allocated chunk struct
+%define HEAP_CHUNK_SEG 0
+; The offset of the offset in the heap allocated chunk struct
+%define HEAP_CHUNK_OFF (HEAP_ALC_SEG + 2)
+; The size of the chunk, in the heap allocated chunk struct
+%define HEAP_CHUNK_SIZE (HEAP_CHUNK_OFF + 2)
+; The size of the heapChunk struct sizeof(heapChunk)
+
 
 %define MAX_PATH_FORMATTED_LENGTH 256
 
