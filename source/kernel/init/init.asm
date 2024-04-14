@@ -104,7 +104,7 @@
   mov es, bx
 
   ; Initialize both PICs and set offsets
-  PIC8259_INIT 8, 8+8
+  ; PIC8259_INIT 8, 8+8
 
   ; Set ISRs for interrupts 
   SET_IVT INT_DIVIBE_ZERO, cs, ISR_divZero

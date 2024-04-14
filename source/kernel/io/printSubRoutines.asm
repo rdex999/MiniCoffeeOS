@@ -70,35 +70,35 @@ printCarriageReturnRoutine:
 ; RETURNS
 ;   - In DI, the new index in VGA
 printTabRoutine:
-  mov ax, di                  ; Get index in AX as we divibe it
+  mov ax, di                      ; Get index in AX as we divibe it
+  shr ax, 1                       ; Divide by 2, because we will use a pure cursor location
 
-  add ax, 2                   ; Increase character location by 1 (each character is two bytes) so tab will always have an effect
+  inc ax                          ; Increase cursor location, so that tab will always have an effect
 
-  ; Closest high dividable number => num * ceil(num / 4)
-  mov bx, TXT_TAB_SIZE        ; Divibe by the tab size
-  xor dx, dx                  ; Zero out remainder
-  div bx                      ;
+  ; We need to get the closest cursor location that is dividable by TXT_TAB_SIZE, so: closest = ceil(n / TXT_TAB_SIZE)
+  mov bx, TXT_TAB_SIZE            ; Divide by TXT_TAB_SIZE
+  xor dx, dx                      ; Zero out remainder
+  div bx                          ; Divide
 
-  test dx, dx                 ; Check if the remainder
-  jz printTabRoutine_afterInc ; If the remainder is zero then dont increment result
+  test dx, dx                     ; Check if there is a remainder
+  jz printTabRoutine_afterInc     ; If there is no remainder then dont increment
 
-  add ax, 2                   ; Increase character location by 1 (each character is two bytes)
+  inc ax                          ; If there is a remainder then increment location
 
 printTabRoutine_afterInc:
-  shl ax, 2                   ; log2(4) = 2   // Multiply by 4 (TXT_TAB_SIZE)
-%ifdef IO_NEWLINE_SPACES
-  ; If should fill with spaces then get the amount of spaces to fill, then fill it
-  mov cx, ax                  ; Closes index in CX
-  sub cx, di                  ; Get the amount of spaces to fill in CX
-  shr cx, 1                   ; because we will store 2 bytes each time, divide by 2 so we wont store 2*2 bytes
-  mov ax, si                  ; Color in AH
-  mov al, ' '                 ; Space character in AL
-  cli                         ; Clear direction flag so STOSW will increment DI by 2 each time
-  rep stosw                   ; Store AX at ES:DI and increment DI by 2 each time, until CX is zero
-%else
-  ; If should not fill with spaces then just inrease the VGA index
-  mov di, ax                  ; Get the new index in VGA in DI
-%endif
-  ret
+  shl ax, 2+1                     ; log2(4) = 2   // +1 because also need to multiply by 2, because each character in VGA is 2 bytes
 
+%ifdef IO_NEWLINE_SPACES
+  mov cx, ax                      ; New location in CX
+  sub cx, di                      ; Get the difference between the new location and the old location
+  shr cx, 1                       ; Divide by 2. Get the amount of spaces to fill in CX
+
+  mov ax, si                      ; Get color of spaces in AH
+  mov al, ' '                     ; Print spaces
+  rep stosw                       ; Repeate printing spaces until CX is 0
+%else
+  mov di, ax                      ; If should not print spaces then just set the new locatio
+%endif
+
+  ret
 %endif

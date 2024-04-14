@@ -154,3 +154,5 @@ kernel_readCommandsLoop:
   jmp kernel_readCommandsLoop       ; continue reading commands
 
   jmp $                             ; jump to <this> location. should not get there.
+
+kernelEnd:

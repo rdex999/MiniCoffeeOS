@@ -200,6 +200,9 @@ read_loop:
   cmp al, BACKSPACE
   je read_handleBackspace
 
+  cmp al, TAB
+  je read_loop
+
   test si, si
   jz read_loop
   dec si
