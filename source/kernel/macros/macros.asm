@@ -40,7 +40,7 @@
 ; };
 
 ; The amount heapChunk in the heapFreeChunks array
-%define HEAP_FREE_CHUNKS 32
+%define HEAP_CHUNKS_LEN 32
 %define HEAP_END_SEG 9FC0h
 
 ; ALC stands for "allocated"

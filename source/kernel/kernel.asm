@@ -80,7 +80,7 @@ trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
-heapChunks:               times (HEAP_FREE_CHUNKS * HEAP_SIZEOF_HCHUNK) db 0
+heapChunks:               times (HEAP_CHUNKS_LEN * HEAP_SIZEOF_HCHUNK) db 0
 
 dbgTestTxt:               db "T15     TXT"
 buffer:                   times 64 db 97         ;;;;;; DEBUG

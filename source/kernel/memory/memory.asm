@@ -17,134 +17,166 @@
 ; RETURNS
 ;   - ES:DI   => The new segment offset pair
 getNextSegOff:
-  mov ax, di
-  shr ax, 4
-  mov bx, es
-  add bx, ax
-  mov es, bx
+  ; newSeg = seg + (offset >> 4)
+  mov ax, di                  ; We dont want to modify the original offset, copy it to AX
+  shr ax, 4                   ; Shift offset 4 bits to the left, so we can add it to the segment
+  mov bx, es                  ; Cant make operations on segment registers directly
+  add bx, ax                  ; Add bitwise shift result to the segment
+  mov es, bx                  ; Set new segment to ES
 
-  and di, 0Fh
+  ; newOffset = offset & 0Fh
+  and di, 0Fh                 ; bitwise and on the offset (DI) with 0Fh, to get just the lower 4 bits
   ret
 
 ; Initialize the heap
 ; Basicaly initialize the heapChunks array (set all chunks to free)
 heapInit:
-  push bp
-  mov bp, sp
-  sub sp, 4
+  push bp                                   ; Save stack frame
+  mov bp, sp                                ;
+  sub sp, 4                                 ; Allocate 4 bytes
 
-  push es
-  push gs 
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
-  mov gs, bx                          ; GS will be used as the kernel segment
+  push es                                   ; Save old segments
+  push gs                                   ;
+  mov bx, KERNEL_SEGMENT                    ; Set both ES and GS segments to kernel segments
+  mov es, bx                                ; ES will be used as the next segment in heap memory
+  mov gs, bx                                ; GS will be used as the kernel segment
 
-  lea si, [heapChunks]
-  lea di, [kernelEnd]
+  lea si, [heapChunks]                      ; SI will be used as a pointer to a chunk in the heapChunks array
+  lea di, [kernelEnd]                       ; DI will be used as the offset for the current segment in heap memory 
+                                            ; (heap starts from the end of the kernel)
 
-  push si 
-  call getNextSegOff
-  pop si
+  SAVE_BEFORE_CALL getNextSegOff, si         ; Get first segment:offset pair for the first heap chunk
 
-  mov ax, 0FFFFh
-  sub ax, di
+  ; Calculate the size of the chunk, as the limit is 0FFFFh (65535 bytes)
+  mov ax, 0FFFFh                            ; Set AX to chunk limit
+  sub ax, di                                ; Subtract segment offset from chunk limit, to get the chunks size
 
 heapInit_setFreeLoop:
-  mov word gs:[si + HEAP_CHUNK_SEG], es
-  mov word gs:[si + HEAP_CHUNK_OFF], di
-  mov word gs:[si + HEAP_CHUNK_SIZE], ax
-  add si, HEAP_SIZEOF_HCHUNK
+  ; When getting here, SI should point to a chunk in heapChunks, ES:DI should be a pointer to a chunk in heap memory
+  ; and AX should be the size of the chunk
+  mov word gs:[si + HEAP_CHUNK_SEG], es     ; Set the chunks segment in heapChunks
+  mov word gs:[si + HEAP_CHUNK_OFF], di     ; Set the chunks offset in heapChunks
+  mov word gs:[si + HEAP_CHUNK_SIZE], ax    ; Set the chunks size in heapChunks
+  add si, HEAP_SIZEOF_HCHUNK                ; Increase chunk pointer (in heapChunks) to point to next chunk
+
+  ; Save current chunk pointer (in heap memory) before changing it to the next chunk.
+  ; Basicaly each time store the previous chunk pointer
+  mov [bp - 2], es                          ; Store current chunk segment
+  mov [bp - 4], di                          ; Store current chunk offset
   
-  mov [bp - 2], es
-  mov [bp - 4], di
-  
-  add di, ax
-  push si
-  call getNextSegOff
-  pop si
+  add di, ax                                ; Add the size of the chunk to the offset, to get to its end
+  SAVE_BEFORE_CALL getNextSegOff, si         ; Get the next chunk in ES:DI
 
-  mov bx, es
-  mov ax, 0FFFFh
-  sub ax, di
-  mov cx, ax
-  shr cx, 4
-  add bx, cx
-  cmp bx, HEAP_END_SEG
-  jb heapInit_setFreeLoop
+  ; Check if the new chunk overrides the Extended BIOS Data Area (EBDA) with a size of 0FFF0h
+  ; If it doesnt, then continue initializing chunks. If it does override it then calculate the size that wont override the EBDA and
+  ; then initialize the next chunk to this size.
+  ; if(newChunk + newChunkSize >= EBDA){
+  ;   uint16_t tmp = EBDA - (prevChunkSegment + (newChunkSize >> 4));
+  ;   if(tmp < 0) { return; }
+  ;   newSize = tmp << 4;
+  ;   continue;
+  ; }else{
+  ;   continue;
+  ; }
+  mov bx, es                                ; Get new chunk segment in BX
+  mov ax, 0FFFFh                            ; Chunk limit
+  sub ax, di                                ; Subtract the new chunks offset from the limit to get its size
+  mov cx, ax                                ; Copy the size to BX, because if we dont override the EBDA then the size must be in AX
+  shr cx, 4                                 ; Shift the size to the right by 4 bits so we can add it to the segment
+  add bx, cx                                ; Add the shifted size to the segemnt, so we can check if it overlaps the EBDA
+  cmp bx, HEAP_END_SEG                      ; Check if the new chunk overlaps the EBDA
+  jb heapInit_setFreeLoop                   ; If it doesnt overlap the EBDA with the max size, continue initializing chunks
 
-  mov bx, [bp - 2]
-  mov cx, [bp - 4]
-  mov ax, 0FFFFh
-  sub ax, cx
-  shr ax, 4
-  add bx, ax
-  mov ax, HEAP_END_SEG
-  sub ax, bx
-  js heapInit_end
+  ; If does overlap EBDA, then calculate the size that wont overlap it
+  mov bx, [bp - 2]                          ; Get the current chunks segment (not the new one, that is, in ES:DI)
+  mov cx, [bp - 4]                          ; Get the current chunks offset
+  mov ax, 0FFFFh                            ; Max chunk size
+  sub ax, cx                                ; Get the size of the current chunk in AX
+  shr ax, 4                                 ; Shift it 4 bits to the right so we can add it to the segment
+  add bx, ax                                ; Add the shifted offset to the segment
+  mov ax, HEAP_END_SEG                      ; The first byte of EBDA (the segment)
+  sub ax, bx                                ; Subtract from the EBDA pointer the current saegment+offset, to get the size that wont overlap
+  jc heapInit_end                           ; If the result is negative, then we are done initializing segments. Just return
 
-  shl ax, 4
-  dec ax
-  jmp heapInit_setFreeLoop
+  ; If not negative, then shift the result 4 bits to the left to get the real size (because we shifted it to the right, before)
+  shl ax, 4                                 ; Shift 4 bits to the right to get the real size
+  dec ax                                    ; Decrement by 1, so wont overlap EBDA
+  jmp heapInit_setFreeLoop                  ; Continue. Initialize the chunk, and next time we get here we will return from the function
 
 heapInit_end:
-  pop gs
-  pop es
+  pop gs                                    ; Restore segemnts
+  pop es                                    ;
 
-  mov sp, bp
-  pop bp
+  mov sp, bp                                ; Restore stack frame
+  pop bp                                    ;
   ret
-
 
 ; Print the heapChunks array
 ;;;;;;; THIS IS A DEBUG FUNCTION
 heapPrintHChunks:
-  push es
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
+  push es                                   ; Save old ES segment
+  mov bx, KERNEL_SEGMENT                    ; Set ES segment to kernel segment
+  mov es, bx                                ;
 
-  mov cx, HEAP_FREE_CHUNKS
-  lea si, [heapChunks]
+  xor cx, cx                                ; CX is used as a counter for how many chunks were printed 
+  lea si, [heapChunks]                      ; SI is used as a pointer to a chunk in heapChunks
+
 heapPrintHChunks_loop:
-  push cx
+  inc cx                                    ; Increase Chunks counter
+  cmp cx, HEAP_CHUNKS_LEN                   ; Check if the counter is greater then the amount of chunks
+  ja heapPrintHChunks_end                   ; If it is then return
 
-  mov ax, es:[si + HEAP_CHUNK_SEG]
-  mov bx, es:[si + HEAP_CHUNK_OFF]
-  mov cx, es:[si + HEAP_CHUNK_SIZE]
-  push si
-  PRINTF_M `%x:%x size %u\t`, ax, bx, cx
-  pop si
-  add si, HEAP_SIZEOF_HCHUNK
+  push cx                                   ; Save chunk counter
+  push si                                   ; Save chunk pointer
 
-  mov ax, es:[si + HEAP_CHUNK_SEG]
-  mov bx, es:[si + HEAP_CHUNK_OFF]
-  mov cx, es:[si + HEAP_CHUNK_SIZE]
-  push si
-  PRINTF_M `%x:%x size %u\t`, ax, bx, cx
-  pop si
-  add si, HEAP_SIZEOF_HCHUNK
+  ; Get chunk info and print it
+  mov ax, es:[si + HEAP_CHUNK_SEG]          ; Get the chunks segment
+  mov bx, es:[si + HEAP_CHUNK_OFF]          ; Get the chunks offset
+  mov cx, es:[si + HEAP_CHUNK_SIZE]         ; Get the chunks size
+  PRINTF_M `%x:%x size %u\t`, ax, bx, cx    ; Print the details
+  
+  pop si                                    ; Restore chunk pointer
+  pop cx                                    ; Restore chunk counter
 
-  mov ax, es:[si + HEAP_CHUNK_SEG]
-  mov bx, es:[si + HEAP_CHUNK_OFF]
-  mov cx, es:[si + HEAP_CHUNK_SIZE]
-  push si
-  PRINTF_M `%x:%x size %u\t`, ax, bx, cx
-  pop si
-  add si, HEAP_SIZEOF_HCHUNK
+  add si, HEAP_SIZEOF_HCHUNK                ; Increase pointer to point to next chunk in heapChunks
 
-  mov ax, es:[si + HEAP_CHUNK_SEG]
-  mov bx, es:[si + HEAP_CHUNK_OFF]
-  mov cx, es:[si + HEAP_CHUNK_SIZE]
-  push si
-  PRINTF_M `%x:%x size %u\n`, ax, bx, cx
-  pop si
-  add si, HEAP_SIZEOF_HCHUNK
+  test cx, 4 - 1                            ; Check if the amount of chunks printed is dividable by 4
+  jnz heapPrintHChunks_loop                 ; If not then continue printing chunks
 
-  pop cx
-  sub cx, 4
-  jnz heapPrintHChunks_loop
+  ; If it is dividable by 4 then print a newline, then continue printing chunks
+  push cx                                   ; Save chunks counter
+  push si                                   ; Save chunk pointer
+  PRINT_NEWLINE                             ; Print the newline
+  pop si                                    ; Restore chunk pointer
+  pop cx                                    ; Restore chunk counter
+  jmp heapPrintHChunks_loop                 ; Continue printing chunks data
 
 heapPrintHChunks_end:
-  pop es
+  pop es                                    ; Restore ES segment
+  ret
+
+
+; Copies a chunk of memory from one location to another.
+; PARAMS
+;   - 0) ES:DI    => Memory to copy to, the destination.
+;   - 1) DS:SI    => Memory to copy data from, the source.
+;   - 2) DX       => The amount of memory to copy, in bytes.
+; RETURNS
+;   - This functions return type is void.
+memcpy:
+  mov cx, dx        ; Move the amount to copy to CX, as it is used as a counter for the REP instruction
+  
+  shr cx, 1         ; Divide amount of bytes to copy by 2, because we will copy it by 2 bytes at a time (word)
+  
+  cld               ; Clear direction flag so MOVSW will increase DI by 2 each time
+  rep movsw         ; Copy 2 bytes from DS:SI to ES:DI, and repeat until CX is 0
+
+  test dx, 1        ; Test if the amount of bytes to copy (the parameter) is a multiple of 2 (if its not, then need to copy one more byte)
+  jz memcpy_end     ; If it is, then just return
+
+  movsb             ; If not a multiple of 2 then copy the last byte and then return
+
+memcpy_end:
   ret
 
 %endif

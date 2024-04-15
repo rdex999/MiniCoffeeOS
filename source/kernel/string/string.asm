@@ -97,28 +97,4 @@ strchr_found:
   mov ax, di                    ; If found then return a pointer to the character
   ret
 
-
-; Copies a chunk of memory from one location to another.
-; PARAMS
-;   - 0) ES:DI    => Memory to copy to, the destination.
-;   - 1) DS:SI    => Memory to copy data from, the source.
-;   - 2) DX       => The amount of memory to copy, in bytes.
-; RETURNS
-;   - This functions return type is void.
-memcpy:
-  mov cx, dx                    ; Move the amount to copy to CX, as it is used as a counter for the REP instruction
-  
-  shr cx, 1  
-  
-  cld
-  rep movsw                     
-
-  test dx, 1
-  jz memcpy_end
-
-  movsb
-
-memcpy_end:
-  ret
-
 %endif
