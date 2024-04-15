@@ -39,16 +39,20 @@
 ;   uint16_t size;
 ; };
 
+; The amount heapChunk in the heapFreeChunks array
+%define HEAP_FREE_CHUNKS 32
+%define HEAP_END_SEG 9FC0h
+
 ; ALC stands for "allocated"
 
 ; The offset of the segment in the heap allocated chunk struct
 %define HEAP_CHUNK_SEG 0
 ; The offset of the offset in the heap allocated chunk struct
-%define HEAP_CHUNK_OFF (HEAP_ALC_SEG + 2)
+%define HEAP_CHUNK_OFF (HEAP_CHUNK_SEG + 2)
 ; The size of the chunk, in the heap allocated chunk struct
 %define HEAP_CHUNK_SIZE (HEAP_CHUNK_OFF + 2)
 ; The size of the heapChunk struct sizeof(heapChunk)
-
+%define HEAP_SIZEOF_HCHUNK (HEAP_CHUNK_SIZE + 2)
 
 %define MAX_PATH_FORMATTED_LENGTH 256
 
@@ -538,15 +542,9 @@
   call printf           ; Call printf and print the formatted string
   add sp, %0 * 2        ; Free stack space
 
-  mov cx, 0FFFFh        ; CX:DX => Time to wait in microseconds
-  mov dx, 0FFFFh        ; (1000000 microseconds is 1 second)
-  mov ah, 86h           ; INT15h/AH=86h BIOS wait function
-  int 15h               ; Wait 1.114095 seconds
-  jc %%PANIC_LM_WAIT_ERR
-
-  int 19h               ; Reboot
-%%PANIC_LM_WAIT_ERR:
-  jmp $
+  mov di, 0FFFFh
+  mov si, 5
+  call sleep
 
 %endmacro
 

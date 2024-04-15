@@ -80,6 +80,8 @@ trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
+heapChunks:               times (HEAP_FREE_CHUNKS * HEAP_SIZEOF_HCHUNK) db 0
+
 dbgTestTxt:               db "T15     TXT"
 buffer:                   times 64 db 97         ;;;;;; DEBUG
 pathStf:                  db "fld/teSt.txt", 0
@@ -89,13 +91,10 @@ pathStf:                  db "fld/teSt.txt", 0
 ;
 
 kernelMain:
-  call clear
-
-  mov di, 13
-  mov si, 15
-  call cursorEnable
-
   INIT_KERNEL             ; Initialize kernel.
+
+  call heapPrintHChunks 
+  PRINT_NEWLINE
 
   lea si, [welcomeMsg]
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
@@ -110,13 +109,7 @@ kernelMain:
   mov di, es:[trmColor] 
   call printStr
 
-  PRINTF_M `\n\ncurrent\t=> %x:%x\n`, KERNEL_SEGMENT, kernelEnd
-  mov di, kernelEnd
-  call getNextSegOff
-  PRINTF_M `new \t=> %x:%x\n`, es, di
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
-
+  ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
 

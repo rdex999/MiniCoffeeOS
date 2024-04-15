@@ -136,6 +136,14 @@
     PS2_8042_INIT
   %endif
 
+  call clear
+
+  mov di, 13
+  mov si, 15
+  call cursorEnable
+
+  call heapInit
+
 %endmacro
 
 %endif
