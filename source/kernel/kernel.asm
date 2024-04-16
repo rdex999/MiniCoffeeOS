@@ -33,7 +33,7 @@ jmp kernelMain    ; skip data and function declaration section
 bpbStart:
 %include "bootloader/bpbStruct/bpbStruct.asm"
 
-welcomeMsg:               db "[*] Welcome to my OS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, NEWLINE, 0
+welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, NEWLINE, 0
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
