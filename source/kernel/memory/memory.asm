@@ -60,6 +60,11 @@ heapInit_setFreeLoop:
   mov byte gs:[si + HEAP_CHUNK_FLAGS8], 0                   ; Mark the chunk as free, and cancel all flags (HEAP_CHUNK_F_OWNED = 1)
   add si, HEAP_SIZEOF_HCHUNK                                ; Increase chunk pointer (in heapChunks) to point to next chunk
 
+  ; Save current chunk pointer (in heap memory) before changing it to the next chunk.
+  ; Basicaly each time store the previous chunk pointer
+  mov [bp - 2], es                          ; Store current chunk segment
+  mov [bp - 4], di                          ; Store current chunk offset
+  
   add di, ax                                ; Add the size of the chunk to the offset, to get to its end
   SAVE_BEFORE_CALL getNextSegOff, si         ; Get the next chunk in ES:DI
 
@@ -83,23 +88,21 @@ heapInit_setFreeLoop:
   cmp bx, HEAP_END_SEG                      ; Check if the new chunk overlaps the EBDA
   jb heapInit_setFreeLoop                   ; If it doesnt overlap the EBDA with the max size, continue initializing chunks
 
+  ; If does overlap EBDA, then calculate the size that wont overlap it
+  mov bx, [bp - 2]                          ; Get the current chunks segment (not the new one, that is, in ES:DI)
+  mov cx, [bp - 4]                          ; Get the current chunks offset
+  mov ax, 0FFFFh                            ; Max chunk size
+  sub ax, cx                                ; Get the size of the current chunk in AX
+  shr ax, 4                                 ; Shift it 4 bits to the right so we can add it to the segment
+  add bx, ax                                ; Add the shifted offset to the segment
+  mov ax, HEAP_END_SEG                      ; The first byte of EBDA (the segment)
+  sub ax, bx                                ; Subtract from the EBDA pointer the current saegment+offset, to get the size that wont overlap
+  jc heapInit_end                           ; If the result is negative, then we are done initializing segments. Just return
 
-  ;;;;;;;; WILL REPAIR SOON
-  ; ; If does overlap EBDA, then calculate the size that wont overlap it
-  ; mov bx, [bp - 2]                          ; Get the current chunks segment (not the new one, that is, in ES:DI)
-  ; mov cx, [bp - 4]                          ; Get the current chunks offset
-  ; mov ax, 0FFFFh                            ; Max chunk size
-  ; sub ax, cx                                ; Get the size of the current chunk in AX
-  ; shr ax, 4                                 ; Shift it 4 bits to the right so we can add it to the segment
-  ; add bx, ax                                ; Add the shifted offset to the segment
-  ; mov ax, HEAP_END_SEG                      ; The first byte of EBDA (the segment)
-  ; sub ax, bx                                ; Subtract from the EBDA pointer the current saegment+offset, to get the size that wont overlap
-  ; jc heapInit_end                           ; If the result is negative, then we are done initializing segments. Just return
-
-  ; ; If not negative, then shift the result 4 bits to the left to get the real size (because we shifted it to the right, before)
-  ; shl ax, 4                                 ; Shift 4 bits to the right to get the real size
-  ; dec ax                                    ; Decrement by 1, so wont overlap EBDA
-  ; jmp heapInit_setFreeLoop                  ; Continue. Initialize the chunk, and next time we get here we will return from the function
+  ; If not negative, then shift the result 4 bits to the left to get the real size (because we shifted it to the right, before)
+  shl ax, 4                                 ; Shift 4 bits to the right to get the real size
+  sub ax, 0Fh + 1                           ; Need to subtract 0Fh, +1 so we dont overlap EBDA
+  jmp heapInit_setFreeLoop                  ; Continue. Initialize the chunk, and next time we get here we will return from the function
 
 heapInit_end:
   pop gs                                    ; Restore segemnts
@@ -115,8 +118,6 @@ heapPrintHChunks:
   push es                                         ; Save old ES segment
   mov bx, KERNEL_SEGMENT                          ; Set ES segment to kernel segment
   mov es, bx                                      ;
-
-  PRINT_NEWLINE
 
   xor cx, cx                                      ; CX is used as a counter for how many chunks were printed 
   lea si, [heapChunks]                            ; SI is used as a pointer to a chunk in heapChunks
