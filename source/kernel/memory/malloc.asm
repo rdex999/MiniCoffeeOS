@@ -16,6 +16,7 @@
 malloc:
   push bp                                                     ; Save stack frame
   mov bp, sp                                                  ;
+  sub sp, 2
 
   push gs                                                     ; Save old ES segment
 
@@ -66,17 +67,63 @@ malloc_checkRes:
   jz malloc_end                                               ; If not found then return with null (as ES and DI are both 0)
 
   ; Otherwise if a chunk was found then get a pointer to it and return
-  mov es, gs:[di + HEAP_CHUNK_SEG16]                          ; Get the found chunks segment
-  mov ax, gs:[di + HEAP_CHUNK_SIZE16]                         ;;;; DEBUG
-  mov di, gs:[di + HEAP_CHUNK_OFF16]                          ; Get the found chunks offset
-  push di                                                     ;;;; DEBUG
-  PRINTF_M `\nsize %x\n`, ax                                  ;;;;
-  pop di                                                      ;;;;
+  mov [bp - 2], di                                            ; Store the chunk descriptor pointer
+  SAVE_BEFORE_CALL heapFindNullChunk, dx                      ; Save the requested size, and get a pointer to a null chunk descriptor in ES:DI
+
+  mov si, di                                                  ; Pointer to null chunk descriptor in ES:SI
+  mov di, [bp - 2]                                            ; Pointer to found chunk (the one that we return) in GS:DI
+
+  mov cx, gs:[di + HEAP_CHUNK_SIZE16]                         ; Get the found chunk original size in CX
+  mov gs:[di + HEAP_CHUNK_SIZE16], dx                         ; Update the found chunk size to the requested size
+  mov ax, gs:[di + HEAP_CHUNK_SEG16]                          ; Get the found chunks segment in AX
+  mov bx, gs:[di + HEAP_CHUNK_OFF16]                          ; Get the found chunks offset in BX
+  or byte gs:[di + HEAP_CHUNK_FLAGS8], HEAP_CHUNK_F_OWNED     ; Mark the found chunk as owned
+
+  ; We got a null chunk descriptor at ES:SI, now we need to update it so it starts from the end of the found chunk,
+  ; and update some of its properties
+  add bx, dx                                                  ; The new chunks offset will be found.offset + requestedSize
+  sub cx, dx                                                  ; The new chunks size will be found.size - requestedSize
+
+  mov es:[si + HEAP_CHUNK_SEG16], ax                          ; Set new chunk segment
+  mov es:[si + HEAP_CHUNK_OFF16], bx                          ; Set new chunk offset
+  mov es:[si + HEAP_CHUNK_SIZE16], cx                         ; Set new chunk size
+  mov byte es:[si + HEAP_CHUNK_FLAGS8], 0                     ; Set flags, mark it as free
+
+  mov es, gs:[di + HEAP_CHUNK_SEG16]                          ; Get the segment of the found chunk
+  mov di, gs:[di + HEAP_CHUNK_OFF16]                          ; Get the offset of the found chunk
 
 malloc_end:
   pop gs                                                      ; Restore GS segment
   mov sp, bp                                                  ; Restore stack frame
   pop bp                                                      ;
+  ret
+
+
+
+; Finds a null chunk in heapChunks, and return a pointer to it
+; Takes no parameters
+; RETURNS
+;   - ES:DI   => A pointer to the chunk descriptor in heapChunks. Returns null if there is no null chunk
+heapFindNullChunk:
+  mov bx, KERNEL_SEGMENT                      ; Set ES to kernel segment.
+  mov es, bx                                  ; I Dont save ES because its used as the return value
+  
+  lea si, [heapChunks - HEAP_SIZEOF_HCHUNK]   ; Get a pointer to (heapChunks - sizeof(heapChunks)) because we first increase the pointer in the loop
+  mov cx, HEAP_CHUNKS_LEN                     ; CX will count the amount of chunks left to check
+  xor di, di                                  ; Zero out result pointer, so if we dont find a chunk we return null
+
+heapFindNullChunk_loop:
+  dec cx                                      ; Decrement amount of chunks left to check
+  jz heapFindNullChunk_end                    ; If there are no more chunks left to check then return
+
+  add si, HEAP_SIZEOF_HCHUNK                  ; Increase heapChunks pointer to point to the next heap chunk descriptor
+
+  cmp word [si + HEAP_CHUNK_SEG16], 0         ; Check if the chunks segment is 0. (only a null chunk would have such segment)
+  jne heapFindNullChunk_loop                  ; If its not zero (meaning its not a null chunk) then continue searching
+
+  mov di, si                                  ; If it is a null chunk then set result pointer to point to the chunk descriptor and reutrn
+
+heapFindNullChunk_end:
   ret
 
 %endif

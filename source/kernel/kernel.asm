@@ -93,9 +93,6 @@ pathStf:                  db "fld/teSt.txt", 0
 kernelMain:
   INIT_KERNEL             ; Initialize kernel.
 
-  call heapPrintHChunks 
-  PRINT_NEWLINE
-
   lea si, [welcomeMsg]
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
@@ -112,8 +109,15 @@ kernelMain:
   mov di, 30
   call malloc
   PRINTF_M `\n%x:%x\n`, es, di
+
+  mov di, 300
+  call malloc
+  PRINTF_M `\n%x:%x\n`, es, di
+  
   mov bx, KERNEL_SEGMENT
   mov es, bx
+
+  call heapPrintHChunks 
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:
