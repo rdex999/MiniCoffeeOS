@@ -43,16 +43,26 @@
 %define HEAP_CHUNKS_LEN 32
 %define HEAP_END_SEG 9FC0h
 
+%define HEAP_MAX_CHUNK_SIZE 0FFF0h
+
 ; ALC stands for "allocated"
 
 ; The offset of the segment in the heap allocated chunk struct
-%define HEAP_CHUNK_SEG 0
+%define HEAP_CHUNK_SEG16 0
 ; The offset of the offset in the heap allocated chunk struct
-%define HEAP_CHUNK_OFF (HEAP_CHUNK_SEG + 2)
+%define HEAP_CHUNK_OFF16 (HEAP_CHUNK_SEG16 + 2)
 ; The size of the chunk, in the heap allocated chunk struct
-%define HEAP_CHUNK_SIZE (HEAP_CHUNK_OFF + 2)
+%define HEAP_CHUNK_SIZE16 (HEAP_CHUNK_OFF16 + 2)
+; Flags for the chunk
+%define HEAP_CHUNK_FLAGS8 (HEAP_CHUNK_SIZE16 + 2)
+
 ; The size of the heapChunk struct sizeof(heapChunk)
-%define HEAP_SIZEOF_HCHUNK (HEAP_CHUNK_SIZE + 2)
+%define HEAP_SIZEOF_HCHUNK (HEAP_CHUNK_FLAGS8 + 1)
+
+; Flags values for heapChunk
+
+; If owned then 1, if free then 0
+%define HEAP_CHUNK_F_OWNED 0000_0001b
 
 %define MAX_PATH_FORMATTED_LENGTH 256
 

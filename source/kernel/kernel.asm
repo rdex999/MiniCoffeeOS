@@ -109,6 +109,12 @@ kernelMain:
   mov di, es:[trmColor] 
   call printStr
 
+  mov di, 30
+  call malloc
+  PRINTF_M `\n%x:%x\n`, es, di
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
+
   ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
