@@ -109,12 +109,16 @@ kernelMain:
   mov di, 1000
   call malloc
 
-  PRINTF_M `\nChunk %x:%x\n`, es, di
+  PRINTF_M `\n\nChunk %x:%x\n`, es, di
 
   mov di, 200
   call malloc
 
-  PRINTF_M `\nChunk %x:%x\n`, es, di
+  push di 
+  PRINTF_M `Chunk %x:%x\n\n`, es, di
+  pop di
+
+  call free
 
   mov bx, KERNEL_SEGMENT
   mov es, bx

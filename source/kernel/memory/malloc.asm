@@ -32,7 +32,7 @@ malloc:
   lea si, [heapChunks - HEAP_SIZEOF_HCHUNK]                   ; Get a pointer to (heapChunks - sizeof(heapChunks))
                                                               ; (bacause we increment first, inside the loop)
   mov bx, 0FFFFh                                              ; BX is used as the minimum chunk size. (We want to allocate the smallest one)
-  mov cx, HEAP_CHUNKS_LEN                                     ; CX will hold the amount of chunks left to check
+  mov cx, HEAP_CHUNKS_LEN + 1                                 ; CX will hold the amount of chunks left to check
                                                               ; used to determin when to return from the function
 
 malloc_searchChunkLoop:

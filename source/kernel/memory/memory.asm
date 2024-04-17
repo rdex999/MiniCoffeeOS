@@ -7,6 +7,7 @@
 
 %include "kernel/memory/heapInit.asm"
 %include "kernel/memory/malloc.asm"
+%include "kernel/memory/free.asm"
 
 ; Converts a segment:offset pointer into the next segment:offset.
 ; For example you have 7E0:FFFF the function will return 17DF:000F
