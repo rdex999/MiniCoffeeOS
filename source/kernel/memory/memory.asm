@@ -101,7 +101,8 @@ heapInit_setFreeLoop:
 
   ; If not negative, then shift the result 4 bits to the left to get the real size (because we shifted it to the right, before)
   shl ax, 4                                 ; Shift 4 bits to the right to get the real size
-  sub ax, 0Fh + 1                           ; Need to subtract 0Fh, +1 so we dont overlap EBDA
+  sub ax, di                                ; The new size doesnt take in count the offset, so subtract the offset from it
+  dec ax                                    ; Decrement size by 1 so we dont overlap EBDA
   jmp heapInit_setFreeLoop                  ; Continue. Initialize the chunk, and next time we get here we will return from the function
 
 heapInit_end:
