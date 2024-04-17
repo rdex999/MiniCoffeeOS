@@ -78,6 +78,7 @@ malloc_checkRes:
   mov ax, gs:[di + HEAP_CHUNK_SEG16]                          ; Get the found chunks segment in AX
   mov bx, gs:[di + HEAP_CHUNK_OFF16]                          ; Get the found chunks offset in BX
   or byte gs:[di + HEAP_CHUNK_FLAGS8], HEAP_CHUNK_F_OWNED     ; Mark the found chunk as owned
+  and byte gs:[di + HEAP_CHUNK_FLAGS8], ~HEAP_CHUNK_F_ZERO     ; Mark the found chunk as not zeroed
 
   ; We got a null chunk descriptor at ES:SI, now we need to update it so it starts from the end of the found chunk,
   ; and update some of its properties
@@ -87,17 +88,24 @@ malloc_checkRes:
   mov es:[si + HEAP_CHUNK_SEG16], ax                          ; Set new chunk segment
   mov es:[si + HEAP_CHUNK_OFF16], bx                          ; Set new chunk offset
   mov es:[si + HEAP_CHUNK_SIZE16], cx                         ; Set new chunk size
-  mov byte es:[si + HEAP_CHUNK_FLAGS8], 0                     ; Set flags, mark it as free
+  and byte es:[si + HEAP_CHUNK_FLAGS8], ~HEAP_CHUNK_F_OWNED   ; Set flags, mark it as free
 
+  mov al, gs:[di + HEAP_CHUNK_FLAGS8]
   mov es, gs:[di + HEAP_CHUNK_SEG16]                          ; Get the segment of the found chunk
   mov di, gs:[di + HEAP_CHUNK_OFF16]                          ; Get the offset of the found chunk
+
+  test al, HEAP_CHUNK_F_ZERO                                  ; Check if the chunks memory is set to 0
+  jnz malloc_end                                              ; If it is then just return a pointer to the chunk
+
+  ; If not zero then zero it and return a pointer to the chunk
+  xor si, si                                                  ; Set memory to 0
+  call memset                                                 ; Zero out the chunk. Destination is in ES:DI anmd count already in DX
 
 malloc_end:
   pop gs                                                      ; Restore GS segment
   mov sp, bp                                                  ; Restore stack frame
   pop bp                                                      ;
   ret
-
 
 
 ; Finds a null chunk in heapChunks, and return a pointer to it

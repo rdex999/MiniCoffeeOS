@@ -63,6 +63,7 @@
 
 ; If owned then 1, if free then 0
 %define HEAP_CHUNK_F_OWNED 0000_0001b
+%define HEAP_CHUNK_F_ZERO 0000_00010b
 
 %define MAX_PATH_FORMATTED_LENGTH 256
 

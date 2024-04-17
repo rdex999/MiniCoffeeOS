@@ -106,16 +106,19 @@ kernelMain:
   mov di, es:[trmColor] 
   call printStr
 
-  mov di, 30
+  mov di, 1000
   call malloc
-  PRINTF_M `\n%x:%x\n`, es, di
 
-  mov di, 300
+  PRINTF_M `\nChunk %x:%x\n`, es, di
+
+  mov di, 200
   call malloc
-  PRINTF_M `\n%x:%x\n`, es, di
-  
+
+  PRINTF_M `\nChunk %x:%x\n`, es, di
+
   mov bx, KERNEL_SEGMENT
   mov es, bx
+
 
   call heapPrintHChunks 
 
