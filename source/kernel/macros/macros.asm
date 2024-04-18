@@ -19,6 +19,9 @@
 
 %define KERNEL_SEGMENT 7E0h
 
+%define CLOCK_FREQUENCY 1000_000
+%define PIT_CHANNEL0_IRQ_PER_SEC 100
+
 ; %define IO_NEWLINE_SPACES
 
 %define KBD_DRIVER
@@ -110,6 +113,7 @@
 
 %define INT_DIVIBE_ZERO 0
 %define INT_KEYBOARD 9
+%define INT_PIT_CHANNEL0 8
 
 %define IRQ_KEYBOARD 1
 

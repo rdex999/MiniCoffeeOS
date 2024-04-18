@@ -32,49 +32,49 @@ getNextSegOff:
 
 ; Print the heapChunks array
 ;;;;;;; THIS IS A DEBUG FUNCTION
-heapPrintHChunks:
-  push es                                         ; Save old ES segment
-  mov bx, KERNEL_SEGMENT                          ; Set ES segment to kernel segment
-  mov es, bx                                      ;
+; heapPrintHChunks:
+;   push es                                         ; Save old ES segment
+;   mov bx, KERNEL_SEGMENT                          ; Set ES segment to kernel segment
+;   mov es, bx                                      ;
 
-  xor cx, cx                                      ; CX is used as a counter for how many chunks were printed 
-  lea si, [heapChunks]                            ; SI is used as a pointer to a chunk in heapChunks
+;   xor cx, cx                                      ; CX is used as a counter for how many chunks were printed 
+;   lea si, [heapChunks]                            ; SI is used as a pointer to a chunk in heapChunks
 
-heapPrintHChunks_loop:
-  inc cx                                          ; Increase Chunks counter
-  cmp cx, HEAP_CHUNKS_LEN                         ; Check if the counter is greater then the amount of chunks
-  ja heapPrintHChunks_end                         ; If it is then return
+; heapPrintHChunks_loop:
+;   inc cx                                          ; Increase Chunks counter
+;   cmp cx, HEAP_CHUNKS_LEN                         ; Check if the counter is greater then the amount of chunks
+;   ja heapPrintHChunks_end                         ; If it is then return
 
-  push cx                                         ; Save chunk counter
-  push si                                         ; Save chunk pointer
+;   push cx                                         ; Save chunk counter
+;   push si                                         ; Save chunk pointer
 
-  ; Get chunk info and print it
-  mov ax, es:[si + HEAP_CHUNK_SEG16]              ; Get the chunks segment
-  mov bx, es:[si + HEAP_CHUNK_OFF16]              ; Get the chunks offset
-  mov cx, es:[si + HEAP_CHUNK_SIZE16]             ; Get the chunks size
-  mov dl, es:[si + HEAP_CHUNK_FLAGS8]
-  xor dh, dh
-  PRINTF_M `%x:%x %x %x\t\t`, ax, bx, cx, dx    ; Print the details
+;   ; Get chunk info and print it
+;   mov ax, es:[si + HEAP_CHUNK_SEG16]              ; Get the chunks segment
+;   mov bx, es:[si + HEAP_CHUNK_OFF16]              ; Get the chunks offset
+;   mov cx, es:[si + HEAP_CHUNK_SIZE16]             ; Get the chunks size
+;   mov dl, es:[si + HEAP_CHUNK_FLAGS8]
+;   xor dh, dh
+;   PRINTF_M `%x:%x %x %x\t\t`, ax, bx, cx, dx    ; Print the details
   
-  pop si                                          ; Restore chunk pointer
-  pop cx                                          ; Restore chunk counter
+;   pop si                                          ; Restore chunk pointer
+;   pop cx                                          ; Restore chunk counter
 
-  add si, HEAP_SIZEOF_HCHUNK                      ; Increase pointer to point to next chunk in heapChunks
+;   add si, HEAP_SIZEOF_HCHUNK                      ; Increase pointer to point to next chunk in heapChunks
 
-  test cx, 4 - 1                                  ; Check if the amount of chunks printed is dividable by 4
-  jnz heapPrintHChunks_loop                       ; If not then continue printing chunks
+;   test cx, 4 - 1                                  ; Check if the amount of chunks printed is dividable by 4
+;   jnz heapPrintHChunks_loop                       ; If not then continue printing chunks
 
-  ; If it is dividable by 4 then print a newline, then continue printing chunks
-  push cx                                         ; Save chunks counter
-  push si                                         ; Save chunk pointer
-  PRINT_NEWLINE                                   ; Print the newline
-  pop si                                          ; Restore chunk pointer
-  pop cx                                          ; Restore chunk counter
-  jmp heapPrintHChunks_loop                       ; Continue printing chunks data
+;   ; If it is dividable by 4 then print a newline, then continue printing chunks
+;   push cx                                         ; Save chunks counter
+;   push si                                         ; Save chunk pointer
+;   PRINT_NEWLINE                                   ; Print the newline
+;   pop si                                          ; Restore chunk pointer
+;   pop cx                                          ; Restore chunk counter
+;   jmp heapPrintHChunks_loop                       ; Continue printing chunks data
 
-heapPrintHChunks_end:
-  pop es                                          ; Restore ES segment
-  ret
+; heapPrintHChunks_end:
+;   pop es                                          ; Restore ES segment
+;   ret
 
 
 ; Copies a chunk of memory from one location to another.

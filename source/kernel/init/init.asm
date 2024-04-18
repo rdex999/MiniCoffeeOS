@@ -104,10 +104,11 @@
   mov es, bx
 
   ; Initialize both PICs and set offsets
-  ; PIC8259_INIT 8, 8+8
+  PIC8259_INIT 8, 8+8
 
   ; Set ISRs for interrupts 
   SET_IVT INT_DIVIBE_ZERO, cs, ISR_divZero
+  SET_IVT INT_PIT_CHANNEL0, cs, ISR_pitChannel_0
 
 %ifdef KBD_DRIVER
   SET_IVT INT_KEYBOARD, cs, ISR_keyboard
@@ -115,6 +116,34 @@
 
   pop es                          ; Restore ES segment
   sti                             ; Enable interrupts
+
+%endmacro
+
+; Initialize the PIT. Set PIT channel 0 to send N IRQs per second
+; PARAMS
+;   - 0) The amount of IRQs to send in a second
+%macro INIT_PIT 1
+
+  cli                                     ; Disable interrupts while initializing PIT
+
+  ; Set up command for the PIT, 
+  ; bits 7-6 - [00] select channel 0 (which sends IRQs)
+  ; bits 5-4 - [11] Access mode, (for setting the reload value) set both low part and high part (send first the low part, then high part)
+  ; bits 1-3 - [010] Operating mode, Mode 2, For sending IRQs infinitely
+  ; bit 0    - [0] BCD/binary mode, BCD is annoying and slow, so im using binary mode
+  mov al, 0011_0100b                      ; Set up command for PIT
+  out 43h, al                             ; Send command to PIT
+
+  ; Set up the timing of which channel 0 of the PIT will send IRQs
+  ; Formula for getting the right reload value:
+  ; reloadVal = cpuClockFrequency / irqPerSec
+  mov al, (CLOCK_FREQUENCY / %1) & 0Fh    ; First we send only the low part, as the reload value is 16 bits
+  out 40h, al                             ; Send the lower 8 bits of the reload value
+
+  mov al, (CLOCK_FREQUENCY / %1) >> 8     ; Calculate the high 8 bits of the reload value
+  out 40h, al                             ; Send the high 8 bits of the reload value to the PIT
+
+  sti                                     ; Turn interrupts back on
 
 %endmacro
 
@@ -129,8 +158,10 @@
   mov sp, 7A00h                     ; Make stack larger
   mov bx, 40h                       
   mov ss, bx                        ; So make the stack not overwrite the IVT
-  
+
   IVT_INIT
+
+  INIT_PIT PIT_CHANNEL0_IRQ_PER_SEC
 
   %ifdef KBD_DRIVER
     PS2_8042_INIT

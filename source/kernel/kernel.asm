@@ -106,26 +106,6 @@ kernelMain:
   mov di, es:[trmColor] 
   call printStr
 
-  mov di, 1000
-  call malloc
-
-  PRINTF_M `\n\nChunk %x:%x\n`, es, di
-
-  mov di, 200
-  call malloc
-
-  push di 
-  PRINTF_M `Chunk %x:%x\n\n`, es, di
-  pop di
-
-  call free
-
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
-
-
-  call heapPrintHChunks 
-
   ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
