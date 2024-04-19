@@ -86,6 +86,11 @@ dbgTestTxt:               db "T15     TXT"
 buffer:                   times 64 db 97         ;;;;;; DEBUG
 pathStf:                  db "fld/teSt.txt", 0
 
+; For the system clock
+sysClock_milliseconds:    dw 0
+sysClock_seconds:         db 0
+sysClock_minutes:         db 0
+sysClock_hours:           db 0
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;

@@ -124,26 +124,26 @@
 ;   - 0) The amount of IRQs to send in a second
 %macro INIT_PIT 1
 
-  cli                                     ; Disable interrupts while initializing PIT
+  cli                                           ; Disable interrupts while initializing PIT
 
   ; Set up command for the PIT, 
   ; bits 7-6 - [00] select channel 0 (which sends IRQs)
   ; bits 5-4 - [11] Access mode, (for setting the reload value) set both low part and high part (send first the low part, then high part)
   ; bits 1-3 - [010] Operating mode, Mode 2, For sending IRQs infinitely
   ; bit 0    - [0] BCD/binary mode, BCD is annoying and slow, so im using binary mode
-  mov al, 0011_0100b                      ; Set up command for PIT
-  out 43h, al                             ; Send command to PIT
+  mov al, 0011_0100b                            ; Set up command for PIT
+  out 43h, al                                   ; Send command to PIT
 
   ; Set up the timing of which channel 0 of the PIT will send IRQs
   ; Formula for getting the right reload value:
   ; reloadVal = cpuClockFrequency / irqPerSec
-  mov al, (CLOCK_FREQUENCY / %1) & 0Fh    ; First we send only the low part, as the reload value is 16 bits
-  out 40h, al                             ; Send the lower 8 bits of the reload value
+  mov al, (OSCILLATOR_FREQUENCY / %1) & 0FFh    ; First we send only the low part, as the reload value is 16 bits
+  out 40h, al                                  ; Send the lower 8 bits of the reload value
 
-  mov al, (CLOCK_FREQUENCY / %1) >> 8     ; Calculate the high 8 bits of the reload value
-  out 40h, al                             ; Send the high 8 bits of the reload value to the PIT
+  mov al, (OSCILLATOR_FREQUENCY / %1) >> 8     ; Calculate the high 8 bits of the reload value
+  out 40h, al                                  ; Send the high 8 bits of the reload value to the PIT
 
-  sti                                     ; Turn interrupts back on
+  sti                                           ; Turn interrupts back on
 
 %endmacro
 
