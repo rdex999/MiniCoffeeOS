@@ -147,6 +147,68 @@
 
 %endmacro
 
+%macro INIT_DATE_FROM_RTC 0
+
+  mov al, 0Bh                                 ; Register 0Bh - Has some flags that we need to change, like the DM (which controlles BCD mode)
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare access to register 0Bh at its data port
+  in al, CMOS_DATA_REG_PORT                   ; Read registers data into AL
+
+  ; flags changed:
+  ; bit 0 - DSE {0}   => When 1, daylight saveing is enabled, turned it off (0)
+  ; bit 1 - 24/12 {1} => When 1, 24 hours mode is enabled
+  ; bit 2 - DM {1}    => When 1, binary mode is used. If 0 then BCD mode is used
+  or al, 0000_0110b                           ; Enable some flags
+  and al, 1111_1110b                          ; Disable one flag
+
+  mov bl, al                                  ; Store changes in BL
+
+  mov al, 0Bh                                 ; We want to access again this register to update it to the changes we made
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare register 0Bh at its data port
+  mov al, bl                                  ; Get the changed value in AL
+  out CMOS_DATA_REG_PORT, al                  ; Write the new flags to register 0Bh
+
+%%initDateFromRTC_waitUpdate:
+  mov al, 0Ah                                 ; 0Ah - Status register that has the UIP bit, which indicates if there is an update in process
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare register 0Ah at its data port
+  in al, CMOS_DATA_REG_PORT                   ; Read registers value into AL
+  test al, 1000_0000b                         ; Check if the CMOS is currently doing an update
+  jnz %%initDateFromRTC_waitUpdate            ; If it is, continue checking and waiting
+
+  ; Get here if CMOS is not doing an update
+  cli                                         ; Disable interrupts while initializing time
+  push es                                     ; Save old ES
+  mov bx, KERNEL_SEGMENT                      ; Set ES to kernel segment
+  mov es, bx                                  ;
+
+  lea di, [sysClock_seconds]                  ; Get a pointer to the seconds
+  mov cx, 7                                   ; Copy 7 things (seconds, minutes, hours, weekDay, day, month, year)
+  xor al, al                                  ; Start from register 0
+  cld                                         ; Clear direction flag so STOSB will increase DI
+%%initDateFromRTC_loop:
+  or al, NMI_STATUS_BIT_CMOS                  ; Disable NMI
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare register number <AL> in its data port
+  and al, 0111_1111b                          ; Clear NMI bit, so the INC instruction (later on) will not mess up the register number
+  push ax                                     ; Save current register number
+  in al, CMOS_DATA_REG_PORT                   ; Read CMOS register value into AL
+  stosb                                       ; Store the value in the matching variable for it (sysClock_seconds, minutes, ...)
+  pop ax                                      ; Restore CMOS register counter
+  inc al                                      ; Increase register
+  
+  ; Register 0 - 4 (seconds[0], minutes[2], hours[4]) are increasing by 2,
+  ; while registers 6 - 9 (weekDay[6], day[7], year[8]) are increasing by 1
+  cmp al, 6 - 1                               ; Check if should increase by 2 or 1
+  ja %%initDateFromRTC_loop_afterInc2         ; If by 1 then skip the second increase
+
+  inc al                                      ; If should increase by 2, then increase the register number one more time
+
+%%initDateFromRTC_loop_afterInc2:
+  loop %%initDateFromRTC_loop                 ; Continue copying time data until CX is 0
+
+  pop es                                      ; Restore old ES segment
+  sti                                         ; Enable interrupts
+
+%endmacro
+
 ; When the kernel first starts up, need to initialize some things. (Like cpying the BPB from the bootlaoder)
 ; I made this macro here because it will only be included once.
 %macro INIT_KERNEL 0
@@ -177,6 +239,8 @@
 
   mov di, NORM_SCREEN_START_IDX
   call setCursorIndex
+  
+  INIT_DATE_FROM_RTC
 
 %endmacro
 

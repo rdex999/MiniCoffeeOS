@@ -117,6 +117,11 @@
 
 %define IRQ_KEYBOARD 1
 
+; 1 - NMI is disabled
+%define NMI_STATUS_BIT_CMOS 1000_0000b
+%define CMOS_ACCESS_REG_PORT 70h
+%define CMOS_DATA_REG_PORT 71h
+
 %define KBD_SCANCODE_NORM_BREAK 0F0h
 %define KBD_SCANCODE_SPECIAL 0E0h
 %define GET_CURSOR_INDEX(row, col) (80 * row + col)

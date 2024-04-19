@@ -43,5 +43,5 @@ clean:
 run: $(FDA)
 	make clean
 	make
-	qemu-system-x86_64 -hda $(FDA)
+	qemu-system-x86_64 -drive file=$(FDA),format=raw,index=0,media=disk -rtc base=localtime
 	clear

@@ -87,8 +87,13 @@ sysClock_milliseconds:    dw 0
 sysClock_seconds:         db 0
 sysClock_minutes:         db 0
 sysClock_hours:           db 0
+sysClock_weekDay:         db 0
+sysClock_day:             db 0
+sysClock_month:           db 0
+sysClock_year:            db 0
 
-sysClock_onScreenTime:    db "%u:%u:%u", 0
+; Day-Month-Year Hour:Minute:Second
+sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 
 dbgTestTxt:               db "T15     TXT"
 buffer:                   times 64 db 97         ;;;;;; DEBUG

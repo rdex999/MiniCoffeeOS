@@ -8,11 +8,11 @@
   call getCursorIndex                                 ; Save the current cursor location, so we can change back to it later
   push ax                                             ;
 
-  mov di, GET_CURSOR_INDEX(0, (40 - 3))               ; Set the cursor location to the middle of the first row on the screen
+  mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
   call setCursorIndex                                 ;
 
   ; Clear the time that was printed there before
-  mov cx, 8                                           ; Print 8 spaces
+  mov cx, 17                                          ; Print 23 spaces
 %%sysClockUpdateScreen_clearCurrentTime:
   push cx                                             ; Save counter
   mov di, COLOR_CHR(' ', VGA_TXT_BLACK, VGA_TXT_BLACK); Get the space character( ' ' ) and a black color
@@ -20,19 +20,26 @@
   pop cx                                              ; Restore color
   loop %%sysClockUpdateScreen_clearCurrentTime        ; Continue printing spaces until cx is 0
 
-  mov di, GET_CURSOR_INDEX(0, (40 - 3))               ; Set the cursor location to the middle of the first row on the screen
+  mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
   call setCursorIndex                                 ; because printChar had changed it
 
   push ds                                             ; Save DS segment, bacuase we will change it
   mov bx, es                                          ; Set DS segment to kernel segemnt
   mov ds, bx                                          ; Doing this because pointers in printf are using the DS segment
-  mov al, ds:[sysClock_seconds]                       ; Get the seconds 
-  mov bl, ds:[sysClock_minutes]                       ; Get the minutes
-  mov cl, ds:[sysClock_hours]                         ; Get the hours
-  xor ah, ah                                          ; Zero out high parts of the registers
+  mov al, ds:[sysClock_year]                          ; Get years
+  mov bl, ds:[sysClock_month]                         ; Get month
+  mov cl, ds:[sysClock_day]                           ; Get day
+  mov dl, ds:[sysClock_hours]                         ; Get hours
+  and dl, 0111_1111b                                  ; Disable PM bit
+  mov si, ds:[sysClock_minutes]                       ; Get minutes
+  mov di, ds:[sysClock_seconds]                       ; Get seconds
+  xor ah, ah                                          ; Zero out high parts of registers, as each value is 8 bits only
   xor bh, bh                                          ;
-  xor ch, ch                                          ; 
-  PRINTF_LM sysClock_onScreenTime, cx, bx, ax         ; Print the system time on the screen
+  xor ch, ch                                          ;
+  xor dh, dh                                          ;
+  and si, 0FFh                                        ; Remove the high 8 bits of the minutes
+  and di, 0FFh                                        ; Remove the high 8 bits of the seconds
+  PRINTF_LM sysClock_onScreenTime, ax, bx, cx, dx, si, di   ; Print all of them
   pop ds                                              ; Restore data segment
 
   pop di                                              ; Restore original cursor location
