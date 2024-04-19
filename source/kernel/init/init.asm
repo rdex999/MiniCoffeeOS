@@ -167,13 +167,16 @@
     PS2_8042_INIT
   %endif
 
+  call heapInit
+
   call clear
 
   mov di, 13
   mov si, 15
   call cursorEnable
 
-  call heapInit
+  mov di, NORM_SCREEN_START_IDX
+  call setCursorIndex
 
 %endmacro
 

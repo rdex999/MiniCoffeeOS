@@ -26,7 +26,7 @@ clear_loop:
   dec word [bp - 2]
   jnz clear_loop
 
-  xor di, di
+  mov di, NORM_SCREEN_START_IDX 
   call setCursorIndex
 
   pop es

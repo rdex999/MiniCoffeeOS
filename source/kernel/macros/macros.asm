@@ -119,7 +119,8 @@
 
 %define KBD_SCANCODE_NORM_BREAK 0F0h
 %define KBD_SCANCODE_SPECIAL 0E0h
-%define GET_CURSOR_INDEX(row, col) (2 * (80 * row + col))
+%define GET_CURSOR_INDEX(row, col) (80 * row + col)
+%define NORM_SCREEN_START_IDX (GET_CURSOR_INDEX(1, 0))
 
 ; compares two strings and if equal then jump to given lable
 %macro STRCMP_JUMP_EQUAL 3

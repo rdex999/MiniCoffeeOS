@@ -82,15 +82,18 @@ clearCmd:                 db "clear", 0
 
 heapChunks:               times (HEAP_CHUNKS_LEN * HEAP_SIZEOF_HCHUNK) db 0
 
-dbgTestTxt:               db "T15     TXT"
-buffer:                   times 64 db 97         ;;;;;; DEBUG
-pathStf:                  db "fld/teSt.txt", 0
-
 ; For the system clock
 sysClock_milliseconds:    dw 0
 sysClock_seconds:         db 0
 sysClock_minutes:         db 0
 sysClock_hours:           db 0
+
+sysClock_onScreenTime:    db "%u:%u:%u", 0
+
+dbgTestTxt:               db "T15     TXT"
+buffer:                   times 64 db 97         ;;;;;; DEBUG
+pathStf:                  db "fld/teSt.txt", 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;

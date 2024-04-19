@@ -81,7 +81,7 @@ setCursorIndex:
   ret
 
 
-; Get the cursor index in VGA (while each character is two bytes)
+; Get the cursor index in VGA
 ; Takes no parameters
 ; RETURNS
 ;   - In AX, the cursor index in VGA
