@@ -33,7 +33,7 @@ jmp kernelMain    ; skip data and function declaration section
 bpbStart:
 %include "bootloader/bpbStruct/bpbStruct.asm"
 
-welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, NEWLINE, 0
+welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
@@ -96,7 +96,7 @@ sysClock_year:            db 0
 sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 dbgTestTxt:               db "T15     TXT"
-buffer:                   times 64 db 97         ;;;;;; DEBUG
+buffer:                   times 64 db 0         ;;;;;; DEBUG
 pathStf:                  db "fld/teSt.txt", 0
 
 ;
@@ -110,26 +110,9 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ;;;;;;;;; DEBUG
-  lea di, [buffer]
-  lea si, [pathStf]
-  call getFullPath
-
-  lea si, [buffer]
-  mov di, es:[trmColor] 
-  call printStr
-
   ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
-
-%ifdef GET_ASCII_CODES
-  xor ah, ah
-  int 16h
-  xor ah, ah
-  PRINT_HEX16 ax
-  PRINT_NEWLINE
-%endif
 
 %ifndef GET_ASCII_CODES
   lea di, [commandEntered]          ;
@@ -139,20 +122,8 @@ kernel_readCommandsLoop:
   test ax, ax                       ; if zero bytes were read then just show a new shell
   jz kernel_readCommandsLoop        ;
 
-  PRINT_NEWLINE
-
-  ;;;;; FOR DEBUG
-  ; lea di, dbgTestTxt
-  ; lea bx, buffer
-  ; call readFile
-  ; test ax, ax
-  ; jnz kernel_dontPrintFileContent
-
-  ; lea di, buffer                ;;;;;;;; FOR DEBUG
-  ; call printStr
-  
-  kernel_dontPrintFileContent:
-  PRINT_NEWLINE
+  PRINT_NEWLINE 1
+  PRINT_NEWLINE 1
 
   ; compares two strings, and if their equal then jump to given lable
   CMDCMP_JUMP_EQUAL commandEntered, helpCmd, kernel_printHelp

@@ -150,14 +150,21 @@
 %endmacro
 
 ; prints 10 and 13 (ascii codes). goes down a line
-%macro PRINT_NEWLINE 0
+; PARAMS
+;   - 0) Flag, if 1, the macro asumes that ES is set to the kernel segment. 
+;        If 0 it will save the old value, print the character and restore it to the old value
+%macro PRINT_NEWLINE 1
 
-  push es
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
+  %if %1 == 0
+    push es
+    mov bx, KERNEL_SEGMENT
+    mov es, bx
+  %endif
   mov ah, es:[trmColor]
   PRINT_CHAR NEWLINE, ah
-  pop es
+  %if %1 == 0
+    pop es
+  %endif
 
 %endmacro
 
