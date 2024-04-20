@@ -6,6 +6,7 @@
 %define FILESYSTEM_ASM
 
 %include "bootloader/macros/getRegions.asm"
+%include "kernel/filesystem/getFileEntry.asm"
 %include "kernel/filesystem/readFile.asm"
 %include "kernel/filesystem/searchInRootDir.asm"
 %include "kernel/filesystem/parsePath.asm"
@@ -50,7 +51,7 @@ readDisk:
   call lbaToChs                 ; convert LBA from DI to CHS
   mov ax, si                    ; AL = number of sectors to read
   mov ah, 2                     ; read interrupt number
-  mov dl, [ebpb_driveNumber]    ; get drive number
+  mov dl, ds:[ebpb_driveNumber]    ; get drive number
   pop bx                        ; restore data buffer
   int 13h                       ; read!
   jc readDisk_error             ; Jump if int13h/AH=2 has failed

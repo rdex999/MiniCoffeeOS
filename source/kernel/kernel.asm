@@ -37,7 +37,7 @@ welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'he
 shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
-currentUserDirPath:       db '/folder/idk/'
+currentUserDirPath:       db '/'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
 helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
@@ -96,8 +96,8 @@ sysClock_year:            db 0
 sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 dbgTestTxt:               db "T15     TXT"
-buffer:                   times 64 db 0         ;;;;;; DEBUG
-pathStf:                  db "fld/teSt.txt", 0
+buffer:                   times 512 db 0         ;;;;;; DEBUG
+pathStf:                  db "folder/teSt.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -109,6 +109,11 @@ kernelMain:
   lea si, [welcomeMsg]
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
+
+  lea di, [buffer]
+  lea si, [pathStf]
+  call getFileEntry
+
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

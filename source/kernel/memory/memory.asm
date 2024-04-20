@@ -67,7 +67,7 @@ getNextSegOff:
 ;   ; If it is dividable by 4 then print a newline, then continue printing chunks
 ;   push cx                                         ; Save chunks counter
 ;   push si                                         ; Save chunk pointer
-;   PRINT_NEWLINE                                   ; Print the newline
+;   PRINT_NEWLINE 1                                 ; Print the newline
 ;   pop si                                          ; Restore chunk pointer
 ;   pop cx                                          ; Restore chunk counter
 ;   jmp heapPrintHChunks_loop                       ; Continue printing chunks data

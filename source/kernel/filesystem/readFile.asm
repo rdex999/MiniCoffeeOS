@@ -66,35 +66,4 @@
 ;   mov ax, 1                               ; Read has failed, return 1
 ;   jmp readFile_end
 
-
-; Searches for a file in a path and reads it into a buffer.
-; PARAMS
-;   - 0) ES:DI      => Buffer to store data in
-;   - 1) DS:SI      => File path, doesnt have to be capital. For example: "dir/file.txt"
-; RETURNS
-; 0 On success, otherwise a none zero error code.
-readFile:
-  push bp
-  mov bp, sp
-
-  sub sp, 4*2
-
-  mov [bp - 2], es          ; Store buffer segment
-  mov [bp - 4], di          ; Store buffer offset
-  
-  mov [bp - 6], ds          ; Store file path segment
-  mov [bp - 8], si          ; Store file path offset
-
-  
-
-
-
-
-
-readFile_end:
-  mov sp, bp
-  pop bp
-  ret
-
-
 %endif

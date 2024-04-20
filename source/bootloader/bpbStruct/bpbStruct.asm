@@ -34,7 +34,7 @@ bpb_largeSectorCount:         dw 0
 ; [[ EBPB ]]
 
 ebpb_driveNumber:             db 80h
-ebpb_flags:                   db 0
+ebpb_flags:                    db 0
 ebpb_signature:               db 29h
 ebpb_volumeID:                dw 0
                               dw 0

@@ -182,7 +182,7 @@
   COPY_BPB bpbStart
   
   ; 50h << 4 = 500h   // 500h is the end of the IVT and the BIOS data area(as it starts on 0000:0000)
-  mov sp, 7A00h                     ; Make stack larger
+  mov sp, 7A00h - 2                 ; Make stack larger
   mov bx, 40h                       
   mov ss, bx                        ; So make the stack not overwrite the IVT
 

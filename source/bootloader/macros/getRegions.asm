@@ -9,8 +9,8 @@
 %macro GET_FILE_ALLOCATION_TABLES_SIZE 0
 
   xor ah, ah
-  mov al, [bpb_FATs]
-  mov bx, [bpb_sectorsPerFAT]
+  mov al, ds:[bpb_FATs]
+  mov bx, ds:[bpb_sectorsPerFAT]
   mul bx
 
 %endmacro
@@ -19,7 +19,7 @@
 %macro GET_ROOT_DIR_OFFSET 0
 
   GET_FILE_ALLOCATION_TABLES_SIZE    ; result in AX
-  add ax, [bpb_reservedSectors]
+  add ax, ds:[bpb_reservedSectors]
 
 %endmacro
 
@@ -28,12 +28,12 @@
 %macro GET_ROOT_DIR_SIZE 0
 
   ; rootDirSize = (rootDirEntriesCount * 32 + bytesPerSector - 1) / bytesPerSector
-  mov ax, [bpb_rootDirectoryEntries]
+  mov ax, ds:[bpb_rootDirectoryEntries]
   mov bx, 32                          ; multiply by 32 // each entry in 32 bytes (yes, bytes and not bits)
   mul bx
   add ax, [bpb_bytesPerSector]
   dec ax
-  mov bx, [bpb_bytesPerSector]
+  mov bx, ds:[bpb_bytesPerSector]
   xor dx, dx
   div bx
 
@@ -42,10 +42,10 @@
 %macro GET_DATA_REGION_OFFSET 0
 
   xor ah, ah
-  mov al, [bpb_FATs]
-  mov bx, [bpb_sectorsPerFAT]
+  mov al, ds:[bpb_FATs]
+  mov bx, ds:[bpb_sectorsPerFAT]
   mul bx
-  add ax, [bpb_reservedSectors]
+  add ax, ds:[bpb_reservedSectors]
   push ax
   GET_ROOT_DIR_SIZE
   pop bx
