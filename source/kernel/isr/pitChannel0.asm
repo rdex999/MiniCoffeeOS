@@ -12,20 +12,17 @@
   call setCursorIndex                                 ;
 
   ; Clear the time that was printed there before
-  mov cx, 20                                          ; Print 23 spaces
-%%sysClockUpdateScreen_clearCurrentTime:
-  push cx                                             ; Save counter
-  mov di, COLOR_CHR(' ', VGA_TXT_BLACK, VGA_TXT_BLACK); Get the space character( ' ' ) and a black color
-  call printChar                                      ; Print the character
-  pop cx                                              ; Restore color
-  loop %%sysClockUpdateScreen_clearCurrentTime        ; Continue printing spaces until cx is 0
+  push ds                                             ; Save DS segment, bacuase we will change it
+  mov bx, es                                          ; Set DS segment to kernel segemnt
+  mov ds, bx                                          ; Doing this because the string pointer is using DS
+  mov di, COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)         ; White color, black background
+  lea si, [sysClock_20spaces]                         ; Print the 20 spaces string
+  mov dx, 20                                          ; Print 20 characters
+  call printStrLen                                    ; Perform
 
   mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
   call setCursorIndex                                 ; because printChar had changed it
 
-  push ds                                             ; Save DS segment, bacuase we will change it
-  mov bx, es                                          ; Set DS segment to kernel segemnt
-  mov ds, bx                                          ; Doing this because pointers in printf are using the DS segment
   mov al, ds:[sysClock_year]                          ; Get years
   mov bl, ds:[sysClock_month]                         ; Get month
   mov cl, ds:[sysClock_day]                           ; Get day

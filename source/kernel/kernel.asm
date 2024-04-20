@@ -94,7 +94,7 @@ sysClock_year:            db 0
 
 ; Day-Month-Year Hour:Minute:Second
 sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
-
+sysClock_20spaces:        times 20 db ' '
 dbgTestTxt:               db "T15     TXT"
 buffer:                   times 64 db 97         ;;;;;; DEBUG
 pathStf:                  db "fld/teSt.txt", 0
