@@ -12,7 +12,7 @@
   call setCursorIndex                                 ;
 
   ; Clear the time that was printed there before
-  mov cx, 17                                          ; Print 23 spaces
+  mov cx, 20                                          ; Print 23 spaces
 %%sysClockUpdateScreen_clearCurrentTime:
   push cx                                             ; Save counter
   mov di, COLOR_CHR(' ', VGA_TXT_BLACK, VGA_TXT_BLACK); Get the space character( ' ' ) and a black color
@@ -58,21 +58,6 @@
   ; If the milliseconds are higher than 1000 then set them to 0 and increase the sysClock seconds
   mov word es:[sysClock_milliseconds], 0      ; Reset milliseconds
   
-  inc byte es:[sysClock_seconds]              ; Increase seconds
-  cmp byte es:[sysClock_seconds], 60          ; Check if the seconds are more than 60
-  jb %%isr_sysClockHandlePit_end              ; If not then return
-
-  ; If the seconds are greater or equal to 60 then set the seconds to 0 and increase the minutes
-  mov byte es:[sysClock_seconds], 0           ; Set seconds to 0
-
-  inc byte es:[sysClock_minutes]              ; Increase minutes
-  cmp byte es:[sysClock_minutes], 60          ; Check if the minutes are more than 60
-  jb %%isr_sysClockHandlePit_end              ; If not then return
-
-  ; If the minutes are greater than 60 then set minutes to 0 and increment the hours
-  mov byte es:[sysClock_minutes], 0           ; Set minutes to 0
-
-  inc byte es:[sysClock_hours]                ; Increment hours
 %%isr_sysClockHandlePit_end:
 
 %endmacro

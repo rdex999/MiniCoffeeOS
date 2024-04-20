@@ -113,7 +113,8 @@
 
 %define INT_DIVIBE_ZERO 0
 %define INT_KEYBOARD 9
-%define INT_PIT_CHANNEL0 8
+%define INT_PIT_CHANNEL0 (0 + 8)
+%define INT_CMOS_UPDATE (8 + 8)
 
 %define IRQ_KEYBOARD 1
 
@@ -224,6 +225,8 @@
 %endmacro
 
 ; Sends an EOI (End Of Interrupt) signal to the PICs.
+; PARAMS
+;   - 0) The interrupt number (not the IRQ number)
 %macro PIC8259_SEND_EOI 1
 
   mov al, PIC_EOI 
