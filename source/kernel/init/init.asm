@@ -187,8 +187,9 @@
   mov ss, bx                        ; So make the stack not overwrite the IVT
 
   IVT_INIT
-  INIT_DATE_FROM_RTC
 
+  INIT_DATE_FROM_RTC
+  
   INIT_PIT PIT_CHANNEL0_IRQ_PER_SEC
 
   %ifdef KBD_DRIVER

@@ -54,7 +54,26 @@
 
   ; If the milliseconds are higher than 1000 then set them to 0 and increase the sysClock seconds
   mov word es:[sysClock_milliseconds], 0      ; Reset milliseconds
-  
+  inc byte es:[sysClock_seconds]              ; Increase seconds
+
+  cmp byte es:[sysClock_seconds], 60          ; If the seconds are more than 60, then set RTC interrupt flag, so it will update the time
+  jb %%isr_sysClockHandlePit_end              ; If not more than 60, then skip
+
+  ; If a minute have passed, then tell RTC to send interrupts on every time update
+  ; And the interrupt service routine (ISR) will update the full time, and it will tell the RTC not to send interrupt
+  ; That way RTC sends an interrupt every minute, and we use the PIT for milliseconds
+  mov al, 0Bh                                 ; register 0Bh containes the interrupts flag (PIE)
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare access to register 0Bh
+  in al, CMOS_DATA_REG_PORT                   ; Read registers value into AL
+
+  or al, 0100_0000b                           ; Enable RTC interrupts
+  mov bl, al                                  ; Store changes in BL
+
+  mov al, 0Bh                                 ; Now we want to write out changes back
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare access to register 0Bh
+  mov al, bl                                  ; Get updated value in AL
+  out CMOS_DATA_REG_PORT, al                  ; Write changes back to register
+
 %%isr_sysClockHandlePit_end:
 
 %endmacro
@@ -64,7 +83,7 @@
 ISR_pitChannel_0:
   push ax                                     ; Save used registers
   push bx                                     ; 
-  push dx
+  push dx                                     ;
   push es                                     ; Save segment as we are changing it
 
   mov bx, KERNEL_SEGMENT                      ; Set ES to kernel segemnt

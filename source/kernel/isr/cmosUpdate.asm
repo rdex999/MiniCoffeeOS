@@ -6,16 +6,12 @@
 %define CMOS_UPDATE_ASM
 
 ISR_cmosUpdate:
-  push ax
-  push bx
-  push cx
-  push di
+  push ax                                     ; Save used registers
+  push bx                                     ;
+  push cx                                     ;
+  push di                                     ;
   push es                                     ; Save old ES
 
-  ; pusha
-  ; PRINT_CHAR 'a', VGA_TXT_YELLOW
-  ; popa 
-  
   mov bx, KERNEL_SEGMENT                      ; Set ES to kernel segment
   mov es, bx                                  ;
 
@@ -44,6 +40,20 @@ ISR_cmosUpdate:
   loop .copyDataLoop                          ; Continue copying time data until CX is 0
 
 .end:
+
+  ; Now we want to disable RTC interrupts, and the PIT will enable them once every minute.
+  mov al, 0Bh | NMI_STATUS_BIT_CMOS           ; Interrupts flag (PIE) is in register 0Bh of CMOS
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare register 0Bh in its data port
+  in al, CMOS_DATA_REG_PORT                   ; Read registers value
+
+  and al, 1011_1111b                          ; Disable interrupts flag (PIE)
+  mov bl, al                                  ; Store changes in BL
+
+  mov al, 0Bh | NMI_STATUS_BIT_CMOS           ; Now we want to write out changes back to this register
+  out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS to prepare register 0Bh in data port
+  mov al, bl                                  ; Get the updated flags in AL
+  out CMOS_DATA_REG_PORT, al                  ; Write changes back to register
+
   ; After an RTC interrupt, register 0Ch will contain a bitmask of which interrupt just happened.
   ; If we do not read this value the RTC wont send more interrupts.
   mov al, 0Ch | NMI_STATUS_BIT_CMOS           ; Need to read this register
