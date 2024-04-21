@@ -22,7 +22,7 @@
 ;   - DH => head
 lbaToChs:
   mov ax, di                      ;
-  mov bx, [bpb_sectorsPerTrack]   ; LBA / sectorsPerTrack
+  mov bx, ds:[bpb_sectorsPerTrack]   ; LBA / sectorsPerTrack
   xor dx, dx                      ;
   div bx                          ; AX = AX / BX ;; DX = %
 
@@ -30,7 +30,7 @@ lbaToChs:
   mov cl, dl                      ; sector = (LBA % sectorsPerTrack) + 1
 
   ; AX containes LBA/sectorsPerTrack
-  mov bx, [bpb_numberOfHeadsOrSides]    ;
+  mov bx, ds:[bpb_numberOfHeadsOrSides]    ;
   xor dx, dx                            ;
   div bx                                ;
   mov dh, dl                            ; head = (LBA / sectorsPerTrack) % heads
@@ -47,12 +47,17 @@ lbaToChs:
 ; RETURNS
 ;   In AX => 0 on success, and 1 on failure.
 readDisk:
+  push ds
+  mov ax, KERNEL_SEGMENT
+  mov ds, ax
+
   push bx                       ; save data buffer
   call lbaToChs                 ; convert LBA from DI to CHS
   mov ax, si                    ; AL = number of sectors to read
   mov ah, 2                     ; read interrupt number
   mov dl, ds:[ebpb_driveNumber]    ; get drive number
   pop bx                        ; restore data buffer
+  pop ds
   int 13h                       ; read!
   jc readDisk_error             ; Jump if int13h/AH=2 has failed
   
@@ -70,15 +75,21 @@ readDisk_error:
 ; RETURNS
 ;   returns in AX the LBA address
 clusterToLBA:                       ; LBA = dataRegionOffset + (cluster - 2) * sectorsPerCluster
+  push ds
+  mov bx, KERNEL_SEGMENT
+  mov ds, bx 
+  
   sub di, 2                         ; DI = cluster - 2
   mov ax, di                        ; AX = cluster - 2
   xor bh, bh
-  mov bl, [bpb_sectorPerCluster]    ;
+  mov bl, ds:[bpb_sectorPerCluster]    ;
   mul bx                            ; AX *= sectorsPerCluster
   push ax                           ; Save for now
   GET_DATA_REGION_OFFSET            ; Get data region first sector in AX
   pop bx
   add ax, bx                        ; add to result
+
+  pop ds
   ret
 
 

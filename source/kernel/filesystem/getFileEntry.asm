@@ -10,7 +10,7 @@
 getFileEntry:
   push bp                         ; Save stack frame
   mov bp, sp                      ; 
-  sub sp, 20                      ; Allocate memory on the stack
+  sub sp, 26                      ; Allocate memory on the stack
 
   ; *(bp - 2)     - Buffer segment
   ; *(bp - 4)     - Buffer offset
@@ -23,8 +23,11 @@ getFileEntry:
   ; *(bp - 17)    - Amount of directories/things in the path
   ; *(bp - 18)    - General counter
   ; *(bp - 20)    - LBA
+  ; *(bp - 22)    - Old GS segment
+  ; *(bp - 24)    - Previous sector offset in FAT
+  ; *(bp - 26)    - Offset to the formatted path (which changes)
 
-  push gs                         ; Save old GS segment
+  mov [bp - 22], gs
   mov bx, KERNEL_SEGMENT          ; Set GS to kernel segment
   mov gs, bx                      ; 
 
@@ -58,7 +61,7 @@ getFileEntry:
 
   mov [bp - 10], es               ; If not null then store the segment and the offset 
   mov [bp - 12], di               ; Store offset
-
+  mov [bp - 26], di
   ; Now we call a function that formats the path, and writes the new path to ES:DI
   mov ds, [bp - 6]                ; Get the paths (the argument) segment
   mov si, [bp - 8]                ; Get the paths (the argument) offset
@@ -172,47 +175,105 @@ getFileEntry:
   jmp .freeAndRet                     ; Free used memory and return
 
 .isDir:
-  pusha                               ;;;;; DEBUG
-  PRINT_CHAR 'i', VGA_TXT_YELLOW      ;
-  popa                                ;
+  add word [bp - 26], 11
+  mov di, es:[di + 26]
+  mov [bp - 20], di
+  mov word [bp - 24], 0FFFFh
+.nextCluster:
+  call clusterToLBA
+  mov di, ax
+  mov al, gs:[bpb_sectorPerCluster]
+  xor ah, ah
+  mov si, ax
+  mov es, [bp - 14]
+  mov bx, [bp - 16]
+  call readDisk
+  test ax, ax
+  jnz .freeAndRet
+
+   ; Calculate the amount of bytes in a cluster, then divide it by 32 to get the amount of entries to search in for the file
+  mov ax, gs:[bpb_bytesPerSector]     ; Get amount of bytes in a sector
+  mov bl, gs:[bpb_sectorPerCluster]   ; Get amount of sectors in a cluster (8 bits)
+  xor bh, bh                          ; Zero out high part
+  mul bx                              ; res = bytesInSector * sectorsPerCluster
+  shr ax, 5                           ; Divide by 32 (log2(32) == 5)
+  mov dx, ax                          ; Use counter in DX
+
+  mov es, [bp - 14]                   ; Get cluster buffer pointer (segment)
+  mov di, [bp - 16]                   ; Get cluster buffer offset
+
+  mov ds, [bp - 10]                   ; Get formatted file path segment
+  mov si, [bp - 26]                   ; Get offset, which changes on every directory (+11 bytes each time)
+
+  ; Here we compare the first 11 bytes of an entry to the formatted file path (the current directory in it), 
+  ; to know if its the entry for the file/directory
+.nextEntry:
+  mov cx, 11                          ; Compare 11 bytes
+  cld                                 ; Clear direction flag so CMPSB will increase DI and Si each time
+  push si                             ; Save path pointer
+  push di                             ; Save cluster buffer pointer
+  repe cmpsb                          ; Compare both strings from DS:SI to ES:DI
+  pop di                              ; Restore buffer pointer
+  pop si                              ; Restore path pointer
+  je .foundPathPartEntry              ; If they are equal, continue
+
+  add di, 32                          ; If not equal, increase cluster pointer to point to the next entry
+  dec dx                              ; Decrement entries left counter
+  jnz .nextEntry                      ; If zero then load the next cluster (Read the next cluster number from FAT, etc..)
 
 
+  ;;;;; TODO get the next cluster number from FAT and read it into cluster buffer
+  PRINT_CHAR 'E', VGA_TXT_YELLOW      ;;;;; DEBUG
+  jmp $                               ;
+
+.foundPathPartEntry:
+  dec byte [bp - 17]                  ; Decrement the amount of directories to read
+  jz .lastDir_copy                    ; If its zero, then copy it to the destination buffer and return 
+
+  ; If not zero, then check if the entry is a directory entry, because we will need to use it as a directory
+  test byte es:[di + 11], FAT_F_DIRECTORY   ; Check directory flag
+  jnz .isDir                                ; If set then continue
+
+  ; If not a directory then free used memory and return
+  mov ax, ERR_NOT_DIRECTORY           ; Error code if not a directory
+  jmp .freeAndRet                     ; Free used memory and return 
 
 .lastDir_copy:
-  ; When getting here, a pointer to the entry should be in ES:DI
-  mov bx, es
-  mov ds, bx
-  mov si, di
+  ; When getting here, a pointer to the directory entry should be in ES:DI
+  ; Copy the entry to the given buffer (the parameter), and return with no error
+  mov bx, es                          ; Set DS to ES, because copying from DS to ES
+  mov ds, bx                          ;
+  mov si, di                          ; Set SI to DI (same reason)
 
-  mov es, [bp - 2]
-  mov di, [bp - 4]
-  mov dx, 32
-  call memcpy
+  mov es, [bp - 2]                    ; Get the requested buffer pointer
+  mov di, [bp - 4]                    ; Get offset
+  mov dx, 32                          ; Copy 32 bytes (the size of a directory entry)
+  call memcpy                         ; Copy
 
-  xor ax, ax
-  jmp .freeAndRet
+  xor ax, ax                          ; Return with error 0 (no error)
+  jmp .freeAndRet                     ; Free allocated memory and return
 
 ;;;;;;; TODO free malloced memory (not doing it for now, but i will)
 .err:
-  mov ax, ERR_GET_FILE_ENTRY
-  jmp .end
+  mov ax, ERR_GET_FILE_ENTRY          ; Give a general error
+  jmp .end                            ; Return
 
   ; Jump here with the error code in AX
 .freeAndRet:
-  push ax
+  push ax                             ; Save error code
   
-  mov es, [bp - 10]
-  mov di, [bp - 12]
-  call free
+  mov es, [bp - 10]                   ; Get pointer to the formatted file path
+  mov di, [bp - 12]                   ; Get offset
+  call free                           ; Free memory
 
-  mov es, [bp - 14]
-  mov di, [bp - 16]
-  call free
+  mov es, [bp - 14]                   ; Get pointer to cluster buffer
+  mov di, [bp - 16]                   ; Get offset
+  call free                           ; Free memory
 
-  pop ax
+  pop ax                              ; Restore error code
 
 .end:
-  pop gs                              ; Restore old GS segment
+  mov gs, [bp - 22] 
   mov es, [bp - 2]                    ; Restore ES segment
   mov ds, [bp - 6]                    ; Restore DS segemnt
   mov sp, bp                          ; Restore stack frame
