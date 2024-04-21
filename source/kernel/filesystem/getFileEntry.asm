@@ -55,7 +55,7 @@ getFileEntry:
   mov bx, es                      ; Cant perform operations on segments directly, so copy the returned pointers segment to BX
   test bx, bx                     ; Check if the segment is null (malloc will return a null segment if it could not allocate memory)
   jz .err                         ; If null then return an error
-  
+
   mov [bp - 10], es               ; If not null then store the segment and the offset 
   mov [bp - 12], di               ; Store offset
 
@@ -74,8 +74,15 @@ getFileEntry:
   
   mov bx, es                      ; Get returned pointers segment in BX
   test bx, bx                     ; Check if malloc returned a null pointer
-  jz .err                         ; If null then return an error
+  jnz .clusterMallocSuccess       ; If not null then continue
 
+  ; If null, then free the memory we allocated for the formatted path, and then return
+  mov es, [bp - 10]               ; Get formatted path buffer pointer
+  mov di, [bp - 12]               ; Get offset
+  call free                       ; Free the memory
+  jmp .err                        ; Return a general error
+
+.clusterMallocSuccess:
   mov [bp - 14], es               ; If not null then store the segment and the offset
   mov [bp - 16], di               ; Store offset
 
@@ -106,7 +113,7 @@ getFileEntry:
   call readDisk                       ; Read a cluster of the root directory into buffer
   pop ds                              ; Restore old DS
   test ax, ax                         ; Check if readDisk returned an error
-  jnz .err                            ; If it did then return an error
+  jnz .freeAndRet                     ; If it did then return an error
 
   ; Load a pointer to the formatted string, and to the file name, then compare 11 bytes
   mov ds, [bp - 10]                   ; Get pointer to formatted string
@@ -149,15 +156,61 @@ getFileEntry:
 
   ; If negative/zero then error with a file not find error
   mov ax, ERR_FILE_NOT_FOUND          ; Get error code in AX
-  jmp .end                            ; Return
+  jmp .freeAndRet                     ; Return
 
 .foundFirstEntry:
-  PRINT_CHAR 'K', VGA_TXT_YELLOW      ;;;;;;;; DEBUG
+  ; Will get here when we find the first directory in the root directory
+  dec byte [bp - 17]                  ; Decrement the amount of directories to read
+  jz .lastDir_copy                    ; If its zero, then copy it to the destination buffer and return 
 
+  ; If not zero, then check if the entry is a directory entry, because we will need to use it as a directory
+  test byte es:[di + 11], FAT_F_DIRECTORY   ; Check directory flag
+  jnz .isDir                                ; If set then continue
+
+  ; If not a directory then free used memory and return
+  mov ax, ERR_NOT_DIRECTORY           ; Error code if not a directory
+  jmp .freeAndRet                     ; Free used memory and return
+
+.isDir:
+  pusha                               ;;;;; DEBUG
+  PRINT_CHAR 'i', VGA_TXT_YELLOW      ;
+  popa                                ;
+
+
+
+.lastDir_copy:
+  ; When getting here, a pointer to the entry should be in ES:DI
+  mov bx, es
+  mov ds, bx
+  mov si, di
+
+  mov es, [bp - 2]
+  mov di, [bp - 4]
+  mov dx, 32
+  call memcpy
+
+  xor ax, ax
+  jmp .freeAndRet
 
 ;;;;;;; TODO free malloced memory (not doing it for now, but i will)
 .err:
   mov ax, ERR_GET_FILE_ENTRY
+  jmp .end
+
+  ; Jump here with the error code in AX
+.freeAndRet:
+  push ax
+  
+  mov es, [bp - 10]
+  mov di, [bp - 12]
+  call free
+
+  mov es, [bp - 14]
+  mov di, [bp - 16]
+  call free
+
+  pop ax
+
 .end:
   pop gs                              ; Restore old GS segment
   mov es, [bp - 2]                    ; Restore ES segment

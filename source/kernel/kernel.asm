@@ -114,6 +114,8 @@ kernelMain:
   lea si, [pathStf]
   call getFileEntry
 
+  PRINT_INT16 ax
+
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

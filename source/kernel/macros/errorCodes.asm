@@ -12,5 +12,6 @@
 %define ERR_PATH_PART_LIMIT 2
 %define ERR_GET_FILE_ENTRY 3
 %define ERR_FILE_NOT_FOUND 4
+%define ERR_NOT_DIRECTORY 5
 
 %endif
