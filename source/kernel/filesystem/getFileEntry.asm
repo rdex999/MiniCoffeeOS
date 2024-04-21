@@ -22,7 +22,7 @@ getFileEntry:
   ; *(bp - 16)    - Memory from malloc, the cluster buffer (offset)
   ; *(bp - 17)    - Amount of directories/things in the path
   ; *(bp - 18)    - General counter
-  ; *(bp - 20)    - LBA
+  ; *(bp - 20)    - LBA/cluster number
   ; *(bp - 22)    - Old GS segment
   ; *(bp - 24)    - Previous sector offset in FAT
   ; *(bp - 26)    - Offset to the formatted path (which changes) segment is SS
@@ -233,10 +233,50 @@ getFileEntry:
   dec dx                              ; Decrement entries left counter
   jnz .nextEntry                      ; If zero then load the next cluster (Read the next cluster number from FAT, etc..)
 
+  ; Calculate the sector offset to read. Basically means that instead of reading lots of sectors, just read the one that is needed.
+  ; sectorOffset = cluster / bytesPerSector;
+  ; clusterIndex = cluster % bytesPerSector;
+  mov ax, [bp - 20]                   ; Get the current CLUSTER number
+  mov bx, gs:[bpb_bytesPerSector]     ; Get amount of bytes in 1 sector
+  xor dx, dx                          ; Zero out remainder register
+  div bx                              ; Divide current cluster number by amount of bytes in a sector
 
-  ;;;;; TODO get the next cluster number from FAT and read it into cluster buffer
-  PRINT_CHAR 'E', VGA_TXT_YELLOW      ;;;;; DEBUG
-  jmp $                               ;
+  ; New sector offset will be in AX, check if its the same as the previous one. 
+  ; If it is, then there is no need to read the same FAT sector once again
+  cmp ax, [bp - 24]                   ; Check if the new FAT offset is the same as the previous one
+  je .afterFATread                    ; If it is, then skip reading the FAT again
+
+  ; If the offsets are not the same, prepare for reading a sector of FAT
+  mov [bp - 24], ax                   ; Store new FAT offset
+  mov di, gs:[bpb_reservedSectors]    ; Get the first sector of FAT
+  add di, ax                          ; Add to it the new offset
+  mov si, 1                           ; Read one sector
+
+  mov es, [bp - 10]                   ; Get sector buffer segment
+  mov bx, [bp - 12]                   ; Get sector buffer offset
+  push dx                             ; Store the cluster index
+  call readDisk                       ; Read 1 sector of FAT into sector buffer
+  pop dx                              ; Restore cluster index
+  test ax, ax                         ; Check if readDisk returned an error
+  jnz .freeAndRet                     ; If it did, then return with it
+
+.afterFATread:
+  mov es, [bp - 10]                   ; Get sector buffer segment
+  mov di, [bp - 12]                   ; Get sector buffer offset
+
+  shl dx, 1                           ; Multiply cluster index by 2, because each cluster number in FAT is 2 bytes
+  add di, dx                          ; Add the cluster index to the buffer, so ES:DI points to the next cluster number (FAT[idx])
+  
+  mov di, es:[di]                     ; Get the new cluster number
+
+  mov [bp - 20], di                   ; Store the cluster number
+  
+  cmp di, 0FFF8h                      ; Check if its the end of the cluster chain
+  jb .nextCluster                     ; If not, go and process the new cluster and continue searching for files/directories
+
+  ; If its the end of the cluster chain then return an error of "file not found"
+  mov ax, ERR_FILE_NOT_FOUND          ; Return with an error code of file not found
+  jmp .freeAndRet                     ; Free used memory and return
 
 .foundPathPartEntry:
   dec byte [bp - 17]                  ; Decrement the amount of directories to read

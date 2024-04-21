@@ -12,7 +12,7 @@ $(FDA): $(BLD)boot.bin $(BLD)kernel.bin
 	mcopy -i $(FDA) test.txt "::test.txt"
 
 	mcopy -i $(FDA) tmp/folder "::folder"
-	mcopy -i $(FDA) tmp/folder/fld "::folder/fld"
+	mcopy -i $(FDA) tmp/folder/fld200 "::folder/fld200"
 
 	mcopy -i $(FDA) tmp/t0.txt "::t0.txt"
 	mcopy -i $(FDA) tmp/t1.txt "::t1.txt"

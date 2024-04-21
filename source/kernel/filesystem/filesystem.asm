@@ -45,7 +45,7 @@ lbaToChs:
 ;   - 1) SI     => Amount of sectors to read
 ;   - 2) ES:BX  => Buffer
 ; RETURNS
-;   In AX => 0 on success, and 1 on failure.
+;   In AX => 0 on success, and an error code otherwise
 readDisk:
   push ds
   mov ax, KERNEL_SEGMENT
@@ -65,7 +65,7 @@ readDisk:
   ret
 
 readDisk_error:
-  mov ax, 1                     ; Read has failed, return 1
+  mov ax, ERR_READ_DISK         ; Read has failed, return error
   ret
 
 

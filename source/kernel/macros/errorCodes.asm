@@ -13,5 +13,6 @@
 %define ERR_GET_FILE_ENTRY 3
 %define ERR_FILE_NOT_FOUND 4
 %define ERR_NOT_DIRECTORY 5
+%define ERR_READ_DISK 6
 
 %endif

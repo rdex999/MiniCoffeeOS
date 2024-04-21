@@ -97,7 +97,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 dbgTestTxt:               db "T15     TXT"
 buffer:                   times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "folder/fld/t16.txt", 0
+pathStf:                  db "folder/fld200/t16.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
