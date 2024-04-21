@@ -16,8 +16,8 @@ getFileEntry:
   ; *(bp - 4)     - Buffer offset
   ; *(bp - 6)     - File path segment
   ; *(bp - 8)     - File path offset
-  ; *(bp - 10)    - Memory from malloc, for the formatted file path (segment)
-  ; *(bp - 12)    - Memory from malloc, for the formatted file path (offset)
+  ; *(bp - 10)    - Memory from malloc, 1 sector for FAT(segment)
+  ; *(bp - 12)    - Memory from malloc, 1 sector for FAT(offset)
   ; *(bp - 14)    - Memory from malloc, the cluster buffer (segment)
   ; *(bp - 16)    - Memory from malloc, the cluster buffer (offset)
   ; *(bp - 17)    - Amount of directories/things in the path
@@ -25,7 +25,7 @@ getFileEntry:
   ; *(bp - 20)    - LBA
   ; *(bp - 22)    - Old GS segment
   ; *(bp - 24)    - Previous sector offset in FAT
-  ; *(bp - 26)    - Offset to the formatted path (which changes)
+  ; *(bp - 26)    - Offset to the formatted path (which changes) segment is SS
 
   mov [bp - 22], gs
   mov bx, KERNEL_SEGMENT          ; Set GS to kernel segment
@@ -52,8 +52,13 @@ getFileEntry:
   mov bx, 11                      ; Multiply by 11
   mul bx                          ; Get the size that the formatted string will have in AX
 
-  mov di, ax                      ; Argument for malloc in DI (formatted string size)
-  call malloc                     ; Allocate memory for the new formatted path
+  add ax, 2                       ; Allocate 2 more bytes, so we wont overwrite local variables (which are on the stack)
+  sub sp, ax                      ; Allocate memory for formatted string + 2 bytes
+  mov [bp - 26], sp               ; Store beginning of allocated buffer
+
+  ; Allocate memory for 1 sector, thats for reading the FAT
+  mov di, gs:[bpb_bytesPerSector] ; Argument for malloc in DI. Allocate soace for 1 sector. Used for storing a sector from FAT
+  call malloc                     ; Allocate memory for a sector of FAT
 
   mov bx, es                      ; Cant perform operations on segments directly, so copy the returned pointers segment to BX
   test bx, bx                     ; Check if the segment is null (malloc will return a null segment if it could not allocate memory)
@@ -61,8 +66,13 @@ getFileEntry:
 
   mov [bp - 10], es               ; If not null then store the segment and the offset 
   mov [bp - 12], di               ; Store offset
-  mov [bp - 26], di
+  
+  
   ; Now we call a function that formats the path, and writes the new path to ES:DI
+  mov bx, ss                      ; Formatted path buffer segment is SS
+  mov es, bx                      ; Get the formatted path buffer segment
+  mov di, [bp - 26]               ; Get the formatted path buffer offset
+
   mov ds, [bp - 6]                ; Get the paths (the argument) segment
   mov si, [bp - 8]                ; Get the paths (the argument) offset
   call getFullPath                ; Format the path and store result in ES:DI
@@ -80,7 +90,7 @@ getFileEntry:
   jnz .clusterMallocSuccess       ; If not null then continue
 
   ; If null, then free the memory we allocated for the formatted path, and then return
-  mov es, [bp - 10]               ; Get formatted path buffer pointer
+  mov es, [bp - 10]               ; Get allocated sector pointer
   mov di, [bp - 12]               ; Get offset
   call free                       ; Free the memory
   jmp .err                        ; Return a general error
@@ -119,8 +129,9 @@ getFileEntry:
   jnz .freeAndRet                     ; If it did then return an error
 
   ; Load a pointer to the formatted string, and to the file name, then compare 11 bytes
-  mov ds, [bp - 10]                   ; Get pointer to formatted string
-  mov si, [bp - 12]                   ; Get offset
+  mov bx, ss
+  mov ds, bx                          ; Get pointer to the formatted string
+  mov si, [bp - 26]                   ; Get offset
 
   mov es, [bp - 14]                   ; Get entries pointer
   mov di, [bp - 16]                   ; Get offset
@@ -175,23 +186,23 @@ getFileEntry:
   jmp .freeAndRet                     ; Free used memory and return
 
 .isDir:
-  add word [bp - 26], 11
-  mov di, es:[di + 26]
-  mov [bp - 20], di
-  mov word [bp - 24], 0FFFFh
+  add word [bp - 26], 11              ; Increase formatted string pointer to point to next path part (the next directory/file)
+  mov di, es:[di + 26]                ; Get the file/directories first cluster number
+  mov [bp - 20], di                   ; Store the cluster number
+  mov word [bp - 24], 0FFFFh          ; Reset previous FAT offset (So if needed, the first time that we need to read FAT we will read it)
 .nextCluster:
-  call clusterToLBA
-  mov di, ax
-  mov al, gs:[bpb_sectorPerCluster]
-  xor ah, ah
-  mov si, ax
-  mov es, [bp - 14]
-  mov bx, [bp - 16]
-  call readDisk
-  test ax, ax
-  jnz .freeAndRet
+  call clusterToLBA                   ; When getting here the cluster number is in DI, convert it to an LBA address
+  mov di, ax                          ; Argument goes in DI (the LBA)
+  mov al, gs:[bpb_sectorPerCluster]   ; We want a read a cluster (the amount of sectors in a cluster) (8 bits)
+  xor ah, ah                          ; Zero out high part
+  mov si, ax                          ; Amount of sectors to read goes in SI
+  mov es, [bp - 14]                   ; Get pointer to the cluster buffer
+  mov bx, [bp - 16]                   ; Get offset
+  call readDisk                       ; Read the first cluster of the file/directory into the buffer (ES:DI)
+  test ax, ax                         ; Check return value (error code)
+  jnz .freeAndRet                     ; If there was an error then return with it
 
-   ; Calculate the amount of bytes in a cluster, then divide it by 32 to get the amount of entries to search in for the file
+  ; Calculate the amount of bytes in a cluster, then divide it by 32 to get the amount of entries to search in for the file
   mov ax, gs:[bpb_bytesPerSector]     ; Get amount of bytes in a sector
   mov bl, gs:[bpb_sectorPerCluster]   ; Get amount of sectors in a cluster (8 bits)
   xor bh, bh                          ; Zero out high part
@@ -202,7 +213,8 @@ getFileEntry:
   mov es, [bp - 14]                   ; Get cluster buffer pointer (segment)
   mov di, [bp - 16]                   ; Get cluster buffer offset
 
-  mov ds, [bp - 10]                   ; Get formatted file path segment
+  mov bx, ss                          ; 
+  mov ds, bx                          ; Get formatted file path segment
   mov si, [bp - 26]                   ; Get offset, which changes on every directory (+11 bytes each time)
 
   ; Here we compare the first 11 bytes of an entry to the formatted file path (the current directory in it), 
@@ -262,7 +274,7 @@ getFileEntry:
 .freeAndRet:
   push ax                             ; Save error code
   
-  mov es, [bp - 10]                   ; Get pointer to the formatted file path
+  mov es, [bp - 10]                   ; Get pointer to the allocated sector
   mov di, [bp - 12]                   ; Get offset
   call free                           ; Free memory
 
@@ -273,7 +285,7 @@ getFileEntry:
   pop ax                              ; Restore error code
 
 .end:
-  mov gs, [bp - 22] 
+  mov gs, [bp - 22]                   ; Restore old GS segment
   mov es, [bp - 2]                    ; Restore ES segment
   mov ds, [bp - 6]                    ; Restore DS segemnt
   mov sp, bp                          ; Restore stack frame
