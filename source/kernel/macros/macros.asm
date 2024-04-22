@@ -68,6 +68,31 @@
 %define HEAP_CHUNK_F_OWNED 0000_0001b
 %define HEAP_CHUNK_F_ZERO 0000_00010b
 
+; The length of the openFiles array
+%define FILE_OPEN_LEN 10
+; Access for the file
+%define FILE_OPEN_ACCESS8 0
+; The FAT entry of the file
+%define FILE_OPEN_ENTRY256 (FILE_OPEN_ACCESS8 + 1)
+; sizeof(openFile)
+%define FILE_OPEN_SIZEOF (FILE_OPEN_ENTRY256 + 32)
+
+; Open for reading, file must exist
+%define FILE_OPEN_ACCESS_READ 0
+; Open for writing. If already exists then delete all content and write
+%define FILE_OPEN_ACCESS_WRITE (FILE_OPEN_ACCESS_READ + 1)
+; Open for appending to the end of the file. Created if doesnt exist
+%define FILE_OPEN_ACCESS_APPEND (FILE_OPEN_ACCESS_WRITE + 1)
+; Open for reading and writing, file must exist
+%define FILE_OPEN_ACCESS_READ_PLUS (FILE_OPEN_ACCESS_APPEND + 1)
+; Create file for reading and writing
+%define FILE_OPEN_ACCESS_WRITE_PLUS (FILE_OPEN_ACCESS_READ_PLUS + 1)
+; Open file for reading and appending
+%define FILE_OPEN_ACCESS_APPEND_PLUS (FILE_OPEN_ACCESS_WRITE_PLUS + 1)
+
+
+
+
 %define MAX_PATH_FORMATTED_LENGTH 256
 
 %define FAT_F_READ_ONLY 1

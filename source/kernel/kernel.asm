@@ -83,8 +83,10 @@ sysClock_year:            db 0
 ; Day-Month-Year Hour:Minute:Second
 sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
-dbgTestTxt:               db "T15     TXT"
-buffer:                   times 512 db 0         ;;;;;; DEBUG
+
+openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
+
+buffer:                     times 512 db 0         ;;;;;; DEBUG
 pathStf:                  db "folder/fld200/t16.txt", 0
 
 ;
