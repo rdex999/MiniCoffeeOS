@@ -105,8 +105,9 @@ kernelMain:
   call fopen
 
   mov bx, [openFiles + FILE_OPEN_ENTRY256 + 28]
-  PRINTF_M `ret val %u with size %u\n`, ax, bx
-
+  mov cx, [openFiles + FILE_OPEN_ACCESS8]
+  xor ch, ch
+  PRINTF_M `ret val %u with size %u and access %u\n`, ax, bx, cx
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

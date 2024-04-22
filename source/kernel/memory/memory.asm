@@ -95,7 +95,7 @@ memcpy:
   movsb                     ; If not then copy the last byte
 
 memcpy_end:
-  sub di, cx
+  sub di, dx
   ret
 
 
