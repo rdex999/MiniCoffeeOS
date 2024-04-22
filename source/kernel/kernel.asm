@@ -5,22 +5,10 @@ org 0h
 jmp kernelMain    ; skip data and function declaration section
 
 ;
-; ---------- [ FUNCTIONS DECLARATION ] ----------
+; ---------- [ MACROS DECLARATION ] ----------
 ;
 
 %include "kernel/macros/macros.asm"
-%include "kernel/io/io.asm"
-%include "kernel/string/string.asm"
-%include "kernel/trmCommands/trmCommands.asm"
-%include "kernel/filesystem/filesystem.asm"
-%include "kernel/isr/isr.asm"
-%include "kernel/time/time.asm"
-%include "kernel/drivers/vga/vga.asm"
-%include "kernel/memory/memory.asm"
-
-%ifdef KBD_DRIVER
-  %include "kernel/drivers/ps2_8042/ps2_8042.asm"
-%endif
 
 %include "kernel/init/init.asm"
 
@@ -144,4 +132,21 @@ kernel_readCommandsLoop:
 
   jmp $                             ; jump to <this> location. should not get there.
 
+
+;
+; ---------- [ FUNCITONS DECLARATIONS ] ----------
+;
+
+%include "kernel/io/io.asm"
+%include "kernel/string/string.asm"
+%include "kernel/trmCommands/trmCommands.asm"
+%include "kernel/filesystem/filesystem.asm"
+%include "kernel/isr/isr.asm"
+%include "kernel/time/time.asm"
+%include "kernel/drivers/vga/vga.asm"
+%include "kernel/memory/memory.asm"
+
+%ifdef KBD_DRIVER
+  %include "kernel/drivers/ps2_8042/ps2_8042.asm"
+%endif
 kernelEnd:

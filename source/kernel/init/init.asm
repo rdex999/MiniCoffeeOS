@@ -180,7 +180,7 @@
 
   ; Copy the BPB and the EBPB from the bootloader 
   COPY_BPB bpbStart
-  
+
   ; 50h << 4 = 500h   // 500h is the end of the IVT and the BIOS data area(as it starts on 0000:0000)
   mov sp, 7A00h - 2                 ; Make stack larger
   mov bx, 40h                       
@@ -206,7 +206,20 @@
 
   mov di, NORM_SCREEN_START_IDX
   call setCursorIndex
-  
+
+
+  mov bx, cs
+  mov es, bx
+  mov di, %%afterSegOffCall
+  call getNextSegOff
+
+  push word es
+  push word di
+  retf
+
+%%afterSegOffCall:
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
 %endmacro
 
 %endif
