@@ -7,6 +7,8 @@
 ; PARAMS
 ;   - 0) ES:DI  => Buffer to store entry, at least 32 bytes long.
 ;   - 1) DS:SI  => The files path. Doesnt need to be formatted correctly.
+; RETURNS
+;   - 0) In AX, the error code. (0 on success)
 getFileEntry:
   push bp                         ; Save stack frame
   mov bp, sp                      ; 

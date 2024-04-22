@@ -68,6 +68,10 @@
 %define HEAP_CHUNK_F_OWNED 0000_0001b
 %define HEAP_CHUNK_F_ZERO 0000_00010b
 
+
+; To check if the file is open (is openFiles) check if the first cluster number is 0.
+; If the first cluster number is zero then the descriptor is empty
+
 ; The length of the openFiles array
 %define FILE_OPEN_LEN 10
 ; Access for the file

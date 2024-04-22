@@ -100,11 +100,12 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  lea di, [buffer]
-  lea si, [pathStf]
-  call getFileEntry
+  lea di, [pathStf]
+  mov si, FILE_OPEN_ACCESS_APPEND
+  call fopen
 
-  PRINTF_M `ret val %u\n%s\n`, ax, buffer
+  mov bx, [openFiles + FILE_OPEN_ENTRY256 + 28]
+  PRINTF_M `ret val %u with size %u\n`, ax, bx
 
 
   ; Main loop for reading commands
