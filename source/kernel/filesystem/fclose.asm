@@ -17,7 +17,7 @@ fclose:
 
   ; Here we check if its an invalid handle
   cmp di, FILE_OPEN_LEN                           ; Check if the file handle (an index into openFiles) is greater than its length
-  jae .err                                        ; If it is, then its not a valid handle and we return with an error
+  ja .err                                         ; If it is, then its not a valid handle and we return with an error (greater because handle starts from 1)
 
   test di, di                                     ; Check if the handle is 0 (an invalid handle is null)
   jz .err                                         ; If null then return an error

@@ -104,17 +104,14 @@ kernelMain:
   mov si, FILE_OPEN_ACCESS_APPEND
   call fopen
 
-  mov bx, [openFiles + FILE_OPEN_ENTRY256 + 28]
-  mov cx, [openFiles + FILE_OPEN_ACCESS8]
-  xor ch, ch
-  push ax 
-  PRINTF_M `ret val %u with size %u and access %u\n`, ax, bx, cx
-  pop ax
+  mov si, [openFiles + FILE_OPEN_ENTRY256 + 26]       ; First cluster number
+  mov dx, 10                                          ; Byte offset
+  mov cx, 50                                          ; Amount of bytes to read
+  call readClusterBytes
 
-  mov di, ax
-  call fclose
 
-  PRINTF_M `fclose returned %u\n`, ax
+
+
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

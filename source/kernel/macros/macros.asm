@@ -77,8 +77,10 @@
 %define FILE_OPEN_LEN 10
 ; Access for the file
 %define FILE_OPEN_ACCESS8 0
+; The current read position in a file
+%define FILE_OPEN_READ_POS16 (FILE_OPEN_ACCESS8 + 1)
 ; The FAT entry of the file
-%define FILE_OPEN_ENTRY256 (FILE_OPEN_ACCESS8 + 1)
+%define FILE_OPEN_ENTRY256 (FILE_OPEN_READ_POS16 + 2)
 ; sizeof(openFile)
 %define FILE_OPEN_SIZEOF (FILE_OPEN_ENTRY256 + 32)
 
