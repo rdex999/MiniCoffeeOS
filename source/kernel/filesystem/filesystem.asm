@@ -8,6 +8,7 @@
 %include "bootloader/macros/getRegions.asm"
 %include "kernel/filesystem/getFileEntry.asm"
 %include "kernel/filesystem/fopen.asm"
+%include "kernel/filesystem/fclose.asm"
 %include "kernel/filesystem/readFile.asm"
 %include "kernel/filesystem/searchInRootDir.asm"
 %include "kernel/filesystem/parsePath.asm"
