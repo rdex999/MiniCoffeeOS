@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "folder/fld200/t16.txt", 0
+pathStf:                  db "t2.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -100,15 +100,20 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+  ;;;;;;; DEBUG
   lea di, [pathStf]
   mov si, FILE_OPEN_ACCESS_APPEND
   call fopen
 
   mov si, [openFiles + FILE_OPEN_ENTRY256 + 26]       ; First cluster number
-  mov dx, 10                                          ; Byte offset
+  push si
+  PRINTF_M `first cluster 0x%x\n`, si
+  pop si
+
+  mov dx, 512*5+47                                    ; Byte offset
   mov cx, 50                                          ; Amount of bytes to read
   call readClusterBytes
-
+  PRINTF_M `returned %u\n`, ax
 
 
 

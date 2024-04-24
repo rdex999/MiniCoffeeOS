@@ -16,9 +16,9 @@
 ; RETURNS
 ;   - 0) In AX, the amount of bytes read, can be less then the requested amount if an error occurred
 readClusterBytes:
-  push bp                                       ; Save stack frame
-  mov bp, sp                                    ;
-  sub sp, 14                                    ; Allocate space for local variables
+  push bp                               ; Save stack frame
+  mov bp, sp                            ;
+  sub sp, 14                            ; Allocate space for local variables
 
   ; *(bp - 2)   - Buffer segment
   ; *(bp - 4)   - Buffer offset
@@ -28,37 +28,62 @@ readClusterBytes:
   ; *(bp - 12)  - LBA
   ; *(bp - 14)  - Old DS
 
-  mov [bp - 2], es                              ; Store buffer pointer
-  mov [bp - 4], di                              ; (ES:DI)
-  mov [bp - 6], si                              ; Store first cluster number
-  mov [bp - 8], dx                              ; Store bytes offset 
-  mov [bp - 10], cx                             ; Store amount of bytes to read
-  mov [bp - 14], ds                             ; Store old DS segment
+  mov [bp - 2], es                      ; Store buffer pointer
+  mov [bp - 4], di                      ; (ES:DI)
+  mov [bp - 6], si                      ; Store first cluster number
+  mov [bp - 8], dx                      ; Store bytes offset 
+  mov [bp - 10], cx                     ; Store amount of bytes to read
+  mov [bp - 14], ds                     ; Store old DS segment
 
-  ; Convert the first cluster number into an LBA address
-  mov di, si                                    ; Argument for clusterToLBA goes in DI, (SI is currently the cluster number)
-  call clusterToLBA                             ; Convert, get LBA in AX
-  mov [bp - 12], ax                             ; Save LBA
+  mov bx, KERNEL_SEGMENT                ; Set DS segment to kernel segment so we can read kernel variables
+  mov ds, bx                            ;
 
-  PRINTF_M `read LBA %u\n`, ax                  ;;;;;;;;; DEBUG
-
-  mov bx, KERNEL_SEGMENT                        ; Set DS segment to kernel segment so we can read kernel variables
-  mov ds, bx                                    ;
-
-  ; Here we calculate the new LBA. If the byte offset is greater than the amount of bytes in a sector, 
-  ; then reading all sectors (from the first LBA) is pointless. We can calculate the amount of sectors to skip, and get a new LBA for it.
+  ; Here we calculate the amount of clusters we can skip (if any)
   ; The formula:
-  ; sectorsToSkip = byteOffset / bytesPerSector
-  ; newByteOffset  = byteOffset % bytesPerSector
-  mov ax, [bp - 8]                              ; Get bytes offset
-  mov bx, ds:[bpb_bytesPerSector]               ; Get amount of bytes in 1 sector
-  xor dx, dx                                    ; Zero out remainder register
-  div bx                                        ; Divide byte offset by amount of bytes in a sector
+  ; clustersToSkip = byteOffset / bytesPerCluster
+  ; newByteOffset  = byteOffset % bytesPerCluster
+  ; First we calculate the amount of bytes in a cluster (bytesPerSector * sectorPerCluster)
+  mov ax, ds:[bpb_bytesPerSector]       ; Get the amount of bytes in a sector
+  mov bl, ds:[bpb_sectorPerCluster]     ; Get amount of sectors in a cluster (8 bits)
+  xor bh, bh                            ; Zero out high 8 bits
+  mul bx                                ; Get amount of bytes in a cluster in AX
+  
+  mov bx, ax                            ; Amount of bytes in a cluster in BX
 
-  add [bp - 12], ax                             ; Add LBA offset to the LBA
-  mov ax, [bp - 12]                             ;;;;; DEBUG
-  PRINTF_M `offseted LBA %u\n`, ax               ;;;;; DEBUG
+  mov ax, [bp - 8]                      ; Get requested bytes offset
+  xor dx, dx                            ; Zero out remainder register
+  
+  ; AX = byteOffset / bytesPerCluster = clustersToSkip
+  ; DX = byteOffset % bytesPerCluster = newBytesOffset
+  div bx                                ; Calculate
 
+  test ax, ax                           ; Check if there are even any clusters to skip
+  jz .afterCalcClusterSkip              ; If 0 clusters to skip then skip the part which skips clusters (read it again)
+
+  ; If there are some clusters we can skip, then skip them and store the new bytes offset
+  mov [bp - 8], dx                      ; Store the new bytes offset
+  mov cx, ax                            ; Loop through the amount of clusters to skip
+.skipClustersLoop:
+  mov di, [bp - 6]                      ; Get current cluster number
+  push cx                               ; Save amount of clusters left to skip
+  call getNextCluster                   ; Get the next cluster number, from out current one
+  pop cx                                ; Restore amount of clusters left to skip
+  test bx, bx                           ; Check if getNextCluster has returned with an error
+  jnz .err                              ; If it did, then return 0 to indicate an error
+
+  cmp ax, 0FFF8h                        ; Check if its the end of the cluster chain
+  jae .err                              ; If it is, then return 0 because we couldnt even reach the files first byte with the given offset
+
+  mov [bp - 6], ax                      ; If its not the end of the cluster chain, then update the first cluster number variable
+  loop .skipClustersLoop                ; Continue skipping clusters until CX (amount of clusters to skip) is 0
+
+  pusha                                                                   ;;;;;;;; DEBUG
+  mov bx, [bp - 8]                                                        ;;;;;;;;
+  mov ax, [bp - 6]                                                        ;;;;;;;;
+  PRINTF_M `starting on cluster 0x%x with bytes offset of %u\n`, ax, bx   ;;;;;;;;
+  popa                                                                    ;;;;;;;;
+
+.afterCalcClusterSkip:
 
 
 
@@ -67,4 +92,9 @@ readClusterBytes:
   mov sp, bp                                    ; Restore stack frame
   pop bp                                        ;
   ret
+
+.err:
+  xor ax, ax                                    ; If there is an error, we return 0 to indicate 0 bytes were read
+  jmp .end                                      ; Return
+
 %endif
