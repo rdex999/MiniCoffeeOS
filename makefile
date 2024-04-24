@@ -39,7 +39,7 @@ $(BLD)kernel.bin: $(SRC)kernel/kernel.asm
 	$(AS) $(AS_FLAGS) -o $(BLD)kernel.bin $(SRC)kernel/kernel.asm
 
 clean:
-	rm $(FDA)
+	rm -f $(FDA)
 	rm -rf build/*
 
 run: $(FDA)
