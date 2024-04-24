@@ -35,6 +35,13 @@ readClusterBytes:
   mov [bp - 10], cx                     ; Store amount of bytes to read
   mov [bp - 14], ds                     ; Store old DS segment
 
+  pusha                                 ;;;;;; DEBUG
+  mov di, si                            ;;;;;;
+  call clusterToLBA                     ;;;;;;
+  PRINTF_M `first clusters LBA %u\n`, ax;;;;;;
+  popa                                  ;;;;;;
+
+
   mov bx, KERNEL_SEGMENT                ; Set DS segment to kernel segment so we can read kernel variables
   mov ds, bx                            ;
 
@@ -77,14 +84,33 @@ readClusterBytes:
   mov [bp - 6], ax                      ; If its not the end of the cluster chain, then update the first cluster number variable
   loop .skipClustersLoop                ; Continue skipping clusters until CX (amount of clusters to skip) is 0
 
-  pusha                                                                   ;;;;;;;; DEBUG
-  mov bx, [bp - 8]                                                        ;;;;;;;;
-  mov ax, [bp - 6]                                                        ;;;;;;;;
-  PRINTF_M `starting on cluster 0x%x with bytes offset of %u\n`, ax, bx   ;;;;;;;;
-  popa                                                                    ;;;;;;;;
-
 .afterCalcClusterSkip:
+  ; Get the LBA of the new cluster
+  mov di, [bp - 6]                      ; Get first cluster number (updated)
+  call clusterToLBA                     ; Get its LBA in AX
+  mov [bp - 12], ax                     ; Store LBA
 
+  ; Calculate the amount of sectors to skip
+  ; The formula
+  ; sectorsToSkip = byteOffset / bytesPerSector
+  ; newByteOffset = byteOffset % bytesPerSector
+  mov bx, ds:[bpb_bytesPerSector]       ; Get amount of bytes in a sector
+  mov ax, [bp - 8]                      ; Get bytes offset
+  xor dx, dx                            ; Zero out remainder register
+  
+  ; AX = sectorsToSkip  = byteOffset{AX} / bytesPerSector{BX}
+  ; DX = newBytesOffset = byteOffset{AX} % bytesPerSector{BX}
+  div bx                                ; Calculate
+
+  mov [bp - 8], dx                      ; Update the bytes offset
+  add [bp - 12], ax                     ; Increase the LBA
+
+
+  ;;;;;;;;; DEBUG
+  mov ax, [bp - 6]
+  mov bx, [bp - 12]
+  mov cx, [bp - 8]
+  PRINTF_M `Starting on cluster 0x%x LBA %u and byte offset of %u\n`, ax, bx, cx
 
 
 .end:

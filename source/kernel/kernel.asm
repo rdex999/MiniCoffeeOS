@@ -110,7 +110,7 @@ kernelMain:
   PRINTF_M `first cluster 0x%x\n`, si
   pop si
 
-  mov dx, 512*5+47                                    ; Byte offset
+  mov dx, 512 * 4 * 3 + 47                            ; Byte offset
   mov cx, 50                                          ; Amount of bytes to read
   call readClusterBytes
   PRINTF_M `returned %u\n`, ax
