@@ -18,7 +18,7 @@
 readClusterBytes:
   push bp                               ; Save stack frame
   mov bp, sp                            ;
-  sub sp, 19                            ; Allocate space for local variables
+  sub sp, 22                            ; Allocate space for local variables
 
   ; *(bp - 2)   - Buffer segment
   ; *(bp - 4)   - Buffer offset
@@ -30,7 +30,8 @@ readClusterBytes:
   ; *(bp - 16)  - Bytes read so far
   ; *(bp - 18)  - Sector buffer offset (segment is SS)
   ; *(bp - 19)  - Sectors left in cluster
-
+  ; *(bp - 20)  - Flag, if should use memcpy
+  ; *(bp - 22)  - Amound of bytes to copy
 
   mov [bp - 2], es                      ; Store buffer pointer
   mov [bp - 4], di                      ; (ES:DI)
@@ -119,21 +120,20 @@ readClusterBytes:
   mov [bp - 19], bl                     ; Save the amount of sectors left in current cluster
 
 .readSectorsLoop:
-  ; Prepare arguments for readDisk and read a sector of the file into the sector buffer
-  mov di, [bp - 12]                     ; Get current LBA address
-  mov si, 1                             ; Amount of sectors to read
-  
-  mov bx, ss                            ; Set ES:BX = SS:sectorBuffer   // Where to save the data to, out sector buffer
-  mov es, bx                            ; Set ES = SS
-  mov bx, [bp - 18]                     ; Set BX = sectorBufferOffset
-  call readDisk                         ; Read a sector of the file into the sector buffer
-  test ax, ax                           ; Check if readDisk has returned an error
-  jnz .retBytesRead                     ; If it did then return the amount of bytes read so far
+  ; Here we are gonna calculate the amount of bytes to copy in memcpy.
+  ; If the calculated size is 1 sector, and the offset is 0,
+  ; then we can read the sector straight into the buffer and skip memcpy (im using a flag (bp - 20) for skipping memcpy)
 
   ; if(bytesLeftToRead - (bytesPerSector - bytesOffset) < 0) { 
   ;   bytesToCopy = bytesLeftToRead;
+  ;   destMemcpyBuffer = sectorBuffer;
   ; } else {
   ;   bytesToCopy = bytesPerSector - bytesOffset;
+  ;   if(bytesOffset == 0){
+  ;     destMemcpyBuffer = dataBufferParameter;
+  ;   }else{
+  ;     destMemoryBuffer = sectorBuffer;
+  ;   }
   ; } 
   mov ax, ds:[bpb_bytesPerSector]       ; Get amount of bytes in a sector
   sub ax, [bp - 8]                      ; Subtract from it the bytes offset, result in AX
@@ -141,18 +141,45 @@ readClusterBytes:
   sub bx, ax                            ; Subtract from it the thing we calculated before (which is in AX)
   jc .setCopySizeLast                   ; If negative then set the amount of bytes to copy to the amount of bytes left to read
 
-  mov dx, ax                            ; If not negative, set the amount of bytes to copy to the amount of bytes in a sector minus the offset
+  mov [bp - 22], ax                     ; If not negative, then set the copy size to (bytesPerSector - offset)
+
+  cmp word [bp - 8], 0                  ; Check if the offset is 0
+  jne .setReadIntoSectorBuffer          ; If not then read into the sector buffer and perform memcpy
+
+  ; If the offset is not zero then we can read straight into the data buffer (the parameter)
+  mov es, [bp - 2]                      ; Set ES:BX = data buffer (parameter)
+  mov bx, [bp - 4]                      ; Set BX = data buffer offset
+  mov byte [bp - 20], 1                 ; Set flag so we skip memcpy later
+
   jmp .afterSetSize                     ; Continue and prepare arguments for memcpy
 
 .setCopySizeLast:
-  mov dx, [bp - 10]                     ; If negative then set the amount of bytes to copy to the amount of bytes left to read from the file
+  mov ax, [bp - 10]                     ; If negative then set the amount of bytes to copy to the amount of bytes 
+  mov [bp - 22], ax                     ; left to read from the file
+
+.setReadIntoSectorBuffer:
+  mov bx, ss                            ; Set ES:BX = sector buffer
+  mov es, bx                            ; Set ES = sector buffer segment
+  mov bx, [bp - 18]                     ; Set BX = sector buffer offset
+  mov byte [bp - 20], 0                 ; Turn flag of so we dont skip memcpy
 
 .afterSetSize:
+  ; Prepare arguments for readDisk and read a sector of the file into the sector buffer
+  mov di, [bp - 12]                     ; Get current LBA address
+  mov si, 1                             ; Amount of sectors to read
+  call readDisk                         ; Read a sector of the file into the sector buffer
+  test ax, ax                           ; Check if readDisk has returned an error
+  jnz .retBytesRead                     ; If it did then return the amount of bytes read so far
+
   ; When getting here the amount of bytes to copy will be in DX
+  mov dx, [bp - 22]                     ; Get amount of bytes to copy
   add [bp - 16], dx                     ; Add the amount of bytes were gonna copy to the amount of bytes we read so far
   sub [bp - 10], dx                     ; Subtract the amount of bytes were gonna copy from the amount of bytes left to read from the file
 
-  ; Prepare arguments for memcpy
+  cmp byte [bp - 20], 0                 ; Check flag to know if we should skip memcpy
+  jne .afterMemcpy                      ; If the flag is set then skip memcpy
+
+  ; If the flag is not set then prepare arguments for memcpy
   mov es, [bp - 2]                      ; Set ES:DI = requestedDataBuffer   // ES:DI is the destination, where to copy the tada to
   mov di, [bp - 4]                      ; Set DI = bufferOffset
 
@@ -160,17 +187,17 @@ readClusterBytes:
   mov ds, bx                            ; Set DS = SS   // We want to copy from the sector buffer to the requested buffer (the parameter)
   mov si, [bp - 18]                     ; Set SI = sectorBufferOffset
   add si, [bp - 8]                      ; Add the the offset, the bytes offset (the bytes offset is always 0, but not in the first iteration)
-  push dx                               ; Save the amount of bytes to copy (we will use it)
   call memcpy                           ; Copy the files data into the requested buffer
-  pop dx                                ; Restore amount of bytes we just copied
 
+.afterMemcpy:
   mov bx, KERNEL_SEGMENT                ; Set DS to kernel segment
   mov ds, bx                            ; so we can read correct values
 
   cmp word [bp - 10], 0                 ; Check if the amount of bytes left to read is below/equal to 0
   jle .retBytesRead                     ; If it is then return with the amount of bytes we read so far
 
-  add [bp - 4], dx                      ; Add the amount of bytes we just read, to the buffer pointer (the parameter)
+  mov ax, [bp - 22]
+  add [bp - 4], ax                      ; Add the amount of bytes we just read, to the buffer pointer (the parameter)
   mov word [bp - 8], 0                  ; Set the bytes offset to 0
 
   dec byte [bp - 19]                    ; Decrement the amount of sectors left in the current cluster

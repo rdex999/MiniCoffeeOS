@@ -86,7 +86,7 @@ sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
-buffer:                     times 512 db 0         ;;;;;; DEBUG
+buffer:                     times 512*4*1 db 0         ;;;;;; DEBUG
 pathStf:                  db "t1.txt", 0
 
 ;
@@ -109,10 +109,10 @@ kernelMain:
   push si
   PRINTF_M `first cluster 0x%x\n`, si
 
-  %define DEBUG_READ_SIZE 1000
+  %define DEBUG_READ_SIZE 1500
   pop si
   lea di, [buffer]
-  mov dx, 500                                           ; Byte offset
+  mov dx, 999                                           ; Byte offset
   mov cx, DEBUG_READ_SIZE                             ; Amount of bytes to read
   call readClusterBytes
   PRINTF_M `returned %u\n`, ax
