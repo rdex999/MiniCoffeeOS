@@ -105,16 +105,11 @@ kernelMain:
   mov si, FILE_OPEN_ACCESS_APPEND
   call fopen
 
-  mov si, [openFiles + FILE_OPEN_ENTRY256 + 26]       ; First cluster number
-  push si
-  PRINTF_M `first cluster 0x%x\n`, si
-
-  %define DEBUG_READ_SIZE 1500
-  pop si
+  mov dx, ax
+  %define DEBUG_READ_SIZE 1001
   lea di, [buffer]
-  mov dx, 999                                           ; Byte offset
-  mov cx, DEBUG_READ_SIZE                             ; Amount of bytes to read
-  call readClusterBytes
+  mov si, DEBUG_READ_SIZE                             ; Amount of bytes to read
+  call fread
   PRINTF_M `returned %u\n`, ax
 
   lea si, [buffer]
