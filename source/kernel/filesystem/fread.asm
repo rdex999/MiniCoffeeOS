@@ -16,7 +16,7 @@
 fread:
   push bp                                           ; Save stack frame
   mov bp, sp                                        ;
-  sub sp, 6                                         ; Allocate stack for local variables
+  sub sp, 4                                         ; Allocate stack for local variables
 
   mov [bp - 2], ds                                  ; Save old DS segment
   mov [bp - 4], si                                  ; Save amount of bytes to read
@@ -44,16 +44,30 @@ fread:
   cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0     ; Check if the file is even open
   je .err                                           ; If the file is not open then return an error
 
-  ; Prepare arguments for readClusterBytes and read the file into the buffer
-  ; Note: ES:DI, the destination buffer argument for readClusterBytes, is already set. 
-  mov [bp - 6], si                                  ; Save the files descriptor pointer
+  mov ax, ds:[si + FILE_OPEN_READ_POS16]
+  add ax, [bp - 4]
+  cmp ax, ds:[si + FILE_OPEN_ENTRY256 + 28]
+  jae .setReadMax
 
+  mov cx, [bp - 4]
+  jmp .afterSetReadAmount
+
+.setReadMax:
+  mov cx, ds:[si + FILE_OPEN_ENTRY256 + 28]
+  sub cx, ds:[si + FILE_OPEN_READ_POS16]
+
+.afterSetReadAmount:
+
+  ; Prepare arguments for readClusterBytes and read the file into the buffer
+  ; Note: ES:DI, the destination buffer argument for readClusterBytes, is already set,
+  ; as well as the amount of bytes to read (CX)
+
+  push si
   mov dx, ds:[si + FILE_OPEN_READ_POS16]            ; Get the current read position in the file
-  mov cx, [bp - 4]                                  ; Get the requested amount of bytes to read
   mov si, ds:[si + FILE_OPEN_ENTRY256 + 26]         ; Get the files first cluster number
   call readClusterBytes                             ; Read the file into the given buffer (the parameter, ES:DI)
-  
-  mov si, [bp - 6]                                  ; Get the pointer to the file descriptor in the openFiles array
+
+  pop si
   add ds:[si + FILE_OPEN_READ_POS16], ax            ; Add the amount of bytes we read to the read position
 
 .end:

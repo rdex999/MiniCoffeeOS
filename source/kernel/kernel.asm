@@ -86,8 +86,8 @@ sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
-buffer:                     times 512*4*1 db 0         ;;;;;; DEBUG
-pathStf:                  db "t1.txt", 0
+buffer:                     times 512 db 0         ;;;;;; DEBUG
+pathStf:                  db "folder/fld200/t16.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -106,17 +106,15 @@ kernelMain:
   call fopen
 
   mov dx, ax
-  %define DEBUG_READ_SIZE 1001
   lea di, [buffer]
-  mov si, DEBUG_READ_SIZE                             ; Amount of bytes to read
+  mov si, 40
+  pusha
   call fread
-  PRINTF_M `returned %u\n`, ax
+  PRINTF_M `fread returned %u\n`, ax
 
   lea si, [buffer]
   mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  mov dx, DEBUG_READ_SIZE+10
-  call printStrLen
-  %undef DEBUG_READ_SIZE
+  call printStr
 
 
   ; Main loop for reading commands

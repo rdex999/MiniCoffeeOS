@@ -85,6 +85,11 @@ fopen:
 .foundEmpty:
   mov [bp - 7], bx                                ; Save empty slot index
   mov di, dx                                      ; Get a pointer to the empty slot
+
+  mov al, [bp - 5]                                ; Get requested file access
+  mov es:[di + FILE_OPEN_ACCESS8], al             ; Set files access
+  mov word es:[di + FILE_OPEN_READ_POS16], 0      ; Initialize the files current read position to 0
+
   add di, FILE_OPEN_ENTRY256                      ; Add to the pointer the offset of the FAT entry, as we want to copy to it
   mov si, [bp - 9]                                ; Get a pointer to the FAT entry (from where to copy DS:SI)
   mov bx, ss                                      ; Set DS:SI => FAT entry
@@ -94,8 +99,6 @@ fopen:
   mov cx, [bp - 7]                                ; Get the empty slot index
 
 .setAccess:
-  mov bl, [bp - 5]                                          ; Get requested file access
-  mov es:[di + FILE_OPEN_ACCESS8 - FILE_OPEN_ENTRY256], bl  ; Set files access
   mov ax, cx                                                ; Get the files slot index
   inc ax                                                    ; Increase by 1 so we dont return 0 for a valid index (0 indicates error)
 
