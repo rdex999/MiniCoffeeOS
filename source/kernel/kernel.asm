@@ -102,7 +102,7 @@ kernelMain:
 
   ;;;;;;; DEBUG
   lea di, [pathStf]
-  mov si, FILE_OPEN_ACCESS_APPEND
+  mov si, FILE_OPEN_ACCESS_READ
   call fopen
 
   mov dx, ax

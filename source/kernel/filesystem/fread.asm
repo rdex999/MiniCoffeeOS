@@ -44,24 +44,42 @@ fread:
   cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0     ; Check if the file is even open
   je .err                                           ; If the file is not open then return an error
 
-  mov ax, ds:[si + FILE_OPEN_READ_POS16]
-  add ax, [bp - 4]
-  cmp ax, ds:[si + FILE_OPEN_ENTRY256 + 28]
-  jae .setReadMax
+  ; Check if the file has read acces
+  ; Basicaly check if the files access is some access that doesnt have read access (which is only write ("w") and append ("a"))
+  cmp byte ds:[si + FILE_OPEN_ACCESS8], FILE_OPEN_ACCESS_WRITE    ; Check if the files access is WRITE
+  je .err                                                         ; If it is, then dont read the file and return 0
 
-  mov cx, [bp - 4]
-  jmp .afterSetReadAmount
+  cmp byte ds:[si + FILE_OPEN_ACCESS8], FILE_OPEN_ACCESS_APPEND   ; Check if the files access is APPEND
+  je .err                                                         ; If it is, then dont read the file and return 0 
+
+  ; If the file has read access, then check if the requested amount of bytes to read is less than the files size
+  ; If not then read the maximum amount that we can
+
+  ; if(file.readPos + requestedReadSize > file.size){
+  ;   readSize = file.size - file.readPos;
+  ; }else{
+  ;   readSize = requestedReadSize;
+  ; }
+  mov ax, ds:[si + FILE_OPEN_READ_POS16]              ; Get the files current read position
+  add ax, [bp - 4]                                    ; Add to it the requested amount of bytes to read
+  cmp ax, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Check if the result (AX) is greater than the files size
+  jae .setReadMax                                     ; If it is, then calculate the maximum amount of bytes that we can read
+
+  ; If its not greater than the files size then set the read size to the requested amount of bytes to read
+  mov cx, [bp - 4]                                    ; Set read size to requested amount
+  jmp .afterSetReadAmount                             ; Continue and prepare arguments for readClusterBytes
 
 .setReadMax:
-  mov cx, ds:[si + FILE_OPEN_ENTRY256 + 28]
-  sub cx, ds:[si + FILE_OPEN_READ_POS16]
+  ; If it is greater than the files size then calculate the maximum amount of bytes that we can read
+  ; readSize = file.size - file.readPos;
+  mov cx, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Get the files size
+  sub cx, ds:[si + FILE_OPEN_READ_POS16]              ; Subtract from it the current read position in the file
 
 .afterSetReadAmount:
 
   ; Prepare arguments for readClusterBytes and read the file into the buffer
   ; Note: ES:DI, the destination buffer argument for readClusterBytes, is already set,
   ; as well as the amount of bytes to read (CX)
-
   push si
   mov dx, ds:[si + FILE_OPEN_READ_POS16]            ; Get the current read position in the file
   mov si, ds:[si + FILE_OPEN_ENTRY256 + 26]         ; Get the files first cluster number

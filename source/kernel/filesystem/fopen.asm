@@ -10,9 +10,9 @@
 ;   0 Read ("r")
 ;   1 Write ("w")
 ;   2 Append ("a")
-;   3 Read Write, must exist ("r+")
-;   4 Read Write ("w+")
-;   5 Append Read ("a+")
+;   3 Read write, must exist ("r+")
+;   4 Create with read Write ("w+")
+;   5 Append read ("a+")
 ; PARAMETERS
 ;   - 0) ES:DI    => The path to the file, doesnt have to be formatted. Null terminated string.
 ;   - 1) SI       => Access for the file, low 8 bits only
