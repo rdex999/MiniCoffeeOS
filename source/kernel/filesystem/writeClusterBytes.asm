@@ -16,7 +16,7 @@
 writeClusterBytes:
   push bp
   mov bp, sp 
-  sub sp, 19
+  sub sp, 21
 
   ; *(bp - 2)     - Files first cluster number
   ; *(bp - 4)     - Data buffer to write from (segment)
@@ -28,6 +28,7 @@ writeClusterBytes:
   ; *(bp - 16)    - Current LBA address
   ; *(bp - 17)    - Sectors left in cluster
   ; *(bp - 19)    - Bytes written so far
+  ; *(bp - 21)    - Old ES segment
 
   mov [bp - 2], di                          ; Store arguments   // Store first cluster number
   mov [bp - 4], ds                          ; Store buffer segment
@@ -36,6 +37,7 @@ writeClusterBytes:
   mov [bp - 10], cx                         ; Store amount of bytes to write
   mov [bp - 12], gs                         ; Store old GS segment
   mov word [bp - 19], 0                     ; Initialize bytes written so far to 0
+  mov [bp - 21], es
 
   mov bx, KERNEL_SEGMENT                    ; Set GS to kernel segment so we can access kernel variables
   mov gs, bx                                ;
@@ -84,17 +86,85 @@ writeClusterBytes:
   add [bp - 19], ax                         ; Add it to the amount of bytes we read so far
   sub [bp - 10], ax                         ; Subtract it from the amount of bytes left to read
 
-  ;;;;
-  jmp .retCntBytes                          ;;;;;;;; DEBUG
-  ;;;;
-
   jmp .nextLBA                              ; Get the next cluster/LBA and continue writing to the file
 
 .prepRead:
-  ;;;; TODO
+  ; Now we want to read the sector into RAM, then offset it,
+  ; copy data from the source buffer into the sector buffer, then write it back into hard disk
 
+  ; Calculate the bytes offset, because were writting sectors and not whole clusters
+  mov al, gs:[bpb_sectorPerCluster]         ; Get amount of sectors in a cluster
+  sub al, [bp - 17]                         ; Subtract from it the amount of sectors left to write to in the current cluster
+  xor ah, ah                                ; Zero out high 8 bits
+
+  mov bx, gs:[bpb_bytesPerSector]           ; Get amoint of bytes in a sector
+  mul bx                                    ; Multiply sectorsPerCluster * bytesPerSector = bytesPerCluster
+
+  mov dx, ax                                ; Get bytes offset in DX
+  mov si, [bp - 2]                          ; Get current cluster number in SI
+  mov cx, gs:[bpb_bytesPerSector]           ; Amount of bytes to read, 1 sector (bytesPerSector)
+  
+  mov bx, ss                                ; Set destination buffer pointer to the sector buffer ES:DI = sectorBuffer
+  mov es, bx                                ; Set segment ES = SS
+  mov di, [bp - 14]                         ; Set offset DI = sectorBuffer.offset
+  call readClusterBytes                     ; Read 1 sector of the file into the sector buffer
+  cmp ax, gs:[bpb_bytesPerSector]           ; Check if the amount of bytes read is less than a sector
+  jb .retCntBytes                           ; If it is then return the amount of bytes written so far
+
+  ; If we read 1 sector successfully, then now calculate the amount of bytes to copy from the buffer
+  ; (the parameter) into the sector buffer
+  ; if(size - (bytesPerSector - offset) < 0){
+  ;   copySize = size;
+  ; }else{
+  ;   copySzie = bytesPerSector - offset;
+  ; }
+  mov bx, gs:[bpb_bytesPerSector]           ; Get amount of bytes in a sector
+  sub bx, [bp - 8]                          ; Subtract from it the bytes offset (parameter)
+
+  mov ax, [bp - 10]                         ; Get the requested write size
+  sub ax, bx                                ; Subtract from it the thing we calculated before (which is in BX)
+  jc .setSizeLeft                           ; If its negative then set the copy size to the maximum amount of bytes that we can copy
+
+  mov dx, gs:[bpb_bytesPerSector]           ; If not negative, then the copy size is (bytesPerSector - offset)  // Get bytes in 1 sector
+  sub dx, [bp - 8]                          ; Subtract the bytes offset from it
+  jmp .afterSetSize                         ; Continue and prepare arguments for memcpy
+
+.setSizeLeft:
+  mov dx, [bp - 10]                         ; If it is negative (the calculation from before) then the copy size is just the requested size
+
+.afterSetSize:
+  ; Prepare arguments for memcpy
+  mov bx, ss                                ; Set destination buffer to the sector buffer
+  mov es, bx                                ; Set segment ES = SS
+  mov di, [bp - 14]                         ; Set offset DI = sectorBuffer.offset
+  add di, [bp - 8]                          ; Add the bytes offset to the destination buffers offset
+
+  mov ds, [bp - 4]                          ; Set the source buffer pointer to the given buffer (the parameter)
+  mov si, [bp - 6]                          ; Set the source buffer offset to the given buffers offset
+
+  push dx                                   ; Save the amount of bytes were gonna copy (were gonna use it later)
+  call memcpy                               ; Copy the given buffers data (+ the offset), into the sector buffer
+
+  ; Now we want to copy out changes of the sector, into the sector in the hard disk
+  mov bx, ss                                ; Set source buffer to our sector buffer DS:SI = sectorBuffer
+  mov ds, bx                                ; Set segment DS = sectorBuffer.segment = SS
+  mov si, [bp - 14]                         ; Set offset SI = sectorBuffer.offset
+
+  mov di, [bp - 16]                         ; Set the LBA to write to   // Out current LBA
+  mov dx, 1                                 ; Amount of sectors to write to (1)
+  call writeDisk                            ; Write the sector buffer into the sector on the hard disk
+  test ax, ax                               ; Check writeDisk error code
+  jnz .retCntBytes                          ; If there was an error then return the amount of bytes we have written so far
+
+  pop dx                                    ; Restore amount of bytes we have copied
+  add [bp - 6], dx                          ; The size were gonne write it to the source buffer offset
+  add [bp - 19], dx                         ; Add it to the amount of bytes we read so far
+  sub [bp - 10], dx                         ; Subtract it from the amount of bytes left to read
+  jc .retCntBytes                           ; If the amount of bytes left to write is zero or negative, 
+  jz .retCntBytes                           ; then return the amount of bytes written so far
 
 .nextLBA:
+  mov word [bp - 8], 0                      ; Reset offset to 0   // The first iteration it will be set, but after that its always 0
   inc word [bp - 16]                        ; Increase current LBA address
   dec byte [bp - 17]                        ; Decrement amount of sectors left in the current cluster
   jnz .writeLoop                            ; If its not zero, then continue writting to the file
@@ -124,6 +194,7 @@ writeClusterBytes:
 .end:
   mov gs, [bp - 12]                         ; Restore old GS segment
   mov ds, [bp - 4]                          ; Restore old DS segment
+  mov es, [bp - 21]
   mov sp, bp                                ; Restore stack frame
   pop bp                                    ;
   ret
