@@ -44,73 +44,20 @@ readClusterBytes:
   mov bx, KERNEL_SEGMENT                ; Set DS segment to kernel segment so we can read kernel variables
   mov ds, bx                            ;
 
-  sub sp, ds:[bpb_bytesPerSector]
-  mov [bp - 18], sp
+  sub sp, ds:[bpb_bytesPerSector]       ; Allocate space for 1 sector on the stack
+  mov [bp - 18], sp                     ; Store sector buffer offset
 
-  ; Here we calculate the amount of clusters we can skip (if any)
-  ; The formula:
-  ; clustersToSkip = byteOffset / bytesPerCluster
-  ; newByteOffset  = byteOffset % bytesPerCluster
-  ; First we calculate the amount of bytes in a cluster (bytesPerSector * sectorPerCluster)
-  mov ax, ds:[bpb_bytesPerSector]       ; Get the amount of bytes in a sector
-  mov bl, ds:[bpb_sectorPerCluster]     ; Get amount of sectors in a cluster (8 bits)
-  xor bh, bh                            ; Zero out high 8 bits
-  mul bx                                ; Get amount of bytes in a cluster in AX
-  
-  mov bx, ax                            ; Amount of bytes in a cluster in BX
+  mov di, si                            ; Get first cluster number
+  mov si, dx                            ; Get bytes offset
+  call skipClusters                     ; Calculate the amount of sectors and clusters that we can skip
+  test si, si                           ; Check error code of skipClusters
+  jnz .err                              ; If there was an error then return an error (return 0)
 
-  mov ax, [bp - 8]                      ; Get requested bytes offset
-  xor dx, dx                            ; Zero out remainder register
-  
-  ; AX = byteOffset / bytesPerCluster = clustersToSkip
-  ; DX = byteOffset % bytesPerCluster = newBytesOffset
-  div bx                                ; Calculate
-
-  test ax, ax                           ; Check if there are even any clusters to skip
-  jz .afterCalcClusterSkip              ; If 0 clusters to skip then skip the part which skips clusters (read it again)
-
-  ; If there are some clusters we can skip, then skip them and store the new bytes offset
-  mov [bp - 8], dx                      ; Store the new bytes offset
-  mov cx, ax                            ; Loop through the amount of clusters to skip
-.skipClustersLoop:
-  mov di, [bp - 6]                      ; Get current cluster number
-  push cx                               ; Save amount of clusters left to skip
-  call getNextCluster                   ; Get the next cluster number, from out current one
-  pop cx                                ; Restore amount of clusters left to skip
-  test bx, bx                           ; Check if getNextCluster has returned with an error
-  jnz .err                              ; If it did, then return 0 to indicate an error
-
-  cmp ax, 0FFF8h                        ; Check if its the end of the cluster chain
-  jae .err                              ; If it is, then return 0 because we couldnt even reach the files first byte with the given offset
-
-  mov [bp - 6], ax                      ; If its not the end of the cluster chain, then update the first cluster number variable
-  loop .skipClustersLoop                ; Continue skipping clusters until CX (amount of clusters to skip) is 0
-
-.afterCalcClusterSkip:
-  ; Get the LBA of the new cluster
-  mov di, [bp - 6]                      ; Get first cluster number (updated)
-  call clusterToLBA                     ; Get its LBA in AX
-  mov [bp - 12], ax                     ; Store LBA
-
-  ; Calculate the amount of sectors to skip
-  ; The formula
-  ; sectorsToSkip = byteOffset / bytesPerSector
-  ; newByteOffset = byteOffset % bytesPerSector
-  mov bx, ds:[bpb_bytesPerSector]       ; Get amount of bytes in a sector
-  mov ax, [bp - 8]                      ; Get bytes offset
-  xor dx, dx                            ; Zero out remainder register
-  
-  ; AX = sectorsToSkip  = byteOffset{AX} / bytesPerSector{BX}
-  ; DX = newBytesOffset = byteOffset{AX} % bytesPerSector{BX}
-  div bx                                ; Calculate
-
-  mov [bp - 8], dx                      ; Update the bytes offset
-  add [bp - 12], ax                     ; Increase the LBA
-
-  ; sectorsLeftInCluster = sectorsPerCluster - sectorOffset
-  mov bl, ds:[bpb_sectorPerCluster]     ; Get amount of sectors in a cluster
-  sub bl, al                            ; Subtract from it the cluster offset
-  mov [bp - 19], bl                     ; Save the amount of sectors left in current cluster
+  ; If no error then save the return values
+  mov [bp - 6], ax                      ; Save the cluster number
+  mov [bp - 12], bx                     ; Save new LBA address
+  mov [bp - 19], cl                     ; Save amount of sectors left in current cluster
+  mov [bp - 8], dx                      ; Save new bytes offset
 
 .readSectorsLoop:
   ; Here we are gonna calculate the amount of bytes to copy in memcpy.

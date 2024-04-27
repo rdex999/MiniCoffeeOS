@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "t2.txt", 0
+pathStf:                  db "folder/fld200/t16.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -105,18 +105,15 @@ kernelMain:
   mov si, FILE_OPEN_ACCESS_READ
   call fopen
 
-  mov di, [openFiles + FILE_OPEN_ENTRY256 + 26]
-  push di
-  call clusterToLBA
-  pop di
-  pusha
-  PRINTF_M `start cluster %u with LBA %u\n`, di, ax
-  popa
+  lea di, [buffer] 
+  mov si, 512
+  mov dx, ax
+  call fread
 
-  mov si, 512*3+47
-  call skipClusters
+  lea si, [buffer]
+  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  call printStr
 
-  PRINTF_M `new cluster %u new LBA %u sectors left in cluster %u bytes offset %u\n`, ax, bx, cx, dx
 
   ; lea si, [welcomeMsg]
   ; xor dx, dx
