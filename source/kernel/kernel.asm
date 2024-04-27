@@ -105,23 +105,23 @@ kernelMain:
   mov si, FILE_OPEN_ACCESS_READ
   call fopen
 
-  lea di, [buffer] 
-  mov si, 512
-  mov dx, ax
+  push ax  
+  mov di, [openFiles + FILE_OPEN_ENTRY256 + 26] 
+  lea si, [welcomeMsg]
+  xor dx, dx
+  mov cx, 1000
+  call writeClusterBytes
+
+  PRINTF_M `writeClusterBytes returned %u\n`, ax
+
+  pop dx
+  lea di, [buffer]
+  mov si, 17
   call fread
 
   lea si, [buffer]
   mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
   call printStr
-
-
-  ; lea si, [welcomeMsg]
-  ; xor dx, dx
-  ; mov cx, 64
-  ; call writeClusterBytes
-
-
-
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:
