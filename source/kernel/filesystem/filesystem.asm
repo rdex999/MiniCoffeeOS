@@ -8,6 +8,7 @@
 %include "bootloader/macros/getRegions.asm"
 %include "kernel/filesystem/getFileEntry.asm"
 %include "kernel/filesystem/getNextCluster.asm"
+%include "kernel/filesystem/skipClusters.asm"
 %include "kernel/filesystem/fopen.asm"
 %include "kernel/filesystem/fclose.asm"
 %include "kernel/filesystem/fread.asm"

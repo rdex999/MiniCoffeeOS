@@ -41,13 +41,6 @@ readClusterBytes:
   mov [bp - 14], ds                     ; Store old DS segment
   mov word [bp - 16], 0
 
-  pusha                                 ;;;;;; DEBUG
-  mov di, si                            ;;;;;;
-  call clusterToLBA                     ;;;;;;
-  PRINTF_M `first clusters LBA %u\n`, ax;;;;;;
-  popa                                  ;;;;;;
-
-
   mov bx, KERNEL_SEGMENT                ; Set DS segment to kernel segment so we can read kernel variables
   mov ds, bx                            ;
 
