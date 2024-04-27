@@ -12,6 +12,7 @@
 %include "kernel/filesystem/fclose.asm"
 %include "kernel/filesystem/fread.asm"
 %include "kernel/filesystem/readClusterBytes.asm"
+%include "kernel/filesystem/writeClusterBytes.asm"
 ; %include "kernel/filesystem/readFile.asm"
 ; %include "kernel/filesystem/searchInRootDir.asm"
 %include "kernel/filesystem/parsePath.asm"
@@ -26,21 +27,27 @@
 ;   - CL => sector
 ;   - DH => head
 lbaToChs:
-  mov ax, di                      ;
-  mov bx, ds:[bpb_sectorsPerTrack]   ; LBA / sectorsPerTrack
-  xor dx, dx                      ;
-  div bx                          ; AX = AX / BX ;; DX = %
+  push ds                               ; Set DS to kernel segment so we can read correct values
+  mov bx, KERNEL_SEGMENT                ;
+  mov ds, bx                            ;
 
-  inc dx                          ;
-  mov cl, dl                      ; sector = (LBA % sectorsPerTrack) + 1
+  mov ax, di                            ; Get LBA
+  mov bx, ds:[bpb_sectorsPerTrack]      ; LBA / sectorsPerTrack
+  xor dx, dx                            ;
+  div bx                                ; AX = AX / BX ;; DX = %
+
+  inc dx                                ;
+  mov cl, dl                            ; sector = (LBA % sectorsPerTrack) + 1
 
   ; AX containes LBA/sectorsPerTrack
-  mov bx, ds:[bpb_numberOfHeadsOrSides]    ;
+  mov bx, ds:[bpb_numberOfHeadsOrSides] ;
   xor dx, dx                            ;
   div bx                                ;
   mov dh, dl                            ; head = (LBA / sectorsPerTrack) % heads
 
   mov ch, al                            ; cylinder = (LBA / sectorsPerTrack) / heads
+
+  pop ds                                ; Restore old DS
   ret
 
 
@@ -72,6 +79,42 @@ readDisk:
 readDisk_error:
   mov ax, ERR_READ_DISK         ; Read has failed, return error
   ret
+
+
+; Write sectors to an LBA address
+; PARAMS
+;   - 0) DI     => LBA address to write to
+;   - 1) DS:SI  => Buffer, the data to write to the LBA
+;   - 2) DX     => Amount of sectors to write
+writeDisk:
+  push gs                           ; Save used segments
+  push es                           ; ES is used as the buffer for INT13h/AH=3
+  mov bx, KERNEL_SEGMENT            ; Set GS to the kernel segment so we read correct values
+  mov gs, bx                        ;
+
+  mov bx, ds                        ; ES is used as the buffer for INT13h/AH=3
+  mov es, bx                        ; So set it to the arguments buffer segment
+
+  push si                           ; Save arguments buffer offset
+  push dx                           ; Save amount of sectors to write
+  call lbaToChs                     ; Convert the LBA address (which is in DI) to a CHS address
+  pop ax                            ; Restore amount of sectors to write, into AL
+  pop bx                            ; Restore argument buffer offset, into BX
+  mov dl, gs:[ebpb_driveNumber]     ; Get the drive number
+
+  mov ah, 3                         ; Interrupt number 
+  int 13h                           ; Write sectors from ES:BX into the CHS address
+  jc .err                           ; If there was an error then we set AX to ERR_WRITE_DISK and return
+
+  xor ax, ax
+.end:
+  pop es                            ; Restore used segments
+  pop gs                            ;
+  ret
+
+.err:
+  mov ax, ERR_WRITE_DISK            ; Set error code
+  jmp .end                          ; Return
 
 
 ; converts a cluster number to LBA address

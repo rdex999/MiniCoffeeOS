@@ -10,9 +10,10 @@
 ; If a part of a path (like a files path) is more than 11 bytes.
 ; Part is for example: "dir/file.txt" "dir" is a part and "file.txt" is a part
 %define ERR_PATH_PART_LIMIT 2
-%define ERR_GET_FILE_ENTRY 3
-%define ERR_FILE_NOT_FOUND 4
-%define ERR_NOT_DIRECTORY 5
-%define ERR_READ_DISK 6
+%define ERR_GET_FILE_ENTRY (ERR_PATH_PART_LIMIT + 1)
+%define ERR_FILE_NOT_FOUND (ERR_GET_FILE_ENTRY + 1)
+%define ERR_NOT_DIRECTORY (ERR_FILE_NOT_FOUND + 1)
+%define ERR_READ_DISK (ERR_NOT_DIRECTORY + 1)
+%define ERR_WRITE_DISK (ERR_READ_DISK + 1)
 
 %endif
