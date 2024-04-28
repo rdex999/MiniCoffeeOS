@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "hello.txt", 0
+pathStf:                  db "KERNEL  BIN", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -100,10 +100,26 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+  mov di, 10
+  call getFreeCluster
+  push ax
+  PRINTF_M `getFreeCluster returned %u\n`, ax
+  
+  pop di
+  call getNextCluster
+  PRINTF_M `next cluster %u\n`, ax
+
+
+  
   ;;;;;;; DEBUG
-  lea di, [buffer]
-  lea si, [pathStf]
-  call createFile
+  ; lea di, [buffer]
+  ; lea si, [pathStf]
+  ; mov dl, 0
+  ; call createFile
+
+  ; PRINTF_M `createFile returned %u\n`, ax
+
+
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

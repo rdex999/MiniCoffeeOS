@@ -9,6 +9,7 @@
 ; PARAMS
 ;   - 0) ES:DI    => The buffer to store the files FAT entry in (If null, then wont write the files entry)
 ;   - 1) DS:SI    => A string containing the file path. Doesnt have to be formatted.
+;   - 2) DL       => Flags
 ; RETURNS
 ;   - 0) In AX, the error code.
 createFile:
@@ -104,12 +105,11 @@ createFile:
   dec byte [bp - 16]                    ; Decrement sectors left to read in the root directory
   jnz .rootDirNextSector                ; If its not zero then jump and load the next sector of the root directory
 
-  ; If zero then the disk is full
-  PRINT_CHAR 'E', VGA_TXT_YELLOW        ;;;;;; DEBUG
+  mov ax, ERR_DISK_FULL 
   jmp .end
 
 .foundEmptyRootDir:
-  PRINT_CHAR 'K', VGA_TXT_YELLOW        ;;;;;; DEBUG
+  ; When getting here, the empty entry should be pointed to by SS:DI
 
 .notOnRootDir:
   ; Will get here if the file is from the rrot directory
