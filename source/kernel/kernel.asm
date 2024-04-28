@@ -101,28 +101,9 @@ kernelMain:
   call printStr
 
   ;;;;;;; DEBUG
-  lea di, [pathStf]
-  mov si, FILE_OPEN_ACCESS_READ
-  call fopen
-
-  mov di, [openFiles + FILE_OPEN_ENTRY256 + 26] 
-  lea si, [welcomeMsg]
-  mov dx, 6
-  mov cx, 1020
-  call writeClusterBytes
-
-  PRINTF_M `writeClusterBytes returned %u\n`, ax
-
   lea di, [buffer]
-  mov si, [openFiles + FILE_OPEN_ENTRY256 + 26]
-  mov dx, 0
-  mov cx, 1000
-  call readClusterBytes
-
-  lea si, [buffer]
-  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  mov dx, 100
-  call printStrLen
+  lea si, [pathStf]
+  call createFile
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:
