@@ -107,6 +107,7 @@ parsePath_foundNull:
   sub ax, [bp - 3]                      ; Subract the beginning of the buffer to get current name length in CX
   mov cx, 11                            ; CX = length of path part (11)
   sub cx, ax                            ; CX = 11 - currentNameLength   => How many spaces to fill
+  jz parsePath_success
 
   ; Fill rest of the buffer with spaces
 parsePath_foundNull_fillSpaceAfterExt:
