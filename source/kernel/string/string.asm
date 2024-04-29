@@ -37,13 +37,15 @@ strcmp_notEqual:
 ; int16 => the length of the string
 strlen:
   mov si, di  ; store copy of original pointer in SI
+  mov cx, 0FFFFh
+  xor al, al 
+  cld
 strlen_loop:
-  inc di
-  cmp byte es:[di], 0  ; check for null character
-  jne strlen_loop
+  repnz scasb
 
   mov ax, di
   sub ax, si
+  dec ax
   ret
 
 

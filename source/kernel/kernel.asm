@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "hello.txt", 0
+pathStf:                  db "folder/fld200/file.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -108,15 +108,14 @@ kernelMain:
 
   PRINTF_M `createFile returned %u\n`, ax
 
-  lea di, [pathStf]
-  mov si, FILE_OPEN_ACCESS_READ
-  call fopen
+  ; lea di, [pathStf]
+  ; mov si, FILE_OPEN_ACCESS_READ
+  ; call fopen
 
-  PRINTF_M `fopen returned %u\n`, ax
+  ; PRINTF_M `fopen returned %u\n`, ax
 
-  mov ax, [openFiles + FILE_OPEN_ENTRY256 + 26]
-  PRINTF_M `first cluster %u\n`, ax
-
+  ; mov ax, [openFiles + FILE_OPEN_ENTRY256 + 26]
+  ; PRINTF_M `first cluster %u\n`, ax
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

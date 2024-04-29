@@ -15,7 +15,7 @@
 createFile:
   push bp                               ; Save stack frame
   mov bp, sp                            ;
-  sub sp, 17                            ; Allocate memory on the stack for local variables
+  sub sp, 20                            ; Allocate memory on the stack for local variables
 
   ; *(bp - 2)     - Buffer segment
   ; *(bp - 4)     - Buffer offset
@@ -25,8 +25,10 @@ createFile:
   ; *(bp - 11)    - Formatted string length
   ; *(bp - 13)    - Sector buffer offset (segment is SS)
   ; *(bp - 15)    - Current LBA in root directory
-  ; *(bp - 16)    - Sectors left in root directory
+  ; *(bp - 16)    - Sectors left in root directory, or sectors left in current cluster of directory
   ; *(bp - 17)    - Flags, for the new file
+  ; *(bp - 18)    - The first character of the final file name (because changing it to null)
+  ; *(bp - 20)    - Unformatted string copy buffer offset (segment in SS)
 
   mov [bp - 2], es                      ; Store buffers segment
   mov [bp - 4], di                      ; Store buffers offset
@@ -97,7 +99,7 @@ createFile:
   mov cx, ds:[bpb_bytesPerSector]       ; CX will count how many entries are left to read (decremented by 32 each iteration)
 .searchEmtpy:
   cmp byte ss:[di], 0                   ; If the first byte of the entry is 0, then the entry is free. Check if the current entry if free
-  je .foundEmptyRootDir                 ; If it is free then jump
+  je .initEmptyEntry                    ; If it is free then jump
   add di, 32                            ; If not free then increase the sector buffer pointer to point to the next entry
   sub cx, 32                            ; Decrement entries counter (how many are left)
   jnz .searchEmtpy                      ; As long as the entry counter is not zero continue searching
@@ -111,7 +113,7 @@ createFile:
   mov ax, ERR_DISK_FULL 
   jmp .end
 
-.foundEmptyRootDir:
+.initEmptyEntry:
   ; When getting here, the empty entry should be pointed to by SS:DI
   ; Now we want to copy the filename to the files entry
   mov bx, ss                            ; Both the filename and the file entry are on the stack, so both ES and DS are set to SS
@@ -196,7 +198,57 @@ createFile:
   jmp .end                              ; Return
 
 .notOnRootDir:
-  ; Will get here if the file is from the rrot directory
+  ; Here we need to get the first cluster of the directory of the file. Meaning, if the path is (folder/fld/file.txt)
+  ; Then the directory of the file is folder/fld
+  ; We need to get its cluster so we search the directory for an empty entry, then initialize a file there.
+  ; We get the directory of the file by searching for the last '/' in the files path (then copy it to a seperate buffer, until that '/')
+  mov es, [bp - 6]                      ; Get unformatted file path segment
+  mov di, [bp - 8]                      ; Get unformatted file path offset
+.searchLestFolder:
+  cmp byte es:[di], '/'                 ; Check if the current character in the path is a '/'
+  jne .notDirSeparator                  ; If not, then skip the next line
+
+  mov si, di                            ; If it is a '/', then save a pointer to it in SI
+
+.notDirSeparator:
+  cmp byte es:[di], 0                   ; Check if the current character is a null character
+  je .afterFindLastDir                  ; If it is then exit out of the loop
+
+  inc di                                ; If not a null, increment the string pointer to point to the next character
+  jmp .searchLestFolder                 ; Continue searching the path for '/'
+
+.afterFindLastDir:
+  ; When getting here ES:SI will point to the last '/' in the path
+  mov dx, si                            ; Get the pointer in DX
+  sub dx, [bp - 8]                      ; Subtract from it the beginning of the string, to get the length of the string until the last '/'
+
+  sub sp, dx                            ; Allocate space for the copy of the path 
+  dec sp                                ; Allocate one more byte for the null character
+  mov [bp - 20], sp                     ; Store a pointer to the beginning of the buffer
+
+  ; Now we have the length of the path until the last '/' in DX
+  ; so we want to copy the path into the new buffer.
+  ; Prepare arguments for memcpy.
+  mov ds, [bp - 6]                      ; Get a pointer to the beginning of the unformatted path
+  mov si, [bp - 8]                      ; Get offset
+
+  mov bx, ss                            ; Get a pointer to the beginning of the allocated buffer
+  mov es, bx                            ; Set segment
+  mov di, sp                            ; Set offset
+  push dx                               ; Save the length of the new path
+  call memcpy                           ; Copy the unformatted path to the buffer, until the last '/'
+  pop dx                                ; Restore length of new path
+
+  add di, dx                            ; Add the length to the buffer pointer, to get a pointer to the last character +1
+  mov byte es:[di], 0                   ; Null terminate the new path
+
+  ;;;;; DEBUG
+  mov bx, ss                            ;;;;;;;; DEBUG
+  mov ds, bx
+  mov si, [bp - 20]
+  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  call printStr
+
 
 
 .end:
