@@ -15,7 +15,7 @@
 createFile:
   push bp                               ; Save stack frame
   mov bp, sp                            ;
-  sub sp, 16                            ; Allocate memory on the stack for local variables
+  sub sp, 17                            ; Allocate memory on the stack for local variables
 
   ; *(bp - 2)     - Buffer segment
   ; *(bp - 4)     - Buffer offset
@@ -26,11 +26,13 @@ createFile:
   ; *(bp - 13)    - Sector buffer offset (segment is SS)
   ; *(bp - 15)    - Current LBA in root directory
   ; *(bp - 16)    - Sectors left in root directory
+  ; *(bp - 17)    - Flags, for the new file
 
   mov [bp - 2], es                      ; Store buffers segment
   mov [bp - 4], di                      ; Store buffers offset
   mov [bp - 6], ds                      ; Store paths segment
   mov [bp - 8], si                      ; Store paths offset
+  mov [bp - 17], dl
 
   mov bx, ds                            ; Set ES:DI = DS:SI   // Set argument for strFindLetterCount, the path to format
   mov es, bx                            ; Set ES = DS
@@ -110,6 +112,56 @@ createFile:
 
 .foundEmptyRootDir:
   ; When getting here, the empty entry should be pointed to by SS:DI
+  ; Now we want to copy the filename to the files entry
+  mov bx, ss                            ; Both the filename and the file entry are on the stack, so both ES and DS are set to SS
+  mov es, bx                            ; Set ES = SS
+  mov ds, bx                            ; Set DS = SS
+
+  mov si, [bp - 10]                     ; Get a pointer to the file name (the source)
+  mov dx, 11                            ; Copy 11 bytes (the size of a file name)
+  call memcpy                           ; Copy the file name to the files entry (DI already set)
+
+  mov al, [bp - 17]                     ; Get the requested file flags
+  mov es:[di + 11], al                  ; Set the files flags in its entry
+
+  ; Note: Skipping byte on offset 12 (some stuff for Windows NT)
+  ;       And also byte at offset 13 (creation time in hundredths of a second)
+  mov bx, KERNEL_SEGMENT                ; Set DS to kernel segment so we can access sysTime
+  mov ds, bx                            ;
+
+  ; Update the files creation date (hours, minutes, seconds) 
+  mov al, ds:[sysClock_seconds]         ; Get the current seconds
+  shr ax, 1                             ; Divide it by 2 (the seconds are 5 bits, and 5 bits can hold a maximum value of 31)
+  and ax, 0001_1111b                    ; Remove all other bits, and leave the first 5 (which are the seconds) (seconds: bits 0-4)
+
+  mov bl, ds:[sysClock_minutes]         ; Get the current minute
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5                             ; Shift left by 5 bits because minutes are starting from bit 5 (minuts: bits 5-10)
+  or ax, bx                             ; Get minutes starting from bit 5 in the result register (AX will hold the final creation time)
+
+  mov bl, ds:[sysClock_hours]           ; Get the current hour
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5 + 6                         ; Shift left by the size of the seconds + the size of minuts (in bits) (hours: bits 11-15)
+  or ax, bx                             ; Get current hour in result register
+
+  mov es:[di + 14], ax                  ; Update the creation time of the file (in hours, minutes, and seconds)
+
+  ; Now we want to update the files creation date (year, month, day)
+  mov al, ds:[sysClock_day]             ; Get current day (in month)
+  and ax, 0001_1111b                    ; Clear all bits except the bits of the dat (bits 0-4)
+
+  mov bl, ds:[sysClock_month]           ; Get current month number
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5                             ; Shift left by 5 bits (month: bits 5-8)
+  or ax, bx                             ; Get month in result register
+
+  mov bl, ds:[sysClock_year]            ; Get current year
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5 + 4                         ; Shift left by 9 bits (year: bits 9-15)
+  or ax, bx                             ; Get current year in result register
+
+  mov es:[di + 16], ax                  ; Write the creation time to the file entry
+
 
 .notOnRootDir:
   ; Will get here if the file is from the rrot directory
