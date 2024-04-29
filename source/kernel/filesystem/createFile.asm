@@ -15,7 +15,7 @@
 createFile:
   push bp                               ; Save stack frame
   mov bp, sp                            ;
-  sub sp, 20                            ; Allocate memory on the stack for local variables
+  sub sp, 22                            ; Allocate memory on the stack for local variables
 
   ; *(bp - 2)     - Buffer segment
   ; *(bp - 4)     - Buffer offset
@@ -24,11 +24,12 @@ createFile:
   ; *(bp - 10)    - Formatted string offset (segment is SS)
   ; *(bp - 11)    - Formatted string length
   ; *(bp - 13)    - Sector buffer offset (segment is SS)
-  ; *(bp - 15)    - Current LBA in root directory
+  ; *(bp - 15)    - Current LBA in directory
   ; *(bp - 16)    - Sectors left in root directory, or sectors left in current cluster of directory
   ; *(bp - 17)    - Flags, for the new file
-  ; *(bp - 18)    - The first character of the final file name (because changing it to null)
+  ; *(bp - 18)    - The first character of the final file name (because changing it to null)    // TODO: GET RID OF THIS
   ; *(bp - 20)    - Unformatted string copy buffer offset (segment in SS)
+  ; *(bp - 22)    - Current cluster number in directory
 
   mov [bp - 2], es                      ; Store buffers segment
   mov [bp - 4], di                      ; Store buffers offset
@@ -97,12 +98,12 @@ createFile:
 
   mov di, [bp - 13]                     ; Get a pointer to the sector buffer in SS:DI
   mov cx, ds:[bpb_bytesPerSector]       ; CX will count how many entries are left to read (decremented by 32 each iteration)
-.searchEmtpy:
+.searchEmpty:
   cmp byte ss:[di], 0                   ; If the first byte of the entry is 0, then the entry is free. Check if the current entry if free
   je .initEmptyEntry                    ; If it is free then jump
   add di, 32                            ; If not free then increase the sector buffer pointer to point to the next entry
   sub cx, 32                            ; Decrement entries counter (how many are left)
-  jnz .searchEmtpy                      ; As long as the entry counter is not zero continue searching
+  jnz .searchEmpty                      ; As long as the entry counter is not zero continue searching
 
   ; If the entry counter has reached 0, then increase the LBA, and decrement the amount of sectors left to read in the root directory
   inc word [bp - 15]                    ; Increase current LBA
@@ -110,7 +111,7 @@ createFile:
   jnz .rootDirNextSector                ; If its not zero then jump and load the next sector of the root directory
 
 .errDiskFull:
-  mov ax, ERR_DISK_FULL 
+  mov ax, ERR_DISK_FULL                 ; If the disk is full, we return an error for it
   jmp .end
 
 .initEmptyEntry:
@@ -120,7 +121,12 @@ createFile:
   mov es, bx                            ; Set ES = SS
   mov ds, bx                            ; Set DS = SS
 
+  mov al, [bp - 11]                     ; Get the size of the formatted path
+  xor ah, ah                            ; Zero out high 8 bits
   mov si, [bp - 10]                     ; Get a pointer to the file name (the source)
+  add si, ax                            ; Add the size of the formatted path to the formatted path pointer, to get to the last character
+  sub si, 11                            ; Subtract 11 from it so we get to the first byte of the actual file name
+
   mov dx, 11                            ; Copy 11 bytes (the size of a file name)
   call memcpy                           ; Copy the file name to the files entry (DI already set)
 
@@ -242,14 +248,84 @@ createFile:
   add di, dx                            ; Add the length to the buffer pointer, to get a pointer to the last character +1
   mov byte es:[di], 0                   ; Null terminate the new path
 
-  ;;;;; DEBUG
-  mov bx, ss                            ;;;;;;;; DEBUG
-  mov ds, bx
-  mov si, [bp - 20]
-  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  call printStr
+  sub sp, 32                            ; Allocate a buffer for the entry of the directory
+  mov di, sp                            ; Get a pointer to the beginning of the buffer
 
+  mov bx, ss                            ; Set both ES and DS to SS, because both the path and the buffer are on the stack
+  mov ds, bx                            ; Set DS = SS
+  mov es, bx                            ; Set ES = SS
+  mov si, [bp - 20]                     ; Get a pointer to the new path
+  call getFileEntry                     ; Get the directories entry and store it on the stack (the allocated 32 byte buffer)
+  test ax, ax                           ; Check error code
+  jnz .end                              ; If there was an error then return with it
 
+  mov si, sp                            ; Get a pointer to the directories entry
+  mov di, ss:[si + 26]                  ; Get the directories first cluster number
+  add sp, 32                            ; Free the allocated space, we dont need it anymore
+
+  mov [bp - 22], di                     ; Store the first cluster number
+
+  mov bx, KERNEL_SEGMENT                ; Set DS to the kernel segment so we can access stuff
+  mov ds, bx                            ;
+
+  sub sp, ds:[bpb_bytesPerSector]       ; Allocate space for 1 sector on the stack
+  mov [bp - 13], sp                     ; Store buffer pointer
+
+  call clusterToLBA                     ; Get the LBA of the cluster (which is in DI)
+  mov [bp - 15],  ax                    ; Store the LBA
+  
+  mov al, ds:[bpb_sectorPerCluster]     ; Get the amount of sectors in a cluster
+  mov [bp - 16], al                     ; Store it as a counter for how many clusters are left to 
+.searchEmptyEntryInDir_loadSector:
+  mov bx, ss
+  mov es, bx
+  mov bx, [bp - 13]
+
+  mov di, [bp - 15]
+  mov si, 1
+  call readDisk
+  test ax, ax
+  jnz .end
+
+  mov di, [bp - 13]
+  mov cx, ds:[bpb_bytesPerSector]
+.searchEmptyInSector:
+  cmp byte ss:[di], 0
+  je .initEmptyEntry
+
+  add di, 32
+  sub cx, 32
+  jnz .searchEmptyInSector
+
+  inc word [bp - 15]
+  dec byte [bp - 16]
+  jnz .searchEmptyEntryInDir_loadSector
+
+  mov di, [bp - 22]
+  call getNextCluster
+  test bx, bx
+  jz .gotNextDirectoryCluster
+
+  mov ax, bx
+  jmp .end
+
+.gotNextDirectoryCluster:
+  cmp ax, 0FFF8h
+  jb .validCluster
+
+  ;;; TODO
+  mov ax, 0FFFFh
+  jmp .end
+
+.validCluster:
+  mov di, ax
+  mov [bp - 22], ax
+  call clusterToLBA
+  mov [bp - 15], ax
+
+  mov al, ds:[bpb_sectorPerCluster]
+  mov [bp - 16], al
+  jmp .searchEmptyEntryInDir_loadSector
 
 .end:
   mov es, [bp - 2]                      ; Restore used segments

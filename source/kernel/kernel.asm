@@ -108,14 +108,14 @@ kernelMain:
 
   PRINTF_M `createFile returned %u\n`, ax
 
-  ; lea di, [pathStf]
-  ; mov si, FILE_OPEN_ACCESS_READ
-  ; call fopen
+  lea di, [pathStf]
+  mov si, FILE_OPEN_ACCESS_READ
+  call fopen
 
-  ; PRINTF_M `fopen returned %u\n`, ax
+  PRINTF_M `fopen returned %u\n`, ax
 
-  ; mov ax, [openFiles + FILE_OPEN_ENTRY256 + 26]
-  ; PRINTF_M `first cluster %u\n`, ax
+  mov ax, [openFiles + FILE_OPEN_ENTRY256 + 26]
+  PRINTF_M `first cluster %u\n`, ax
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:
