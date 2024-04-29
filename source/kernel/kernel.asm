@@ -100,14 +100,14 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  mov di, 10
+  mov di, 0FFF9h
   call getFreeCluster
   push ax
   PRINTF_M `getFreeCluster returned %u\n`, ax
   
   pop di
   call getNextCluster
-  PRINTF_M `next cluster %u\n`, ax
+  PRINTF_M `next cluster 0x%x\n`, ax
 
 
   
