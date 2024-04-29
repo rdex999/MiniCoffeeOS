@@ -107,6 +107,7 @@ createFile:
   dec byte [bp - 16]                    ; Decrement sectors left to read in the root directory
   jnz .rootDirNextSector                ; If its not zero then jump and load the next sector of the root directory
 
+.errDiskFull:
   mov ax, ERR_DISK_FULL 
   jmp .end
 
@@ -129,7 +130,7 @@ createFile:
   mov bx, KERNEL_SEGMENT                ; Set DS to kernel segment so we can access sysTime
   mov ds, bx                            ;
 
-  ; Update the files creation date (hours, minutes, seconds) 
+  ; Update the files creation time (hours, minutes, seconds) 
   mov al, ds:[sysClock_seconds]         ; Get the current seconds
   shr ax, 1                             ; Divide it by 2 (the seconds are 5 bits, and 5 bits can hold a maximum value of 31)
   and ax, 0001_1111b                    ; Remove all other bits, and leave the first 5 (which are the seconds) (seconds: bits 0-4)
@@ -145,6 +146,7 @@ createFile:
   or ax, bx                             ; Get current hour in result register
 
   mov es:[di + 14], ax                  ; Update the creation time of the file (in hours, minutes, and seconds)
+  mov es:[di + 22], ax                  ; Set last modification time, same as the creation time
 
   ; Now we want to update the files creation date (year, month, day)
   mov al, ds:[sysClock_day]             ; Get current day (in month)
@@ -161,7 +163,37 @@ createFile:
   or ax, bx                             ; Get current year in result register
 
   mov es:[di + 16], ax                  ; Write the creation time to the file entry
+  mov es:[di + 18], ax                  ; Set last accessed date, same as the creation date
+  
+  mov word es:[di + 20], 0              ; High 8 bits of the first cluster number are always 0
+  mov es:[di + 24], ax                  ; Set last modification date, same as the creation date
+  
+  push di                               ; Save empty entry pointer
+  mov di, 0FFF8h                        ; We want to initialize the first cluster to an end
+  call getFreeCluster                   ; Get a free cluster, and initialize the next one to an end of the cluster chain
+  pop di                                ; Restore empty entry pointer
+  test ax, ax                           ; Check error code of getFreeCluster
+  jz .errDiskFull                       ; If there was an error, then return an error of ERR_DISK_FULL
 
+  mov ss:[di + 26], ax                  ; Set the files first cluster number
+
+  mov word ss:[di + 28], 0              ; Set the files size, low 16 bits
+  mov word ss:[di + 30], 0              ; Set the files size, high 16 bits
+
+  ; Now we need to write out changes (to the sector) to the disk
+  ; so prepare arguments for writeDisk, and write the changes
+  mov bx, ss                            ; Set DS:SI to the start of the sector buffer
+  mov ds, bx                            ; Set DS to SS because the sector buffer is stored on the stack
+  mov si, [bp - 13]                     ; Set SI to the sector buffer offset
+
+  mov di, [bp - 15]                     ; Set DI to the LBA
+  mov dx, 1                             ; Amount of sectors to write, write one sector
+  call writeDisk                        ; Write out changes to the sector, to the hard disk
+  test ax, ax                           ; Check error code of writeDisk
+  jnz .end                              ; If there was an error, then return with it
+
+  xor ax, ax                            ; If there was no error, then return 0
+  jmp .end                              ; Return
 
 .notOnRootDir:
   ; Will get here if the file is from the rrot directory
