@@ -112,7 +112,7 @@ createFile:
 
 .errDiskFull:
   mov ax, ERR_DISK_FULL                 ; If the disk is full, we return an error for it
-  jmp .end
+  jmp .end                              ; Return with the error
 
 .initEmptyEntry:
   ; When getting here, the empty entry should be pointed to by SS:DI
@@ -128,10 +128,22 @@ createFile:
   sub si, 11                            ; Subtract 11 from it so we get to the first byte of the actual file name
 
   mov dl, [bp - 17]                     ; Get the requested flags for the new file
+  push di                               ; Save entry pointer
   call createFile_initEntry             ; Initialize the entry with the current time, clusters and stuff
+  pop si                                ; Restore entry pointer
   test ax, ax                           ; Check error code
   jnz .end                              ; If there was an error return with it
 
+  cmp word [bp - 2], 0                  ; If the given buffer segment is null, dont copy the entry into it
+  je .afterMemcpy                       ; If null skip copying the entry into it
+
+  mov es, [bp - 2]                      ; If not null, get a pointer to the buffer
+  mov di, [bp - 4]                      ; Get offset
+
+  mov dx, 32                            ; Amount of bytes to copy, the size of an entry (which is 32 bytes)
+  call memcpy                           ; Copy the entry into the given buffer
+
+.afterMemcpy:
   ; Now we need to write out changes (to the sector) to the disk
   ; so prepare arguments for writeDisk, and write the changes
   mov bx, ss                            ; Set DS:SI to the start of the sector buffer
@@ -262,10 +274,25 @@ createFile:
   sub si, 11                            ; Decrement the pointer by 11, so now were at the beginning of the actual file name (like file.txt)
 
   mov dl, [bp - 17]                     ; Get the requested flags for the file
+  push di                               ; Save entry pointer
   call createFile_initEntry             ; Write the date & time of the creation to the files entry, as well as a first cluster and stuff
+  pop di                                ; Restore entry pointer
   test ax, ax                           ; Check error code
   jnz .end                              ; If there was an error, return with it
 
+  cmp word [bp - 2], 0                  ; Check if the given buffer segment is null
+  je .afterDirMemcpy                    ; If it is, then dont copy the entry into it
+
+  ; After we have initialized the entry, we want to copy it into the requested buffer
+  mov si, di                            ; Set the source pointer to the entry pointer (from where to copy the data)
+
+  mov es, [bp - 2]                      ; Get a pointer to the requested buffer (where to copy the entry to)
+  mov di, [bp - 4]                      ; Get offset
+
+  mov dx, 32                            ; Amount of bytes to copy, the size of an entry (32 bytes)
+  call memcpy                           ; Copy the entry into the given buffer
+
+.afterDirMemcpy:
   push ds                               ; Save DS segment, because we need to change it for a sec
   mov bx, KERNEL_SEGMENT                ; Set DS to the kernels segment
   mov ds, bx                            ;
@@ -360,7 +387,7 @@ createFile_initEntry:
   mov word es:[di + 28], 0              ; Set the files size, low 16 bits
   mov word es:[di + 30], 0              ; Set the files size, high 16 bits
 
-  xor ax, ax
+  xor ax, ax                            ; Return 0 on success
 
 .end:
   ret

@@ -100,23 +100,6 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ;;;;;;; DEBUG
-  lea di, [buffer]
-  lea si, [pathStf]
-  mov dl, 0
-  call createFile
-
-  PRINTF_M `createFile returned %u\n`, ax
-
-  lea di, [pathStf]
-  mov si, FILE_OPEN_ACCESS_READ
-  call fopen
-
-  PRINTF_M `fopen returned %u\n`, ax
-
-  mov ax, [openFiles + FILE_OPEN_ENTRY256 + 26]
-  PRINTF_M `first cluster %u\n`, ax
-
   ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
