@@ -15,6 +15,7 @@
 ;   - 3) CX     => Amount of bytes to read
 ; RETURNS
 ;   - 0) In AX, the amount of bytes read, can be less then the requested amount if an error occurred
+;   - 1) In BX, the error code
 readClusterBytes:
   push bp                               ; Save stack frame
   mov bp, sp                            ;
@@ -51,8 +52,13 @@ readClusterBytes:
   mov si, dx                            ; Get bytes offset
   call skipClusters                     ; Calculate the amount of sectors and clusters that we can skip
   test si, si                           ; Check error code of skipClusters
-  jnz .err                              ; If there was an error then return an error (return 0)
+  jz .skipSuccess                       ; If there was no error, skip the next three lines
 
+  mov bx, si                            ; Get error code in BX
+  xor ax, ax                            ; Zero out amount of bytes read
+  jmp .end                              ; Return
+
+.skipSuccess:
   ; If no error then save the return values
   mov [bp - 6], ax                      ; Save the cluster number
   mov [bp - 12], bx                     ; Save new LBA address
@@ -109,8 +115,12 @@ readClusterBytes:
   mov si, 1                             ; Amount of sectors to read
   call readDisk                         ; Read a sector of the file into the sector buffer
   test ax, ax                           ; Check if readDisk has returned an error
-  jnz .retBytesRead                     ; If it did then return the amount of bytes read so far
+  jz .readDiskSuccess                   ; If there was no error, skip the next two lines
 
+  mov bx, ax                            ; If there was an error, return with the error code in BX
+  jmp .retBytesRead                     ; Return with the error in BX and the amount of bytes read so far in AX
+
+.readDiskSuccess:
   ; When getting here the amount of bytes to copy will be in DX
   mov dx, [bp - 22]                     ; Get amount of bytes to copy
   add [bp - 16], dx                     ; Add the amount of bytes were gonna copy to the amount of bytes we read so far
@@ -133,6 +143,7 @@ readClusterBytes:
   mov bx, KERNEL_SEGMENT                ; Set DS to kernel segment
   mov ds, bx                            ; so we can read correct values
 
+  xor bx, bx
   cmp word [bp - 10], 0                 ; Check if the amount of bytes left to read is below/equal to 0
   jle .retBytesRead                     ; If it is then return with the amount of bytes we read so far
 
@@ -155,10 +166,16 @@ readClusterBytes:
 
   mov di, [bp - 6]                      ; Get the previous cluster number 
   call getNextCluster                   ; Get the next cluster in the cluster chain
+  test bx, bx                           ; Check error code of getNextCluster
+  jnz .retBytesRead                     ; If there was an error, then return with it and the amount of bytes read so far in AX
 
   cmp ax, 0FFF8h                        ; Check if its the end of the cluster chain
-  jae .retBytesRead                     ; If it is then return the amount of bytes we read so far
+  jb .validCluster                      ; If not, then skip the next 2 lines
 
+  mov bx, ERR_EOF_REACHED               ; If it is the end of the cluster chain, return en error of EOF
+  jmp .retBytesRead                     ; Return with the error in BX and the amount of bytes read so far in AX
+
+.validCluster:
   mov [bp - 6], ax                      ; If its not the end of the cluster chain then update the cluster number
 
   mov di, ax                            ; Set argument for clusterToLBA, the cluster number

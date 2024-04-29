@@ -24,7 +24,7 @@ createFile:
   ; *(bp - 10)    - Formatted string offset (segment is SS)
   ; *(bp - 11)    - Formatted string length
   ; *(bp - 13)    - Sector buffer offset (segment is SS)
-  ; *(bp - 15)    - Current LBA in directory
+  ; *(bp - 15)    - Current LBA in root directory, or the offset from the first cluster (if the file is not from the root directory)
   ; *(bp - 16)    - Sectors left in root directory, or sectors left in current cluster of directory
   ; *(bp - 17)    - Flags, for the new file
   ; *(bp - 18)    - The first character of the final file name (because changing it to null)    // TODO: GET RID OF THIS
@@ -127,66 +127,10 @@ createFile:
   add si, ax                            ; Add the size of the formatted path to the formatted path pointer, to get to the last character
   sub si, 11                            ; Subtract 11 from it so we get to the first byte of the actual file name
 
-  mov dx, 11                            ; Copy 11 bytes (the size of a file name)
-  call memcpy                           ; Copy the file name to the files entry (DI already set)
-
-  mov al, [bp - 17]                     ; Get the requested file flags
-  mov es:[di + 11], al                  ; Set the files flags in its entry
-
-  ; Note: Skipping byte on offset 12 (some stuff for Windows NT)
-  ;       And also byte at offset 13 (creation time in hundredths of a second)
-  mov bx, KERNEL_SEGMENT                ; Set DS to kernel segment so we can access sysTime
-  mov ds, bx                            ;
-
-  ; Update the files creation time (hours, minutes, seconds) 
-  mov al, ds:[sysClock_seconds]         ; Get the current seconds
-  shr ax, 1                             ; Divide it by 2 (the seconds are 5 bits, and 5 bits can hold a maximum value of 31)
-  and ax, 0001_1111b                    ; Remove all other bits, and leave the first 5 (which are the seconds) (seconds: bits 0-4)
-
-  mov bl, ds:[sysClock_minutes]         ; Get the current minute
-  xor bh, bh                            ; Zero out high 8 bits
-  shl bx, 5                             ; Shift left by 5 bits because minutes are starting from bit 5 (minuts: bits 5-10)
-  or ax, bx                             ; Get minutes starting from bit 5 in the result register (AX will hold the final creation time)
-
-  mov bl, ds:[sysClock_hours]           ; Get the current hour
-  xor bh, bh                            ; Zero out high 8 bits
-  shl bx, 5 + 6                         ; Shift left by the size of the seconds + the size of minuts (in bits) (hours: bits 11-15)
-  or ax, bx                             ; Get current hour in result register
-
-  mov es:[di + 14], ax                  ; Update the creation time of the file (in hours, minutes, and seconds)
-  mov es:[di + 22], ax                  ; Set last modification time, same as the creation time
-
-  ; Now we want to update the files creation date (year, month, day)
-  mov al, ds:[sysClock_day]             ; Get current day (in month)
-  and ax, 0001_1111b                    ; Clear all bits except the bits of the dat (bits 0-4)
-
-  mov bl, ds:[sysClock_month]           ; Get current month number
-  xor bh, bh                            ; Zero out high 8 bits
-  shl bx, 5                             ; Shift left by 5 bits (month: bits 5-8)
-  or ax, bx                             ; Get month in result register
-
-  mov bl, ds:[sysClock_year]            ; Get current year
-  xor bh, bh                            ; Zero out high 8 bits
-  shl bx, 5 + 4                         ; Shift left by 9 bits (year: bits 9-15)
-  or ax, bx                             ; Get current year in result register
-
-  mov es:[di + 16], ax                  ; Write the creation time to the file entry
-  mov es:[di + 18], ax                  ; Set last accessed date, same as the creation date
-  
-  mov word es:[di + 20], 0              ; High 8 bits of the first cluster number are always 0
-  mov es:[di + 24], ax                  ; Set last modification date, same as the creation date
-  
-  push di                               ; Save empty entry pointer
-  mov di, 0FFF8h                        ; We want to initialize the first cluster to an end
-  call getFreeCluster                   ; Get a free cluster, and initialize the next one to an end of the cluster chain
-  pop di                                ; Restore empty entry pointer
-  test ax, ax                           ; Check error code of getFreeCluster
-  jz .errDiskFull                       ; If there was an error, then return an error of ERR_DISK_FULL
-
-  mov ss:[di + 26], ax                  ; Set the files first cluster number
-
-  mov word ss:[di + 28], 0              ; Set the files size, low 16 bits
-  mov word ss:[di + 30], 0              ; Set the files size, high 16 bits
+  mov dl, [bp - 17]                     ; Get the requested flags for the new file
+  call createFile_initEntry             ; Initialize the entry with the current time, clusters and stuff
+  test ax, ax                           ; Check error code
+  jnz .end                              ; If there was an error return with it
 
   ; Now we need to write out changes (to the sector) to the disk
   ; so prepare arguments for writeDisk, and write the changes
@@ -271,62 +215,69 @@ createFile:
   sub sp, ds:[bpb_bytesPerSector]       ; Allocate space for 1 sector on the stack
   mov [bp - 13], sp                     ; Store buffer pointer
 
-  call clusterToLBA                     ; Get the LBA of the cluster (which is in DI)
-  mov [bp - 15],  ax                    ; Store the LBA
-  
-  mov al, ds:[bpb_sectorPerCluster]     ; Get the amount of sectors in a cluster
-  mov [bp - 16], al                     ; Store it as a counter for how many clusters are left to 
-.searchEmptyEntryInDir_loadSector:
-  mov bx, ss
-  mov es, bx
-  mov bx, [bp - 13]
+  mov word [bp - 15], 0                 ; Initialize offset from the cluster to 0
+.searchEmptyInDir_readSector:
+  mov bx, ss                            ; Reset ES to stack segment, for the buffers
+  mov es, bx                            ;
 
-  mov di, [bp - 15]
-  mov si, 1
-  call readDisk
-  test ax, ax
-  jnz .end
+  mov di, [bp - 13]                     ; Get a pointer to the sector buffer
+  mov si, [bp - 22]                     ; Get the folders first cluster number
+  mov dx, [bp - 15]                     ; Get the offset at which to read from the folder (it grows by sizeof(sector) each time)
+  mov cx, ds:[bpb_bytesPerSector]       ; Amount of bytes to read   // 1 sector
+  call readClusterBytes                 ; Read 1 sector of the folder into the sector buffer
+  test bx, bx                           ; Check error code
+  jz .prepSearchEmptySector             ; If there was no error, skip the next few lines
 
-  mov di, [bp - 13]
-  mov cx, ds:[bpb_bytesPerSector]
+  ; cmp bx, ERR_EOF_REACHED
+  ; je .addCluster        // TODO
+  mov ax, bx                            ; If there was an error, get the error code in AX
+  jmp .end                              ; Return with the error code
+
+.prepSearchEmptySector:
+  mov di, [bp - 13]                     ; Get a pointer to the beginning of the sector buffer
+  mov cx, ax                            ; Get the size of a sector (returned by readClusterBytes) will be used to determin when to load the next sector
 .searchEmptyInSector:
-  cmp byte ss:[di], 0
-  je .initEmptyEntry
+  cmp byte es:[di], 0                   ; Check if the first byte of the entry is 0
+  je .foundEmptyInDir                   ; If it is then we found an empty entry (jump)
 
-  add di, 32
-  sub cx, 32
-  jnz .searchEmptyInSector
+  add di, 32                            ; If the first byte of the entry wasnt 0, increase the buffer pointer to point to the next entry
+  sub cx, 32                            ; Decrement amount of bytes left to read in the current sector
+  jnz .searchEmptyInSector              ; As long as its not 0, continue reading the sector
 
-  inc word [bp - 15]
-  dec byte [bp - 16]
-  jnz .searchEmptyEntryInDir_loadSector
+  ; If the current sector of the directory didnt have an empty entry, we want to increase the cluster read offset
+  ; so readClusterBytes will read the next sector of the directory
+  mov ax, ds:[bpb_bytesPerSector]       ; Get the size of a sector
+  add [bp - 15], ax                     ; Increase cluster read offset by the size of a sector
 
-  mov di, [bp - 22]
-  call getNextCluster
-  test bx, bx
-  jz .gotNextDirectoryCluster
+  jmp .searchEmptyInDir_readSector      ; Continue and read another sector of the directory into the sector buffer
 
-  mov ax, bx
-  jmp .end
+.foundEmptyInDir:
+  mov bx, ss                            ; Set DS to the stack segment so we can access buffers and stuff
+  mov ds, bx                            ;
 
-.gotNextDirectoryCluster:
-  cmp ax, 0FFF8h
-  jb .validCluster
+  mov al, [bp - 11]                     ; Get the size of the formatted path (so we can get to the files name)
+  xor ah, ah                            ; Zero out high 8 bits
+  mov si, [bp - 10]                     ; Get a pointer to the beginning of the formatted path
+  add si, ax                            ; Add to it the size of the path, so we get to the last character of the path
+  sub si, 11                            ; Decrement the pointer by 11, so now were at the beginning of the actual file name (like file.txt)
 
-  ;;; TODO
-  mov ax, 0FFFFh
-  jmp .end
+  mov dl, [bp - 17]                     ; Get the requested flags for the file
+  call createFile_initEntry             ; Write the date & time of the creation to the files entry, as well as a first cluster and stuff
+  test ax, ax                           ; Check error code
+  jnz .end                              ; If there was an error, return with it
 
-.validCluster:
-  mov di, ax
-  mov [bp - 22], ax
-  call clusterToLBA
-  mov [bp - 15], ax
+  push ds                               ; Save DS segment, because we need to change it for a sec
+  mov bx, KERNEL_SEGMENT                ; Set DS to the kernels segment
+  mov ds, bx                            ;
+  mov cx, ds:[bpb_bytesPerSector]       ; Set CX (argument for writeClusterBytes) to the amount of bytes in a sector
+  pop ds                                ; Restore DS
 
-  mov al, ds:[bpb_sectorPerCluster]
-  mov [bp - 16], al
-  jmp .searchEmptyEntryInDir_loadSector
+  mov di, [bp - 22]                     ; Get the first cluster of the directory
+  mov si, [bp - 13]                     ; Get a pointer to the beginning of the sector buffer (the source, from where to write the data)
+  mov dx, [bp - 15]                     ; Get the bytes offset (which is a multiple of sizeof(sector)) so we write to the currect sector of the directory
+  call writeClusterBytes                ; Write our changes to the directory (only the empty entry), to the hard disk
 
+  xor ax, ax                            ; Return with error code 0 (no error)
 .end:
   mov es, [bp - 2]                      ; Restore used segments
   mov ds, [bp - 6]                      ;
@@ -334,5 +285,88 @@ createFile:
   pop bp                                ;
   ret
 
+
+
+; A sub-funciton of create file.
+; PARAMS
+;   - 0) ES:DI    => The FAT entry
+;   - 1) DS:SI    => The formatted 11 byte file name
+;   - 2) DL       => Flags for the file
+; RETURNS
+;   - 0) The error code in AX, 0 on success
+createFile_initEntry:
+  push dx
+  mov dx, 11                            ; Copy 11 bytes (the size of a file name)
+  call memcpy                           ; Copy the file name to the files entry (DI already set)
+
+  pop ax                                ; Get the requested file flags
+  mov es:[di + 11], al                  ; Set the files flags in its entry
+
+  ; Note: Skipping byte on offset 12 (some stuff for Windows NT)
+  ;       And also byte at offset 13 (creation time in hundredths of a second)
+  push ds                               ; Save DS, because were gonna change it
+  mov bx, KERNEL_SEGMENT                ; Set DS to kernel segment so we can access sysTime
+  mov ds, bx                            ;
+
+  ; Update the files creation time (hours, minutes, seconds) 
+  mov al, ds:[sysClock_seconds]         ; Get the current seconds
+  shr ax, 1                             ; Divide it by 2 (the seconds are 5 bits, and 5 bits can hold a maximum value of 31)
+  and ax, 0001_1111b                    ; Remove all other bits, and leave the first 5 (which are the seconds) (seconds: bits 0-4)
+
+  mov bl, ds:[sysClock_minutes]         ; Get the current minute
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5                             ; Shift left by 5 bits because minutes are starting from bit 5 (minuts: bits 5-10)
+  or ax, bx                             ; Get minutes starting from bit 5 in the result register (AX will hold the final creation time)
+
+  mov bl, ds:[sysClock_hours]           ; Get the current hour
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5 + 6                         ; Shift left by the size of the seconds + the size of minuts (in bits) (hours: bits 11-15)
+  or ax, bx                             ; Get current hour in result register
+
+  mov es:[di + 14], ax                  ; Update the creation time of the file (in hours, minutes, and seconds)
+  mov es:[di + 22], ax                  ; Set last modification time, same as the creation time
+
+  ; Now we want to update the files creation date (year, month, day)
+  mov al, ds:[sysClock_day]             ; Get current day (in month)
+  and ax, 0001_1111b                    ; Clear all bits except the bits of the dat (bits 0-4)
+
+  mov bl, ds:[sysClock_month]           ; Get current month number
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5                             ; Shift left by 5 bits (month: bits 5-8)
+  or ax, bx                             ; Get month in result register
+
+  mov bl, ds:[sysClock_year]            ; Get current year
+  xor bh, bh                            ; Zero out high 8 bits
+  shl bx, 5 + 4                         ; Shift left by 9 bits (year: bits 9-15)
+  or ax, bx                             ; Get current year in result register
+
+  pop ds                                ; Restore DS, we no longer need to kernel segment
+
+  mov es:[di + 16], ax                  ; Write the creation time to the file entry
+  mov es:[di + 18], ax                  ; Set last accessed date, same as the creation date
+  
+  mov word es:[di + 20], 0              ; High 8 bits of the first cluster number are always 0
+  mov es:[di + 24], ax                  ; Set last modification date, same as the creation date
+  
+  push di                               ; Save empty entry pointer
+  mov di, 0FFF8h                        ; We want to initialize the first cluster to an end
+  call getFreeCluster                   ; Get a free cluster, and initialize the next one to an end of the cluster chain
+  pop di                                ; Restore empty entry pointer
+  test ax, ax                           ; Check error code of getFreeCluster
+  jz .errDiskFull                       ; If there was an error, then return an error of ERR_DISK_FULL
+
+  mov es:[di + 26], ax                  ; Set the files first cluster number
+
+  mov word es:[di + 28], 0              ; Set the files size, low 16 bits
+  mov word es:[di + 30], 0              ; Set the files size, high 16 bits
+
+  xor ax, ax
+
+.end:
+  ret
+
+.errDiskFull:
+  mov ax, ERR_DISK_FULL
+  ret
 
 %endif
