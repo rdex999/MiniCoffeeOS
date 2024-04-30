@@ -137,29 +137,26 @@ parsePath_foundNull_searchExt:          ; Loop from the end of the buffer and se
 
   ; Copy the extension to the end of the string - 3. for example "file.txt" => "FILE    TXT"
 parsePath_foundNull_foundExt:
-  mov si, [bp - 3]                      ; SI = pointer to the beginning of name buffer
-  mov cx, 3                             ; Copy 3 bytes after the '.'
-parsePath_foundNull_copyExt:
-  mov al, es:[di]                       ; Set al to current extension byte
-  mov es:[si + 11 - 3], al              ; Copy the current extension byte to the end of the string."file.txt" => "FILE    TXT"
-  inc si                                ; Increase destenation pointer, end of the string
-  inc di                                ; Increase extension pointer
-  loop parsePath_foundNull_copyExt      ; Continue copying the extension, 3 times. (1 byte at a time)
+  mov si, di                            ; Get a pointer to the first character of the extension in SI
+  add si, 2                             ; Add 2 to it, so it points at the last character of the extension
 
-  ; Fill whats after the dot and before the copied extension with spaces
-  mov si, [bp - 3]                      ; Set SI to the beginning of the name buffer
-  add si, 11-3                          ; Set SI to the first byte of the copied extension (three bytes from the end)
-  sub di, 4                             ; Subtract 4 from extension pointer (old extension) to point to the '.'
+  mov di, [bp - 3]                      ; Get a pointer to the start of the current name
+  add di, 11 - 1                        ; Make it point to the last character of the formatted name (the 11th character)
+  mov cx, 3                             ; Copy 3 bytes
+  std                                   ; Set direction flag so MOVSB will decrement SI and DI each iteration
+  rep movsb                             ; Copy the extension to its correct place
+  xchg si, di                           ; Swap DI and SI    // Now DI points to the end of the name - 3 bytes (the '.')
+  cld                                   ; Clear direction flag, so STOSB will increment SI and DI each iteration
+
 parsePath_foundNull_fillSpace:
 %ifdef PARSE_PATH_DEBUG
-  mov byte es:[di], 'q'                 ; Make current byte a space
+  mov al, 'q'                           ; If we debug, then put the letter 'q' for filling spaces
 %else
-  mov byte es:[di], ' '                 ; Make current byte a space
+  mov al, ' '                           ; If not debugging, put the space ' ' character to filling spaces
 %endif
-
-  inc di                                ; Increase pointer
+  stosb                                 ; Store AL at ES:DI and increment DI each time
   cmp di, si                            ; Comapre the pointer to the beginning of the extension.
-  jb parsePath_foundNull_fillSpace      ; As long as the pointer is smaller then the extension pointer continue filling spaces
+  jbe parsePath_foundNull_fillSpace     ; As long as the pointer is smaller then the extension pointer continue filling spaces
 
   ; Return with counters
 parsePath_success:

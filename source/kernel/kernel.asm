@@ -100,6 +100,28 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+  ; lea di, buffer
+  ; lea si, pathStf
+  ; call parsePath
+
+  ; lea si, buffer
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  ; call printStr
+
+
+
+  ; lea di, [buffer] 
+  ; lea si, [pathStf]
+  ; call getFileEntry 
+
+  ; mov bx, [buffer + 26]
+  ; PRINTF_M `getFileEntry error %u first cluster 0x%x\n`, ax, bx
+
+  ; mov di, [buffer + 26]
+  ; mov si, 3
+  ; call addClusters
+
+
   ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
