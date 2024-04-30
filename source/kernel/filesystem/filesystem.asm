@@ -11,6 +11,7 @@
 %include "kernel/filesystem/getFreeCluster.asm"
 %include "kernel/filesystem/skipClusters.asm"
 %include "kernel/filesystem/addClusters.asm"
+%include "kernel/filesystem/setCluster.asm"
 %include "kernel/filesystem/createFile.asm"
 %include "kernel/filesystem/fopen.asm"
 %include "kernel/filesystem/fclose.asm"

@@ -137,6 +137,10 @@ parsePath_foundNull_searchExt:          ; Loop from the end of the buffer and se
 
   ; Copy the extension to the end of the string - 3. for example "file.txt" => "FILE    TXT"
 parsePath_foundNull_foundExt:
+  push ds                               ; Save data segment, because were gonna change it
+  mov bx, es                            ; Set data segment to ES
+  mov ds, bx                            ; Doing this because MOVSB is using DS:SI and ES:DI and since were copying from the buffer, to the buffer..
+
   mov si, di                            ; Get a pointer to the first character of the extension in SI
   add si, 2                             ; Add 2 to it, so it points at the last character of the extension
 
@@ -147,6 +151,8 @@ parsePath_foundNull_foundExt:
   rep movsb                             ; Copy the extension to its correct place
   xchg si, di                           ; Swap DI and SI    // Now DI points to the end of the name - 3 bytes (the '.')
   cld                                   ; Clear direction flag, so STOSB will increment SI and DI each iteration
+
+  pop ds                                ; Restore DI
 
 parsePath_foundNull_fillSpace:
 %ifdef PARSE_PATH_DEBUG

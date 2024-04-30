@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "folder/fld200/file.txt", 0
+pathStf:                  db "kernel.bin", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -100,26 +100,30 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; lea di, buffer
-  ; lea si, pathStf
-  ; call parsePath
-
-  ; lea si, buffer
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  ; call printStr
-
-
-
   ; lea di, [buffer] 
   ; lea si, [pathStf]
   ; call getFileEntry 
 
+  ; mov di, [buffer + 26]
+  ; call getNextCluster
+  ; PRINTF_M `next 0x%x\n`, ax
+
+  ; mov di, [buffer + 26]
+  ; mov si, 420
+  ; call setCluster
+
+  ; PRINTF_M `setCluster returned %u\n`, ax
+
+  ; mov di, [buffer + 26]
+  ; call getNextCluster
   ; mov bx, [buffer + 26]
-  ; PRINTF_M `getFileEntry error %u first cluster 0x%x\n`, ax, bx
+  ; PRINTF_M `next after update 0x%x for 0x%x\n`, ax, bx
 
   ; mov di, [buffer + 26]
   ; mov si, 3
   ; call addClusters
+
+  ; PRINTF_M `addClusters returned 0x%x\n`, ax
 
 
   ; Main loop for reading commands
