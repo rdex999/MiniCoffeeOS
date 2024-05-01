@@ -25,7 +25,7 @@ ps2_8042_waitOutput:
 kbd_waitForKeycode:
   push bp                                   ; Store stack frame
   mov bp, sp                                ;
-  sub sp, 3                                 ; Allocate 3 bytes, *(bp - 1) is used for the keycode and *(bp - 3) in for the time
+  sub sp, 1                                 ; Allocate 3 bytes, *(bp - 1) is used for the keycode and *(bp - 3) in for the time
 
   push ds                                   ; Save old data segment
   mov bx, KERNEL_SEGMENT                    ; Set data segment to kernel data segment
@@ -33,85 +33,91 @@ kbd_waitForKeycode:
   sti                                       ; Enable interrupt so we wont get in an infinite loop while waiting for the keycode
 
   cmp byte ds:[kbdCurrentKeycode], 0        ; Check if there is a key thats currently pressed
-  je kbd_waitForKeycode_waitLoop            ; If not then wait for one the mark it as the first in a row
+  je .waitLoop            ; If not then wait for one the mark it as the first in a row
 
   ; Will be here if there is a key currently being pressed
   cmp byte ds:[kbdIsFirst], 0               ; Check if the key pressed is the first in a row, so we know if should delay or not
-  je kbd_waitForKeycode_delayAndRet         ; If not then give a small delay and return
+  je .delayAndRet         ; If not then give a small delay and return
 
   ; Will get here if the key is the first in the row
   ; Prepare for delay of about 0.6 seconds
   mov al, ds:[kbdCurrentKeycode]            ; Save the current key code  
   mov [bp - 1], al                          ; as we will be checking if it remains pressed while delaying
 
-  GET_SYS_TIME                              ; Get the system time before starting the delay, so we know how much time passes
-  mov [bp - 3], dx                          ; Store the current system time
+  mov di, KBD_HIGH_DELAY                    ; Get the time of the high delay
+  call kbdDelayKey                          ; Delay, as long as the key is the same
+  cmp al, [bp - 1]                          ; Check if the current key is the same of our previous one
+  je .afterSetFirst                         ; If it is, set kbdIsFirst to false
 
-  ; The main delay loop
-kbd_waitForKeycode_firstDelay:
-  mov al, [bp - 1]                          ; Get the key that we started with
-  cmp al, ds:[kbdCurrentKeycode]            ; Check if the key being pressed is the same
-  je kbd_waitForKeycode_afterSetFirst       ; If its the same then dont return
+  mov byte ds:[kbdIsFirst], 1               ; If not the same, mark this key as first in the row
+  jmp .delayAndRet                          ; Make a short delay, and return
 
-  ; Will get here if the key pressed is not the same
-  mov byte ds:[kbdIsFirst], 1               ; If its not the same then mark it as the first in a row, do a small delay and return
-  jmp kbd_waitForKeycode_delayAndRet        ; Short delay and return
-   
-kbd_waitForKeycode_afterSetFirst:
-  GET_SYS_TIME                              ; Get the current system time
-  sub dx, [bp - 3]                          ; currentSysTime - prevSysTime = time in the loop
+.afterSetFirst:
+  mov byte ds:[kbdIsFirst], 0               ; If it is the same, mark this key as not first in row
+  jmp .delayAndRet                          ; Make a short delay and return
 
-  cmp dx, KBD_HIGH_DELAY                                ; Check if the delayed time is above 0.6 seconds
-  jb kbd_waitForKeycode_firstDelay          ; If its not, then continue delaying
-
-  ; Will get here when the delay is finished
-  mov byte ds:[kbdIsFirst], 0               ; As this key was marked as first, unmark it so the next key wont have a big delay
-  jmp kbd_waitForKeycode_delayAndRet        ; Short delay and return
-
-kbd_waitForKeycode_waitLoop:
+.waitLoop:
   ; Will get here if there is no key currently being pressed
   hlt                                       ; Stop the CPU until there is an interrupt, so we wont burn the cpu while waiting
   cmp byte ds:[kbdCurrentKeycode], 0        ; If the interrupt was a keyboard one, then the current key should be set.
-  je kbd_waitForKeycode_waitLoop            ; If the current key is set then stop waiting for a key
+  je .waitLoop            ; If the current key is set then stop waiting for a key
 
   mov byte ds:[kbdIsFirst], 1               ; Mark this key as the first in row
 
-kbd_waitForKeycode_delayAndRet:
-  mov al, ds:[kbdCurrentKeycode]            ; Get the current key code in AL
-  test al, al                               ; Check if its valid
-  jz kbd_waitForKeycode_waitLoop            ; If not then wait for a key
+.delayAndRet:
+  mov di, KBD_LOW_DELAY                     ; Get the time of the low delay
+  call kbdDelayKey                          ; Make a short delay as long as the keyt remains the same
+  test al, al                               ; Check if the current key is null
+  jz .waitLoop                              ; If it is, wait for a key press
 
-  ; If it is valid then make a short delay and return
-  mov [bp - 1], al
+.end:
+  pop ds                                    ; Restore old data segment
+  mov sp, bp                                ;
+  pop bp                                    ; Restore stack frame
+  ret                                       ; Return
 
-  ; Delay of 0.03 seconds
-  mov word [bp - 3], KBD_LOW_DELAY_COUNT                  ; Set the amount of times to make a super small delay
-kbd_waitForKeycode_delayAndRet_loop:
-  mov si, 0FFh                                            ; A very small delay
-  mov di, 4                                               ; so each time we can check if the same key is still being pressed
-  call sleep                                              ; Perform the delay
 
-  mov al, [bp - 1]                                        ; Get che keycode in AL
-  cmp al, ds:[kbdCurrentKeycode]                          ; Check if its still the same key
-  je kbd_waitForKeycode_delayAndRet_loopAfterCurrentCheck ; If its still the same then dont mark it as first
+; A sub-function of kbd_waitForKeycode
+; Will wait a given time, but if a key is pressed it will return before the given time
+; PARAMS
+;   - 0) DI   => The maximum time to wait (in milliseconds)
+; RETURNS
+;   - 0) In AL, the current keycode after returning
+kbdDelayKey:
+  push ds                               ; Save the current DS segment
+  mov bx, KERNEL_SEGMENT                ; Set it to the kernels segment so we can access sysClock
+  mov ds, bx                            ;
 
-  ; If its not the same then mark it as first and return
-  mov byte ds:[kbdIsFirst], 1                             ; Mark as first
-  jmp kbd_waitForKeycode_delayAndRet                      ; Delay again and return
+  call getLowTime                       ; Get the current time in milliseconds (the start time)
+  mov si, ax                            ; Store it in SI 
 
-kbd_waitForKeycode_delayAndRet_loopAfterCurrentCheck:
-  dec word [bp - 3]                                       ; Decrement delay counter
-  jnz kbd_waitForKeycode_delayAndRet_loop                 ; If its not zero then continue delaying
+  mov dl, ds:[kbdCurrentKeycode]        ; Get the current keycode
+  sti                                   ; Enable interrupts so the keyboard works (and the time)
+
+.waitLoop:
+  hlt                                   ; Halt until there is an interrupts
   
+  cmp ds:[kbdCurrentKeycode], dl        ; Check if the current keycode is the same as the one we started with
+  jne .retKey                           ; If its not the same, return
 
-  mov al, [bp - 1]                                        ; If zero then get the keycode in AL and return
+  push si                               ; Save counters and stuff before function call
+  push di                               ;
+  push dx                               ;
+  call getLowTime                       ; Get the current time in milliseconds
+  pop dx                                ; Restore stuff after the function call
+  pop di                                ;
+  pop si                                ;
 
-kbd_waitForKeycode_end:
-  pop ds                                                  ; Restore old data segment
-  mov sp, bp                                              ;
-  pop bp                                                  ; Restore stack frame
-  ret                                                     ; Return
+  sub ax, si                            ; Subtract the start time from the current time, to get the time that has passed
+  cmp ax, di                            ; Check if the time passed is less then the requested amount
+  jb .waitLoop                          ; If not, continue waiting
 
+.retKey:
+  mov al, ds:[kbdCurrentKeycode]        ; Get the current keycode
+
+.end:
+  pop ds                                ; Restore old DS segment
+  ret
 
 ; Waits for a printable key to be pressed, or multiple keys which correspond to one character
 ; For example <SHIFT> + <A> => 'A'

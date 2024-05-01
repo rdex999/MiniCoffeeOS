@@ -26,8 +26,8 @@
 
 %define KBD_DRIVER
 
-%define KBD_HIGH_DELAY 10
-%define KBD_LOW_DELAY_COUNT 10
+%define KBD_HIGH_DELAY 500
+%define KBD_LOW_DELAY 9
 ; %define GET_ASCII_CODES
 
 ; 2*20*512  // 2 FATs, 20 sectors per fat, 512 bytes per sector
