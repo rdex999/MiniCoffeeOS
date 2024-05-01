@@ -28,7 +28,7 @@ errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
 currentUserDirPath:       db '/'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
-helpMsg:                  db "[*] <OS_NAME (idk)>", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
+helpMsg:                  db "---< Mini Coffee OS >---", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
   db "help", TAB, "| prints this help message.", NEWLINE, TAB,
   db "clear", TAB, "| clears the screen", NEWLINE, 
   db 0
@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "kernel.bin", 0
+pathStf:                  db "folder/fld200/t16.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -100,31 +100,30 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; lea di, [buffer] 
-  ; lea si, [pathStf]
-  ; call getFileEntry 
+;   lea di, [buffer] 
+;   lea si, [pathStf]
+;   call getFileEntry 
 
-  ; mov di, [buffer + 26]
-  ; call getNextCluster
-  ; PRINTF_M `next 0x%x\n`, ax
+;   mov di, [buffer + 26]
 
-  ; mov di, [buffer + 26]
-  ; mov si, 420
-  ; call setCluster
+;   push di
+;   PRINTF_M `first cluster 0x%x\n`, di
+;   pop di
 
-  ; PRINTF_M `setCluster returned %u\n`, ax
+;   mov si, 10
+;   call addClusters
 
-  ; mov di, [buffer + 26]
-  ; call getNextCluster
-  ; mov bx, [buffer + 26]
-  ; PRINTF_M `next after update 0x%x for 0x%x\n`, ax, bx
+;   PRINTF_M `addClusters returned 0x%x\n`, ax
 
-  ; mov di, [buffer + 26]
-  ; mov si, 3
-  ; call addClusters
-
-  ; PRINTF_M `addClusters returned 0x%x\n`, ax
-
+;   mov di, [buffer + 26]
+; .nextCluster:
+;   call getNextCluster
+;   push ax
+;   PRINTF_M `next 0x%x\n`, ax
+;   pop ax
+;   mov di, ax
+;   cmp ax, FAT_CLUSTER_INVALID
+;   jb .nextCluster
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:
