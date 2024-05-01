@@ -100,15 +100,13 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  lea di, buffer
-  lea si, pathStf
-  mov dl, 0
-  call createFile
 
-  PRINTF_M `createFile returned %u\n`, ax
+  ; PRINTF_M `starting sleep\n`
 
-  mov ax, [buffer + 26]
-  PRINTF_M `files first cluster 0x%x\n`, ax
+  ; mov di, 3000
+  ; call sleep
+
+  ; PRINTF_M `stopped sleep\n`
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:
