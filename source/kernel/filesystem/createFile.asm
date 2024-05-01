@@ -240,10 +240,21 @@ createFile:
   test bx, bx                           ; Check error code
   jz .prepSearchEmptySector             ; If there was no error, skip the next few lines
 
-  ; cmp bx, ERR_EOF_REACHED
-  ; je .addCluster        // TODO
-  mov ax, bx                            ; If there was an error, get the error code in AX
-  jmp .end                              ; Return with the error code
+  cmp bx, ERR_EOF_REACHED               ; Check if the error is because we reached the end of the cluster chain
+  je .increaseClusterChain              ; If it is, add one more cluster to the folders cluster chain
+
+  mov ax, bx                            ; If its not the case, return with the error code
+  jmp .end                              ; Return
+
+.increaseClusterChain:
+  mov di, [bp - 22]                     ; Get the first cluster of the directory
+  mov si, 1                             ; Set the amount of clusters to add
+  call addClusters                      ; Add 1 cluster to the directories cluster chain
+  test ax, ax                           ; Check error code of addClusters
+  jnz .searchEmptyInDir_readSector      ; If there was no error, read the cluster once again with the offset (and this time it should work)
+
+  mov ax, ERR_DISK_FULL                 ; If there was an error, then return ERR_DISK_FULL as the error code
+  jmp .end                              ; Return
 
 .prepSearchEmptySector:
   mov di, [bp - 13]                     ; Get a pointer to the beginning of the sector buffer
