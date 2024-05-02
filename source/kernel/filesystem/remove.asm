@@ -13,7 +13,7 @@
 remove:
   push bp
   mov bp, sp
-  sub sp, 11
+  sub sp, 16
 
   ; *(bp - 2)   - Old GS segment
   ; *(bp - 4)   - File name segment
@@ -21,6 +21,9 @@ remove:
   ; *(bp - 8)   - Old DS segment
   ; *(bp - 10)  - Formatted path offset (segment is SS), or the offset of the copy of the path (if the file is not on the root directory)
   ; *(bp - 11)  - Formatted path length
+  ; *(bp - 13)  - Current LBA in root directory or the current bytes offset (if the file is not on the root directory)
+  ; *(bp - 14)  - Amount of sectors left to read from the root directory
+  ; *(bp - 16)  - Sector buffer offset
 
   mov [bp - 2], gs                            ; Store GS segment because we will change it
   mov [bp - 4], es                            ; Store file name segment
@@ -60,13 +63,65 @@ remove:
   jmp .end                                    ; Return
 
 .filePathSuccess:
-  ;;;; DEBUG
-  mov bx, ss
-  mov ds, bx
-  mov si, sp
-  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  call printStr
+  mov bx, KERNEL_SEGMENT                      ; Set both DS and GS to the kernels segment
+  mov ds, bx                                  ; Set DS because we need GET_ROOT_DIR_OFFSET to work
+  mov gs, bx                                  ; And GS will be used later for variables and shit
 
+  GET_ROOT_DIR_OFFSET                         ; Get the LBA of the root directory
+  mov [bp - 13], ax                           ; Store it as the current LBA in the root directory
+
+  GET_ROOT_DIR_SIZE                           ; Get the size of the root directory
+  mov [bp - 14], al                           ; Store it as a counter for how many sectors are left to read
+
+  sub sp, ds:[bpb_bytesPerSector]             ; Allocate space for 1 sector
+  mov [bp - 16], sp                           ; Store the sector buffer pointer
+
+.searchRootDirLoop:
+  mov bx, ss                                  ; Set destination, where to store the data (the sector buffer)
+  mov es, bx                                  ; Set segment
+  mov bx, [bp - 16]                           ; Set offset
+
+  mov di, [bp - 13]                           ; Get the current LBA in the root directory (from where to read the data)
+  mov si, 1                                   ; Amount of sectors to read
+  call readDisk                               ; Read 1 sector of the root directory into the sector buffer
+  test ax, ax                                 ; Check error code
+  jnz .end                                    ; If there was an error return with it
+
+  ; After we read 1 sector of the root directory, we need to search the sector for the file
+  mov bx, ss                                  ; Get a pointer to the sector buffer
+  mov es, bx                                  ; Get segment
+  mov di, [bp - 16]                           ; Get offset
+  mov dx, gs:[bpb_bytesPerSector]             ; Get the amount of bytes in a sector, so we know when to stop searching (will be decremented by the size of an entry)
+.searchRootSector:
+  mov bx, ss                                  ; Get a pointer to the formatted file name
+  mov ds, bx                                  ; Get segment
+  mov si, [bp - 10]                           ; Get offset
+  mov cx, 11                                  ; Set amount of bytes to compare
+  cld                                         ; Clear direction flag so CMPSB will increment DI and SI each time
+  push di                                     ; Save current sector buffer pointer (current entry pointer)
+  repe cmpsb                                  ; Compare the entries filename to the requested file name
+  pop di                                      ; Restore buffer pointer
+  je .foundInRootDir                          ; If the file names are equal then we found the file, jump to the handler
+
+  add di, 32                                  ; If its not the file, increase the entry pointer to point to the next entry
+  sub dx, 32                                  ; Decrement amount of entries left to read
+  jnz .searchRootSector                       ; As long as its not zero continue searching the sector
+
+  inc word [bp - 13]                          ; If there are no more entries to read, increase the LBA
+  dec byte [bp - 14]                          ; Decrement amount of sectors left to read in the root directory
+  jnz .searchRootDirLoop                      ; If its not zero, read the next sector of the root directory into the sector buffer
+
+  mov ax, ERR_FILE_NOT_FOUND                  ; If there are no more sectors to read, then the file doesnt exist
+  jmp .end                                    ; Return with an error of ERR_FILE_NOT_FOUND
+
+.foundInRootDir:
+  ;;;;;; DEBUG
+  mov bx, es
+  mov ds, bx
+  mov si, di
+  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  mov dx, 11
+  call printStrLen
   jmp .end
 
 .notOnRootDir:
@@ -74,11 +129,11 @@ remove:
   PRINT_CHAR 'E', VGA_TXT_YELLOW
 
 .end:
-  mov gs, [bp - 2]
-  mov es, [bp - 4]
-  mov ds, [bp - 8]
-  mov sp, bp
-  pop bp
+  mov gs, [bp - 2]                            ; Restore used segments
+  mov es, [bp - 4]                            ;
+  mov ds, [bp - 8]                            ;
+  mov sp, bp                                  ; Restore stack frame
+  pop bp                                      ;
   ret
 
 %endif

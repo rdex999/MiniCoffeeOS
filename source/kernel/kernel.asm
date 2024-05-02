@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "t2.txt", 0
+pathStf:                  db "t15.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
