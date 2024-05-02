@@ -155,8 +155,52 @@ remove:
 
 
 .notOnRootDir:
-  ;;;;;; NOT YET IMPLEMENTED
-  PRINT_CHAR 'E', VGA_TXT_YELLOW
+  mov word [bp - 13], 0                       ; Set bytes offset 
+
+  mov es, [bp - 4]
+  mov di, [bp - 6]
+  mov al, '/'
+  cld
+.searchLastDirLoop:
+  scasb 
+  jne .charNotDir
+
+  mov si, di
+
+.charNotDir:
+  cmp byte es:[di], 0
+  jne .searchLastDirLoop
+
+
+  sub si, [bp - 6]
+  sub sp, si
+  mov [bp - 10], sp
+
+  mov dx, si
+  dec dx
+
+  mov ds, [bp - 4]
+  mov si, [bp - 6]
+
+  mov bx, ss
+  mov es, bx
+  mov di, sp
+  push dx
+  call memcpy
+  pop dx
+
+  add di, dx
+  mov byte es:[di], 0
+
+  mov bx, ss
+  mov ds, bx
+  mov si, [bp - 10]
+  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  call printStr
+
+
+
+
 
 .success:
   xor ax, ax                                  ; On success, we return 0

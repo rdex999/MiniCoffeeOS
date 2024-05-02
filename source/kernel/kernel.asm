@@ -88,6 +88,7 @@ openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
 pathStf:                  db "kernel.bin", 0
+file: db "KERNEL  BIN"
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -101,9 +102,38 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-;   lea di, buffer
+;   lea di, welcomeMsg
 ;   lea si, pathStf
 ;   call getFileEntry
+
+;   push bx
+;   PRINTF_M `lba %u\n`, bx
+;   pop di
+
+;   lea bx, buffer
+;   mov si, 1
+;   call readDisk
+
+;   lea di, buffer
+;   mov dx, 512/32
+;   cld
+; .searchEntry:
+;   lea si, file
+;   mov cx, 11
+;   push di
+;   repe cmpsb
+;   pop di
+;   je .end
+
+;   add di, 32
+;   dec dx
+;   jnz .searchEntry
+
+; .end:
+;   mov si, di
+;   mov di, VGA_TXT_YELLOW
+;   call printStr
+
 
 ;   mov di, [buffer + 26]
 ; .printChain:
@@ -117,7 +147,6 @@ kernelMain:
 
 ;   lea di, pathStf
 ;   call remove
-
 
 ; ;;;;;; we know the kernels clusters are one after the other
 ;   mov cx, 5

@@ -12,7 +12,7 @@
 getFileEntry:
   push bp                         ; Save stack frame
   mov bp, sp                      ; 
-  sub sp, 26                      ; Allocate memory on the stack
+  sub sp, 27                      ; Allocate memory on the stack
 
   ; *(bp - 2)     - Buffer segment
   ; *(bp - 4)     - Buffer offset
@@ -28,6 +28,7 @@ getFileEntry:
   ; *(bp - 22)    - Old GS segment
   ; *(bp - 24)    - Previous sector offset in FAT
   ; *(bp - 26)    - Offset to the formatted path (which changes) segment is SS
+  ; *(bp - 27)    - Amount of directories/things in the path, but this one doesnt change
 
   mov [bp - 22], gs
   mov bx, KERNEL_SEGMENT          ; Set GS to kernel segment
@@ -50,6 +51,7 @@ getFileEntry:
 
   inc ax                          ; Increase the amount of '/' in the path by 1, because there is always at least one part
   mov [bp - 17], al               ; Store the result, thats for later
+  mov [bp - 27], al
 
   mov bx, 11                      ; Multiply by 11
   mul bx                          ; Get the size that the formatted string will have in AX
@@ -305,6 +307,7 @@ getFileEntry:
   call memcpy                         ; Copy
 
   xor ax, ax                          ; Return with error 0 (no error)
+  mov bx, [bp - 20]
   jmp .freeAndRet                     ; Free allocated memory and return
 
 ;;;;;;; TODO free malloced memory (not doing it for now, but i will)
@@ -315,6 +318,7 @@ getFileEntry:
   ; Jump here with the error code in AX
 .freeAndRet:
   push ax                             ; Save error code
+  push bx
   
   mov es, [bp - 10]                   ; Get pointer to the allocated sector
   mov di, [bp - 12]                   ; Get offset
@@ -324,6 +328,15 @@ getFileEntry:
   mov di, [bp - 16]                   ; Get offset
   call free                           ; Free memory
 
+  cmp byte [bp - 27], 1
+  je .getLBA
+
+  pop di 
+  call clusterToLBA
+  push ax
+
+.getLBA:
+  pop bx
   pop ax                              ; Restore error code
 
 .end:
