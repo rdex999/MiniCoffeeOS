@@ -27,7 +27,7 @@
 %define KBD_DRIVER
 
 %define KBD_HIGH_DELAY 500
-%define KBD_LOW_DELAY 9
+%define KBD_LOW_DELAY 15
 ; %define GET_ASCII_CODES
 
 ; 2*20*512  // 2 FATs, 20 sectors per fat, 512 bytes per sector
@@ -617,8 +617,7 @@
   call printf           ; Call printf and print the formatted string
   add sp, %0 * 2        ; Free stack space
 
-  mov di, 0FFFFh
-  mov si, 5
+  mov di, 5 * 1000
   call sleep
 
 %endmacro

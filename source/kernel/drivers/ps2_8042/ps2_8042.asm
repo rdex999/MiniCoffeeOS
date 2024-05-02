@@ -23,10 +23,6 @@ ps2_8042_waitOutput:
 ; RETURNS
 ;   - AL      => The keycode
 kbd_waitForKeycode:
-  push bp                                   ; Store stack frame
-  mov bp, sp                                ;
-  sub sp, 1                                 ; Allocate 3 bytes, *(bp - 1) is used for the keycode and *(bp - 3) in for the time
-
   push ds                                   ; Save old data segment
   mov bx, KERNEL_SEGMENT                    ; Set data segment to kernel data segment
   mov ds, bx                                ;
@@ -41,12 +37,12 @@ kbd_waitForKeycode:
 
   ; Will get here if the key is the first in the row
   ; Prepare for delay of about 0.6 seconds
-  mov al, ds:[kbdCurrentKeycode]            ; Save the current key code  
-  mov [bp - 1], al                          ; as we will be checking if it remains pressed while delaying
+  push word ds:[kbdCurrentKeycode]
 
   mov di, KBD_HIGH_DELAY                    ; Get the time of the high delay
   call kbdDelayKey                          ; Delay, as long as the key is the same
-  cmp al, [bp - 1]                          ; Check if the current key is the same of our previous one
+  pop dx
+  cmp al, dl
   je .afterSetFirst                         ; If it is, set kbdIsFirst to false
 
   mov byte ds:[kbdIsFirst], 1               ; If not the same, mark this key as first in the row
@@ -65,15 +61,20 @@ kbd_waitForKeycode:
   mov byte ds:[kbdIsFirst], 1               ; Mark this key as the first in row
 
 .delayAndRet:
+  push word ds:[kbdCurrentKeycode]          ; Save the current key so we know if it changed while delaying
   mov di, KBD_LOW_DELAY                     ; Get the time of the low delay
   call kbdDelayKey                          ; Make a short delay as long as the keyt remains the same
+  pop dx                                    ; Restore key
   test al, al                               ; Check if the current key is null
   jz .waitLoop                              ; If it is, wait for a key press
 
+  cmp al, dl                                ; Check if the kay had changed
+  je .end                                   ; If it didnt then return
+
+  mov byte ds:[kbdIsFirst], 1               ; If it did change mark it as first is row
+
 .end:
   pop ds                                    ; Restore old data segment
-  mov sp, bp                                ;
-  pop bp                                    ; Restore stack frame
   ret                                       ; Return
 
 
