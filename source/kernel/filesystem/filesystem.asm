@@ -16,6 +16,7 @@
 %include "kernel/filesystem/fopen.asm"
 %include "kernel/filesystem/fclose.asm"
 %include "kernel/filesystem/fread.asm"
+%include "kernel/filesystem/remove.asm"
 %include "kernel/filesystem/readClusterBytes.asm"
 %include "kernel/filesystem/writeClusterBytes.asm"
 ; %include "kernel/filesystem/readFile.asm"
