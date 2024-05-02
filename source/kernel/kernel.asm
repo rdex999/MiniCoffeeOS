@@ -87,11 +87,12 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "t15.txt", 0
+pathStf:                  db "kernel.bin", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
+
 
 kernelMain:
   INIT_KERNEL             ; Initialize kernel.
@@ -100,9 +101,46 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; lea di, pathStf
-  ; call remove
-  
+;   lea di, buffer
+;   lea si, pathStf
+;   call getFileEntry
+
+;   mov di, [buffer + 26]
+; .printChain:
+;   push di
+;   PRINTF_M `next cluster 0x%x\n`, di
+;   pop di
+;   call getNextCluster
+;   mov di, ax 
+;   cmp ax, FAT_CLUSTER_INVALID
+;   jb .printChain
+
+;   lea di, pathStf
+;   call remove
+
+
+; ;;;;;; we know the kernels clusters are one after the other
+;   mov cx, 5
+;   mov di, 2
+; .printAgain:
+;   push cx
+;   push di
+;   call getNextCluster
+;   pop di
+;   push di
+;   PRINTF_M `next cluster for 0x%x is 0x%x\n`, di, ax
+;   pop di
+;   pop cx
+;   inc di
+;   loop .printAgain
+
+
+;   lea di, pathStf
+;   mov si, FILE_OPEN_ACCESS_APPEND
+;   call fopen
+;   PRINTF_M `fopen returned %u\n`, ax
+
+
   ; Main loop for reading commands
 kernel_readCommandsLoop:
   PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell

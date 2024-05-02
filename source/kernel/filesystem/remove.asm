@@ -13,7 +13,7 @@
 remove:
   push bp
   mov bp, sp
-  sub sp, 16
+  sub sp, 18
 
   ; *(bp - 2)   - Old GS segment
   ; *(bp - 4)   - File name segment
@@ -24,6 +24,7 @@ remove:
   ; *(bp - 13)  - Current LBA in root directory or the current bytes offset (if the file is not on the root directory)
   ; *(bp - 14)  - Amount of sectors left to read from the root directory
   ; *(bp - 16)  - Sector buffer offset
+  ; *(bp - 18)  - The files first cluster number
 
   mov [bp - 2], gs                            ; Store GS segment because we will change it
   mov [bp - 4], es                            ; Store file name segment
@@ -59,6 +60,7 @@ remove:
   test bx, bx                                 ; Check error code
   jz .filePathSuccess                         ; If there was no error, skip the next two lines
 
+.errInBX:
   mov ax, bx                                  ; Get the error code in AX
   jmp .end                                    ; Return
 
@@ -115,18 +117,49 @@ remove:
   jmp .end                                    ; Return with an error of ERR_FILE_NOT_FOUND
 
 .foundInRootDir:
-  ;;;;;; DEBUG
-  mov bx, es
-  mov ds, bx
-  mov si, di
-  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  mov dx, 11
-  call printStrLen
-  jmp .end
+  mov ax, es:[di + 26]                        ; Get the files first cluster number
+  mov [bp - 18], ax                           ; Store the cluster number, so we can mark the whole chain (later) as free
+
+  xor si, si                                  ; The value to set the entry to, null
+  mov dx, 32                                  ; Set 32 bytes
+  call memset                                 ; Set the entry to 0
+
+  mov bx, ss                                  ; Set the source, from where to write the data.   // Get a pointer to the sector buffer
+  mov ds, bx                                  ; Set segment
+  mov si, [bp - 16]                           ; Set offset
+
+  mov di, [bp - 13]                           ; Get the LBA to write to (the destination)
+  mov dx, 1                                   ; Amount of sectors to write
+  call writeDisk                              ; Write the changes we made to the entry, to the hard disk
+  test ax, ax                                 ; Check error code
+  jnz .end                                    ; If there was an error, return with it
+
+.freeClusters:
+  ; When getting here, the files first cluster number should be at *(bp - 18)
+  mov di, [bp - 18]                           ; Get the files first cluster number
+  cmp di, FAT_CLUSTER_INVALID                 ; Check if its valid
+  jae .success                                ; If not, return with 0 because we finished freeing the clusters
+
+  call getNextCluster                         ; Get the next cluster for the current one
+  test bx, bx                                 ; Check error code
+  jnz .errInBX                                ; If there was an error, return with it
+
+  mov di, [bp - 18]                           ; Get the current cluster number
+  mov [bp - 18], ax                           ; Set the current cluster number to the next one
+  xor si, si                                  ; The value to set the current cluster to (0 means free)
+  call setCluster                             ; Set the current cluster to 0 (mark it as free)
+  test ax, ax                                 ; Check error code
+  jnz .end                                    ; If there was an error return with it
+
+  jmp .freeClusters                           ; Continue freeing clusters
+
 
 .notOnRootDir:
   ;;;;;; NOT YET IMPLEMENTED
   PRINT_CHAR 'E', VGA_TXT_YELLOW
+
+.success:
+  xor ax, ax                                  ; On success, we return 0
 
 .end:
   mov gs, [bp - 2]                            ; Restore used segments
