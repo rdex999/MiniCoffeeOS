@@ -87,8 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "folder/fld200/t16.txt", 0
-file: db "T16     TXT"
+pathStf:                  db "kernel.bin", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -102,26 +101,9 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; lea di, welcomeMsg
-  ; lea si, pathStf
-  ; call getFileEntry
-
-  ; push cx
-  ; push bx
-  ; PRINTF_M `lba %u with offset of %u\n`, bx, cx
-  ; pop di
-
-  ; lea bx, buffer
-  ; mov si, 1
-  ; call readDisk
-
-  ; pop cx
-  ; lea si, buffer
-  ; add si, cx
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  ; mov dx, 11
-  ; call printStrLen
-
+;   lea di, buffer
+;   lea si, pathStf
+;   call getFileEntry
 
 ;   mov di, [buffer + 26]
 ; .printChain:
@@ -150,7 +132,6 @@ kernelMain:
 ;   pop cx
 ;   inc di
 ;   loop .printAgain
-
 
 ;   lea di, pathStf
 ;   mov si, FILE_OPEN_ACCESS_APPEND
