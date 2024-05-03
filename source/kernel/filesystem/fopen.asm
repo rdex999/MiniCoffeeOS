@@ -109,13 +109,13 @@ fopen:
   cmp al, FILE_OPEN_ACCESS_APPEND_PLUS            ; Check if the requested access is APPEND_PLUS
   je .setPosEnd                                   ; If it is then set the current position to the end of the file
   
-  mov word es:[di + FILE_OPEN_READ_POS16], 0      ; If its not append, initialize the files current read position to 0
+  mov word es:[di + FILE_OPEN_POS16], 0      ; If its not append, initialize the files current read position to 0
   jmp .afterSetPos                                ; skip APPEND access handler
 
 .setPosEnd:
   mov si, [bp - 9] 
   mov ax, ss:[si + 28]
-  mov es:[di + FILE_OPEN_READ_POS16], ax     ; Initialize the files current read position to the end of the file
+  mov es:[di + FILE_OPEN_POS16], ax     ; Initialize the files current read position to the end of the file
 
 .afterSetPos:
   add di, FILE_OPEN_ENTRY256                      ; Add to the pointer the offset of the FAT entry, as we want to copy to it

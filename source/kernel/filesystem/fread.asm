@@ -60,7 +60,7 @@ fread:
   ; }else{
   ;   readSize = requestedReadSize;
   ; }
-  mov ax, ds:[si + FILE_OPEN_READ_POS16]              ; Get the files current read position
+  mov ax, ds:[si + FILE_OPEN_POS16]              ; Get the files current read position
   add ax, [bp - 4]                                    ; Add to it the requested amount of bytes to read
   cmp ax, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Check if the result (AX) is greater than the files size
   jae .setReadMax                                     ; If it is, then calculate the maximum amount of bytes that we can read
@@ -73,7 +73,7 @@ fread:
   ; If it is greater than the files size then calculate the maximum amount of bytes that we can read
   ; readSize = file.size - file.readPos;
   mov cx, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Get the files size
-  sub cx, ds:[si + FILE_OPEN_READ_POS16]              ; Subtract from it the current read position in the file
+  sub cx, ds:[si + FILE_OPEN_POS16]              ; Subtract from it the current read position in the file
 
 .afterSetReadAmount:
 
@@ -81,12 +81,12 @@ fread:
   ; Note: ES:DI, the destination buffer argument for readClusterBytes, is already set,
   ; as well as the amount of bytes to read (CX)
   push si
-  mov dx, ds:[si + FILE_OPEN_READ_POS16]            ; Get the current read position in the file
+  mov dx, ds:[si + FILE_OPEN_POS16]            ; Get the current read position in the file
   mov si, ds:[si + FILE_OPEN_ENTRY256 + 26]         ; Get the files first cluster number
   call readClusterBytes                             ; Read the file into the given buffer (the parameter, ES:DI)
 
   pop si
-  add ds:[si + FILE_OPEN_READ_POS16], ax            ; Add the amount of bytes we read to the read position
+  add ds:[si + FILE_OPEN_POS16], ax            ; Add the amount of bytes we read to the read position
 
 .end:
   mov ds, [bp - 2]                                  ; Restore old DS segment

@@ -73,14 +73,20 @@
 ; To check if the file is open (is openFiles) check if the first cluster number is 0.
 ; If the first cluster number is zero then the descriptor is empty
 
+; struct file_open {
+;   uint8_t access;
+;   uint16_t position;
+;   struct entryFAT;    // 32 bytes
+; };
+
 ; The length of the openFiles array
 %define FILE_OPEN_LEN 10
 ; Access for the file
 %define FILE_OPEN_ACCESS8 0
 ; The current read position in a file
-%define FILE_OPEN_READ_POS16 (FILE_OPEN_ACCESS8 + 1)
+%define FILE_OPEN_POS16 (FILE_OPEN_ACCESS8 + 1)
 ; The FAT entry of the file
-%define FILE_OPEN_ENTRY256 (FILE_OPEN_READ_POS16 + 2)
+%define FILE_OPEN_ENTRY256 (FILE_OPEN_POS16 + 2)
 ; sizeof(openFile)
 %define FILE_OPEN_SIZEOF (FILE_OPEN_ENTRY256 + 32)
 

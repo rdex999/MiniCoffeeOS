@@ -88,6 +88,7 @@ openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
 pathStf:                  db "folder/file.txt", 0
+txtForFile: db "Some stuff that should be in the file", NEWLINE, "after a newline?", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -107,13 +108,20 @@ kernelMain:
 
   ; push ax
   ; PRINTF_M `fopen returned %u\n`, ax
+  ; pop dx
+
+  ; push dx
+  ; lea di, txtForFile
+  ; mov si, 37+16+2
+  ; call fwrite
+  ; PRINTF_M `fwrite returned %u\n`, ax
   ; pop di
 
   ; call fclose
   ; PRINTF_M `fclose returned %u\n`, ax
 
   ; lea di, pathStf
-  ; mov si, FILE_OPEN_ACCESS_WRITE
+  ; mov si, FILE_OPEN_ACCESS_READ
   ; call fopen
 
   ; push ax

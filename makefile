@@ -1,5 +1,5 @@
 AS=nasm
-AS_FLAGS= -f bin -i "source"
+AS_FLAGS= -f bin -i "source" -O3
 SRC=source/
 BLD=build/
 FDA=floppy.img
