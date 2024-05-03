@@ -102,27 +102,6 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-;   mov di, 2
-;   call countClusters
-
-;   PRINTF_M `clusters %u\n`, ax
-
-;   mov di, 2
-; .again:
-;   cmp di, FAT_CLUSTER_INVALID
-;   jae .end 
-
-;   push di
-;   PRINTF_M `current %u\n`, di
-;   pop di
-
-;   call getNextCluster
-;   mov di, ax
-;   jmp .again
-
-; .end:
-
-
   ; lea di, pathStf
   ; mov si, FILE_OPEN_ACCESS_WRITE
   ; call fopen
@@ -149,6 +128,8 @@ kernelMain:
   ; PRINTF_M `second fopen returned %u\n`, ax
   ; pop dx
 
+  ; mov bx, KERNEL_SEGMENT
+  ; mov es, bx
   ; lea di, buffer
   ; mov si, 100
   ; call fread
@@ -156,9 +137,8 @@ kernelMain:
   ; PRINTF_M `fread returned %u\n`, ax
 
   ; lea si, buffer
-  ; mov di, VGA_TXT_YELLOW
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
   ; call printStr
-
 
   ; Main loop for reading commands
 kernel_readCommandsLoop:

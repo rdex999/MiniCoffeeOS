@@ -22,7 +22,16 @@
 fopen:
   push bp                                         ; Save stack frame
   mov bp, sp                                      ;
-  sub sp, 11 + 32                                  ; Allocate memory on the stack, for local stuff and for the file entry
+  sub sp, 15 + 32                                 ; Allocate memory on the stack, for local stuff and for the file entry
+
+  ; *(bp - 2)     - File path segment
+  ; *(bp - 4)     - Old DS segment
+  ; *(bp - 5)     - Requested file access
+  ; *(bp - 7)     - Empty slot index (in the openFiles array)
+  ; *(bp - 9)     - Files entry buffer offset (segment is SS)
+  ; *(bp - 11)    - File path offset
+  ; *(bp - 13)    - The files entry LBA
+  ; *(bp - 15)    - The files entry offset in the LBA
 
   mov [bp - 9], sp                                ; Store FAT buffer pointer (32 bytes)
   mov [bp - 2], es                                ; The files path segment
@@ -56,7 +65,9 @@ fopen:
   test ax, ax                                     ; Check error code of getFileEntry
   jnz .err                                        ; If there was an error we return null
 
-.afterGetEntry:
+  mov [bp - 13], bx
+  mov [bp - 15], cx
+
   mov si, [bp - 9]                                ; Entry stored on the stack
   mov ax, ss:[si + 26]                            ; Get first cluster number
 
@@ -99,6 +110,12 @@ fopen:
 .foundEmpty:
   mov [bp - 7], bx                                ; Save empty slot index
   mov di, dx                                      ; Get a pointer to the empty slot
+
+  mov ax, [bp - 13]
+  mov es:[di + FILE_OPEN_ENTRY_LBA16], ax
+
+  mov ax, [bp - 15]
+  mov es:[di + FILE_OPEN_ENTRY_OFFSET16], ax
 
   mov al, [bp - 5]                                ; Get requested file access
   mov es:[di + FILE_OPEN_ACCESS8], al             ; Set files access
@@ -160,15 +177,16 @@ fopen:
   mov ds, [bp - 2]                                ; Get a pointer to the files path
   mov si, [bp - 11]                               ; Get offset
 
-  mov bx, ss                                      ; Get a pointer to the entry buffer
+  xor bx, bx 
   mov es, bx                                      ; Get segment
-  mov di, [bp - 9]                                ; Offset
+  xor di, di 
+
   xor dx, dx                                      ; Set flags for the new file    // None
   call createFile                                 ; Create the file and save its entry into the entry buffer
   test ax, ax                                     ; Check error code
   jnz .err                                        ; If there was an error return 0
 
-  jmp .afterGetEntry                              ; Continue and set flags and shit
+  jmp .afterHandleAccess                          ; Continue and set flags and shit
 
 .createIfDoesntExist:
   mov ds, [bp - 2]                                ; Get a pointer to the files path (DS:SI)
@@ -179,21 +197,22 @@ fopen:
   mov di, [bp - 9]                                ; Set offset
   call getFileEntry                               ; Get the files entry
   test ax, ax                                     ; Check error code
-  jz .afterGetEntry                               ; If the file exists, continue and set flags for the opened file
+  jz .afterHandleAccess                           ; If the file exists, continue and set flags for the opened file
 
   ; If the file doesnt exist, we create it
   mov ds, [bp - 2]                                ; Get a pointer to the files path
   mov si, [bp - 11]                               ; Get offset
 
-  mov bx, ss                                      ; Get a pointer to the entry buffer
+  xor bx, bx 
   mov es, bx                                      ; Get segment
-  mov di, [bp - 9]                                ; Offset
+  xor di, di
+
   xor dx, dx                                      ; Set flags for the new file    // None
   call createFile                                 ; Create the file and save its entry into the entry buffer
   test ax, ax                                     ; Check error code
   jnz .err                                        ; If there was an error return 0
 
-  jmp .afterGetEntry                              ; Continue and set flags and shit 
+  jmp .afterHandleAccess                          ; Continue and set flags and shit 
 
 
 %endif

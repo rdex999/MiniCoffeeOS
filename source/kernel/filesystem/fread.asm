@@ -60,7 +60,7 @@ fread:
   ; }else{
   ;   readSize = requestedReadSize;
   ; }
-  mov ax, ds:[si + FILE_OPEN_POS16]              ; Get the files current read position
+  mov ax, ds:[si + FILE_OPEN_POS16]                   ; Get the files current read position
   add ax, [bp - 4]                                    ; Add to it the requested amount of bytes to read
   cmp ax, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Check if the result (AX) is greater than the files size
   jae .setReadMax                                     ; If it is, then calculate the maximum amount of bytes that we can read
@@ -70,6 +70,7 @@ fread:
   jmp .afterSetReadAmount                             ; Continue and prepare arguments for readClusterBytes
 
 .setReadMax:
+
   ; If it is greater than the files size then calculate the maximum amount of bytes that we can read
   ; readSize = file.size - file.readPos;
   mov cx, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Get the files size

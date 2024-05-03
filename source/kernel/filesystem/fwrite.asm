@@ -15,7 +15,7 @@
 fwrite:
   push bp                                 ; Save stack frame
   mov bp, sp                              ;
-  sub sp, 6                               ; Allocate space for local stuff
+  sub sp, 8                               ; Allocate space for local stuff
 
   mov [bp - 2], es                        ; Save data buffer pointer
   mov [bp - 4], di                        ; Save its offset
@@ -41,6 +41,10 @@ fwrite:
   lea di, [openFiles]                     ; Get a pointer to the openFiles array
   add di, ax                              ; Add to it the calculated offset
 
+  cmp word es:[di + FILE_OPEN_ENTRY256 + 26], 0
+  je .err
+
+
   mov al, es:[di + FILE_OPEN_ACCESS8]     ; Get the files access
 
   cmp al, FILE_OPEN_ACCESS_READ
@@ -49,20 +53,65 @@ fwrite:
   cmp al, FILE_OPEN_ACCESS_READ
   je .err
 
-
+  mov [bp - 8], di
   ; Check the files size, and if we need to add clusters
+  
+  mov ax, es:[di + FILE_OPEN_POS16]
+  add ax, [bp - 6]
+  cmp ax, es:[di + FILE_OPEN_ENTRY256 + 28] 
+  jbe .writeToFile
+
+  sub ax, es:[di + FILE_OPEN_ENTRY256 + 28]
+
+  ; pusha
+  ; PRINT_CHAR 'I', VGA_TXT_YELLOW
+  ; popa
 
 
+  mov si, ax
 
+  mov ax, es:[bpb_bytesPerSector]
+  mov bl, es:[bpb_sectorPerCluster]
+  xor bh, bh
+  mul bx
 
+  mov bx, ax
+  mov ax, si 
+  xor dx, dx
+  div bx
+  test ax, ax
+  jz .writeToFile
+
+  mov si, ax
+  mov di, es:[di + FILE_OPEN_ENTRY256 + 26]
+  call addClusters
+  test ax, ax
+  jz .err
+
+.writeToFile:
+  mov bx, KERNEL_SEGMENT
+  mov es, bx
+  mov ds, bx
+
+  push ds
+  mov di, [bp - 8] 
   mov dx, es:[di + FILE_OPEN_POS16]
   mov di, es:[di + FILE_OPEN_ENTRY256 + 26]
   mov cx, [bp - 6]
-  mov es, [bp - 2]
-  mov di, [bp - 4]
+  mov ds, [bp - 2]
+  mov si, [bp - 4]
   call writeClusterBytes
+  pop ds
 
+  mov di, [bp - 8]
+  add es:[di + FILE_OPEN_POS16], ax
 
+  mov bx, ax
+  add bx, es:[di + FILE_OPEN_POS16]
+  cmp bx, es:[di + FILE_OPEN_ENTRY256 + 28]
+  jbe .end
+
+  add es:[di + FILE_OPEN_ENTRY256 + 28], ax
 
 .end:
   mov es, [bp - 2]                        ; Restore used segments

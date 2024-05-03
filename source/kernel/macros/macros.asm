@@ -85,8 +85,12 @@
 %define FILE_OPEN_ACCESS8 0
 ; The current read position in a file
 %define FILE_OPEN_POS16 (FILE_OPEN_ACCESS8 + 1)
+; The FAT file entries LBA address
+%define FILE_OPEN_ENTRY_LBA16 (FILE_OPEN_POS16 + 2)
+; The offset in the LBA for the FAT entry
+%define FILE_OPEN_ENTRY_OFFSET16 (FILE_OPEN_ENTRY_LBA16 + 2)
 ; The FAT entry of the file
-%define FILE_OPEN_ENTRY256 (FILE_OPEN_POS16 + 2)
+%define FILE_OPEN_ENTRY256 (FILE_OPEN_ENTRY_OFFSET16 + 2)
 ; sizeof(openFile)
 %define FILE_OPEN_SIZEOF (FILE_OPEN_ENTRY256 + 32)
 
