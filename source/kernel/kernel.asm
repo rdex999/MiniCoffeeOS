@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "kernel.bin", 0
+pathStf:                  db "folder/file.txt", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -101,42 +101,34 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-;   lea di, buffer
-;   lea si, pathStf
-;   call getFileEntry
+  lea di, pathStf
+  mov si, FILE_OPEN_ACCESS_WRITE
+  call fopen
 
-;   mov di, [buffer + 26]
-; .printChain:
-;   push di
-;   PRINTF_M `next cluster 0x%x\n`, di
-;   pop di
-;   call getNextCluster
-;   mov di, ax 
-;   cmp ax, FAT_CLUSTER_INVALID
-;   jb .printChain
+  push ax
+  PRINTF_M `fopen returned %u\n`, ax
+  pop di
 
-;   lea di, pathStf
-;   call remove
+  call fclose
+  PRINTF_M `fclose returned %u\n`, ax
 
-; ;;;;;; we know the kernels clusters are one after the other
-;   mov cx, 5
-;   mov di, 2
-; .printAgain:
-;   push cx
-;   push di
-;   call getNextCluster
-;   pop di
-;   push di
-;   PRINTF_M `next cluster for 0x%x is 0x%x\n`, di, ax
-;   pop di
-;   pop cx
-;   inc di
-;   loop .printAgain
+  lea di, pathStf
+  mov si, FILE_OPEN_ACCESS_WRITE
+  call fopen
 
-;   lea di, pathStf
-;   mov si, FILE_OPEN_ACCESS_APPEND
-;   call fopen
-;   PRINTF_M `fopen returned %u\n`, ax
+  push ax
+  PRINTF_M `seconds fopen returned %u\n`, ax
+  pop dx
+
+  lea di, buffer
+  mov si, 100
+  call fread
+
+  PRINTF_M `fread returned %u\n`, ax
+
+  lea si, buffer
+  mov di, VGA_TXT_YELLOW
+  call printStr
 
 
   ; Main loop for reading commands

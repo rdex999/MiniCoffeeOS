@@ -22,28 +22,36 @@
 fopen:
   push bp                                         ; Save stack frame
   mov bp, sp                                      ;
-  sub sp, 9 + 32                                  ; Allocate memory on the stack, for local stuff and for the file entry
+  sub sp, 11 + 32                                  ; Allocate memory on the stack, for local stuff and for the file entry
 
   mov [bp - 9], sp                                ; Store FAT buffer pointer (32 bytes)
-  mov [bp - 2], es                                ; Save used segments
-  mov [bp - 4], ds                                ;
+  mov [bp - 2], es                                ; The files path segment
+  mov [bp - 4], ds                                ; Save used segments
   mov ax, si                                      ; Save low 8 bits of the requested file access
   mov [bp - 5], al                                ;
+  mov [bp - 11], di                               ; The files path offset
 
+  cmp si, FILE_OPEN_ACCESS_WRITE                  ; Check if the requested access is WRITE, in which we delete and create the file again
+  je .handleWriteAccess                           ; If it is WRITE then handle it
+
+  cmp si, FILE_OPEN_ACCESS_WRITE_PLUS             ; Check if the requested access is WRITE_PLUS, in which we delete and create the file again 
+  je .handleWriteAccess                           ; If it is WRITE_PLUS then handle it
+
+.afterHandleAccess:
   ; Prepare arguments for getFileEntry, and read the file entry into the stack
-  mov bx, es                                      ; Set DS:SI = ES:DI
-  mov ds, bx                                      ; Because getFileEntry wants the filename in DS:SI
-  mov si, di                                      ; SI = DI
+  mov ds, [bp - 2]                                ; Because getFileEntry wants the filename in DS:SI
+  mov si, [bp - 11]                               ; SI = DI
 
   mov bx, ss                                      ; Set ES:DI = SS:SP
   mov es, bx                                      ; Because we will store the entry on the stack, and SP already points
-  mov di, sp                                      ; to the allocated memory on the stack
+  mov di, [bp - 9]                                ; to the allocated memory on the stack
 
   call getFileEntry                               ; Get the files FAT entry and store it on the stack
   test ax, ax                                     ; Check error code of getFileEntry
   jnz .err                                        ; If there was an error we return null
 
-  mov si, sp                                      ; Entry stored on the stack
+.afterGetEntry:
+  mov si, [bp - 9]                                ; Entry stored on the stack
   mov ax, ss:[si + 26]                            ; Get first cluster number
 
 
@@ -98,9 +106,8 @@ fopen:
   call memcpy                                     ; Copy the FAT entry into the empty file slot in openFiles
   mov cx, [bp - 7]                                ; Get the empty slot index
 
-.setAccess:
-  mov ax, cx                                                ; Get the files slot index
-  inc ax                                                    ; Increase by 1 so we dont return 0 for a valid index (0 indicates error)
+  mov ax, cx                                      ; Get the files slot index
+  inc ax                                          ; Increase by 1 so we dont return 0 for a valid index (0 indicates error)
 
 .end:
   mov es, [bp - 2]                                ; Restore used segments
@@ -112,5 +119,35 @@ fopen:
 .err:
   xor ax, ax                                      ; If there is an error we return null
   jmp .end
+
+.handleWriteAccess:
+  ; We need to check if the file exists, if it does, delete it and create it again
+  mov ds, [bp - 2]                                ; Get a pointer to the files path (DS:SI)
+  mov si, [bp - 11]                               ; Get offset
+
+  mov bx, ss                                      ; Set the destination, where to store the files entry (the entry buffer)
+  mov es, bx                                      ; Set segment
+  mov di, [bp - 9]                                ; Set offset
+  call getFileEntry                               ; Get the files entry
+  test ax, ax                                     ; Check error code
+  jnz .writeAccess_create                         ; If there was an error (which is not wrong) then the file doesnt exist, just create it
+
+  mov es, [bp - 2]                                ; If the file does exist, delete it.  // Get a pointer to the files path
+  mov di, [bp - 11]                               ; Get offset
+  call remove                                     ; Delete the file
+
+.writeAccess_create:
+  mov ds, [bp - 2]                                ; Get a pointer to the files path
+  mov si, [bp - 11]                               ; Get offset
+
+  mov bx, ss                                      ; Get a pointer to the entry buffer
+  mov es, bx                                      ; Get segment
+  mov di, [bp - 9]                                ; Offset
+  xor dx, dx                                      ; Set flags for the new file    // None
+  call createFile                                 ; Create the file and save its entry into the entry buffer
+  test ax, ax                                     ; Check error code
+  jnz .err                                        ; If there was an error return 0
+
+  jmp .afterGetEntry                              ; Continue and set flags and shit
 
 %endif
