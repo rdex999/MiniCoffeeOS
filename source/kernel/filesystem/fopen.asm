@@ -37,6 +37,12 @@ fopen:
   cmp si, FILE_OPEN_ACCESS_WRITE_PLUS             ; Check if the requested access is WRITE_PLUS, in which we delete and create the file again 
   je .handleWriteAccess                           ; If it is WRITE_PLUS then handle it
 
+  cmp si, FILE_OPEN_ACCESS_APPEND
+  je .createIfDoesntExist
+
+  cmp si, FILE_OPEN_ACCESS_APPEND_PLUS
+  je .createIfDoesntExist
+
 .afterHandleAccess:
   ; Prepare arguments for getFileEntry, and read the file entry into the stack
   mov ds, [bp - 2]                                ; Because getFileEntry wants the filename in DS:SI
@@ -96,8 +102,22 @@ fopen:
 
   mov al, [bp - 5]                                ; Get requested file access
   mov es:[di + FILE_OPEN_ACCESS8], al             ; Set files access
-  mov word es:[di + FILE_OPEN_READ_POS16], 0      ; Initialize the files current read position to 0
 
+  cmp al, FILE_OPEN_ACCESS_APPEND                 ; Check if the requested access is APPEND (in which, the position is the end of the file)
+  je .setPosEnd                                   ; If it is then set the current position to the end of the file
+
+  cmp al, FILE_OPEN_ACCESS_APPEND_PLUS            ; Check if the requested access is APPEND_PLUS
+  je .setPosEnd                                   ; If it is then set the current position to the end of the file
+  
+  mov word es:[di + FILE_OPEN_READ_POS16], 0      ; If its not append, initialize the files current read position to 0
+  jmp .afterSetPos                                ; skip APPEND access handler
+
+.setPosEnd:
+  mov si, [bp - 9] 
+  mov ax, ss:[si + 28]
+  mov es:[di + FILE_OPEN_READ_POS16], ax     ; Initialize the files current read position to the end of the file
+
+.afterSetPos:
   add di, FILE_OPEN_ENTRY256                      ; Add to the pointer the offset of the FAT entry, as we want to copy to it
   mov si, [bp - 9]                                ; Get a pointer to the FAT entry (from where to copy DS:SI)
   mov bx, ss                                      ; Set DS:SI => FAT entry
@@ -149,5 +169,31 @@ fopen:
   jnz .err                                        ; If there was an error return 0
 
   jmp .afterGetEntry                              ; Continue and set flags and shit
+
+.createIfDoesntExist:
+  mov ds, [bp - 2]                                ; Get a pointer to the files path (DS:SI)
+  mov si, [bp - 11]                               ; Get offset
+
+  mov bx, ss                                      ; Set the destination, where to store the files entry (the entry buffer)
+  mov es, bx                                      ; Set segment
+  mov di, [bp - 9]                                ; Set offset
+  call getFileEntry                               ; Get the files entry
+  test ax, ax                                     ; Check error code
+  jz .afterGetEntry                               ; If the file exists, continue and set flags for the opened file
+
+  ; If the file doesnt exist, we create it
+  mov ds, [bp - 2]                                ; Get a pointer to the files path
+  mov si, [bp - 11]                               ; Get offset
+
+  mov bx, ss                                      ; Get a pointer to the entry buffer
+  mov es, bx                                      ; Get segment
+  mov di, [bp - 9]                                ; Offset
+  xor dx, dx                                      ; Set flags for the new file    // None
+  call createFile                                 ; Create the file and save its entry into the entry buffer
+  test ax, ax                                     ; Check error code
+  jnz .err                                        ; If there was an error return 0
+
+  jmp .afterGetEntry                              ; Continue and set flags and shit 
+
 
 %endif

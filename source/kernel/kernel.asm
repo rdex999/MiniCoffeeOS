@@ -101,34 +101,34 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  lea di, pathStf
-  mov si, FILE_OPEN_ACCESS_WRITE
-  call fopen
+  ; lea di, pathStf
+  ; mov si, FILE_OPEN_ACCESS_WRITE
+  ; call fopen
 
-  push ax
-  PRINTF_M `fopen returned %u\n`, ax
-  pop di
+  ; push ax
+  ; PRINTF_M `fopen returned %u\n`, ax
+  ; pop di
 
-  call fclose
-  PRINTF_M `fclose returned %u\n`, ax
+  ; call fclose
+  ; PRINTF_M `fclose returned %u\n`, ax
 
-  lea di, pathStf
-  mov si, FILE_OPEN_ACCESS_WRITE
-  call fopen
+  ; lea di, pathStf
+  ; mov si, FILE_OPEN_ACCESS_WRITE
+  ; call fopen
 
-  push ax
-  PRINTF_M `seconds fopen returned %u\n`, ax
-  pop dx
+  ; push ax
+  ; PRINTF_M `second fopen returned %u\n`, ax
+  ; pop dx
 
-  lea di, buffer
-  mov si, 100
-  call fread
+  ; lea di, buffer
+  ; mov si, 100
+  ; call fread
 
-  PRINTF_M `fread returned %u\n`, ax
+  ; PRINTF_M `fread returned %u\n`, ax
 
-  lea si, buffer
-  mov di, VGA_TXT_YELLOW
-  call printStr
+  ; lea si, buffer
+  ; mov di, VGA_TXT_YELLOW
+  ; call printStr
 
 
   ; Main loop for reading commands
