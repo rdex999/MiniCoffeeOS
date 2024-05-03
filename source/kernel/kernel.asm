@@ -102,6 +102,27 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+;   mov di, 2
+;   call countClusters
+
+;   PRINTF_M `clusters %u\n`, ax
+
+;   mov di, 2
+; .again:
+;   cmp di, FAT_CLUSTER_INVALID
+;   jae .end 
+
+;   push di
+;   PRINTF_M `current %u\n`, di
+;   pop di
+
+;   call getNextCluster
+;   mov di, ax
+;   jmp .again
+
+; .end:
+
+
   ; lea di, pathStf
   ; mov si, FILE_OPEN_ACCESS_WRITE
   ; call fopen

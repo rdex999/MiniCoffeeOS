@@ -41,9 +41,28 @@ fwrite:
   lea di, [openFiles]                     ; Get a pointer to the openFiles array
   add di, ax                              ; Add to it the calculated offset
 
-  mov al, es:[di + FILE_OPEN_ACCESS8]      ; Get the files access
-  xor ah, ah                              ;;;;;;;;; DEBUG
-  PRINT_INT16 ax                          ;;;;;;;;; DEBUG
+  mov al, es:[di + FILE_OPEN_ACCESS8]     ; Get the files access
+
+  cmp al, FILE_OPEN_ACCESS_READ
+  je .err
+
+  cmp al, FILE_OPEN_ACCESS_READ
+  je .err
+
+
+  ; Check the files size, and if we need to add clusters
+
+
+
+
+  mov dx, es:[di + FILE_OPEN_POS16]
+  mov di, es:[di + FILE_OPEN_ENTRY256 + 26]
+  mov cx, [bp - 6]
+  mov es, [bp - 2]
+  mov di, [bp - 4]
+  call writeClusterBytes
+
+
 
 .end:
   mov es, [bp - 2]                        ; Restore used segments

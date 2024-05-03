@@ -148,4 +148,38 @@ clusterToLBA:                       ; LBA = dataRegionOffset + (cluster - 2) * s
   ret
 
 
+
+; Get the amountof clusters in a cluster chain
+; PARAMS
+;   - 0) DI   => First cluster number
+; RETURNS
+;   - 0) In AX, the amount of clusters in the cluster chain. Can return 0 if an error occurs
+countClusters:
+  push bp                       ; Save stack frame
+  mov bp, sp                    ;
+
+  xor ax, ax                    ; Zero out clusters counter
+.cntLoop:
+  cmp di, FAT_CLUSTER_INVALID   ; Check if the current cluster is valid
+  jae .end                      ; If not, return with the clusters counter
+
+  push ax                       ; Save clusters counter
+  call getNextCluster           ; Get the next cluster in the chain
+  test bx, bx                   ; Check error code
+  jnz .err                      ; If there was an error, return 0
+
+  mov di, ax                    ; Get the next cluster in DI
+  pop ax                        ; Restore clusters counter
+  inc ax                        ; Increment it
+  jmp .cntLoop                  ; Continue counting clusters
+
+.end:
+  mov sp, bp                    ; Restore stack frame
+  pop bp                        ;
+  ret
+
+.err:
+  xor ax, ax                    ; If there is an error, return 0
+  jmp .end                      ; Return
+
 %endif
