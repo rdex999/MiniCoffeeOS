@@ -9,6 +9,8 @@
 ;   - 1) DS:SI  => The files path. Doesnt need to be formatted correctly.
 ; RETURNS
 ;   - 0) In AX, the error code. (0 on success)
+;   - 1) In BX, the entries LBA address
+;   - 2) In CX, the entries offset in the LBA address (in bytes)
 getFileEntry:
   push bp                         ; Save stack frame
   mov bp, sp                      ; 
@@ -297,6 +299,11 @@ getFileEntry:
 .lastDir_copy:
   ; When getting here, a pointer to the directory entry should be in ES:DI
   ; Copy the entry to the given buffer (the parameter), and return with no error
+
+  mov ax, di                          ; Get a pointer to the entry in AX (the offset)
+  sub ax, [bp - 16]                   ; Subtract from it the cluster buffer offset, to get the offset into the LBA
+  push ax                             ; Save the offset in the LBA
+
   mov bx, es                          ; Set DS to ES, because copying from DS to ES
   mov ds, bx                          ;
   mov si, di                          ; Set SI to DI (same reason)
@@ -307,7 +314,8 @@ getFileEntry:
   call memcpy                         ; Copy
 
   xor ax, ax                          ; Return with error 0 (no error)
-  mov bx, [bp - 20]
+  mov bx, [bp - 20]                   ; Get the LBA/cluster number
+  pop cx                              ; Restore offset in LBA
   jmp .freeAndRet                     ; Free allocated memory and return
 
 ;;;;;;; TODO free malloced memory (not doing it for now, but i will)
@@ -315,10 +323,11 @@ getFileEntry:
   mov ax, ERR_GET_FILE_ENTRY          ; Give a general error
   jmp .end                            ; Return
 
-  ; Jump here with the error code in AX
+  ; Jump here with the error code in AX, the LBA of the entry in BX, and the offset in the LBA for the entry in CX
 .freeAndRet:
   push ax                             ; Save error code
-  push bx
+  push cx                             ; Save byte offset in LBA
+  push bx                             ; Save cluster/LBA
   
   mov es, [bp - 10]                   ; Get pointer to the allocated sector
   mov di, [bp - 12]                   ; Get offset
@@ -328,15 +337,16 @@ getFileEntry:
   mov di, [bp - 16]                   ; Get offset
   call free                           ; Free memory
 
-  cmp byte [bp - 27], 1
-  je .getLBA
+  cmp byte [bp - 27], 1               ; Check the amount of path parts (if its one, then BX was an LBA and there is no need to convert it)
+  je .getLBA                          ; If it is 1 then skip converting to LBA
 
-  pop di 
-  call clusterToLBA
-  push ax
+  pop di                              ; If there is more than one path parts, then BX was the cluster number. Get the cluster number
+  call clusterToLBA                   ; Convert it into an LBA address
+  push ax                             ; Save the result
 
 .getLBA:
-  pop bx
+  pop bx                              ; Restore LBA
+  pop cx                              ; Restore byte offset in the LBA
   pop ax                              ; Restore error code
 
 .end:
