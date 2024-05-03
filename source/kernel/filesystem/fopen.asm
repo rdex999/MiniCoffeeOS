@@ -46,11 +46,11 @@ fopen:
   cmp si, FILE_OPEN_ACCESS_WRITE_PLUS             ; Check if the requested access is WRITE_PLUS, in which we delete and create the file again 
   je .handleWriteAccess                           ; If it is WRITE_PLUS then handle it
 
-  cmp si, FILE_OPEN_ACCESS_APPEND
-  je .createIfDoesntExist
+  cmp si, FILE_OPEN_ACCESS_APPEND                 ; Check if the requested access is APPEND, in which we create the file if it doesnt
+  je .createIfDoesntExist                         ; exist. If it is APPEND, handle it
 
-  cmp si, FILE_OPEN_ACCESS_APPEND_PLUS
-  je .createIfDoesntExist
+  cmp si, FILE_OPEN_ACCESS_APPEND_PLUS            ; Check if the requested access is APPEND_PLUS, in which we delete and create the file again 
+  je .createIfDoesntExist                         ; If it is APPEND_PLUS, handle it
 
 .afterHandleAccess:
   ; Prepare arguments for getFileEntry, and read the file entry into the stack
@@ -65,8 +65,8 @@ fopen:
   test ax, ax                                     ; Check error code of getFileEntry
   jnz .err                                        ; If there was an error we return null
 
-  mov [bp - 13], bx
-  mov [bp - 15], cx
+  mov [bp - 13], bx                               ; Store the entries LBA address
+  mov [bp - 15], cx                               ; Store the entries bytes offset in the LBA address
 
   mov si, [bp - 9]                                ; Entry stored on the stack
   mov ax, ss:[si + 26]                            ; Get first cluster number
@@ -111,11 +111,11 @@ fopen:
   mov [bp - 7], bx                                ; Save empty slot index
   mov di, dx                                      ; Get a pointer to the empty slot
 
-  mov ax, [bp - 13]
-  mov es:[di + FILE_OPEN_ENTRY_LBA16], ax
+  mov ax, [bp - 13]                               ; Get the entries LBA address
+  mov es:[di + FILE_OPEN_ENTRY_LBA16], ax         ; Save it in the file descriptor
 
-  mov ax, [bp - 15]
-  mov es:[di + FILE_OPEN_ENTRY_OFFSET16], ax
+  mov ax, [bp - 15]                               ; Get the entries bytes offset in the LBA address
+  mov es:[di + FILE_OPEN_ENTRY_OFFSET16], ax      ; Save it in the file descriptor
 
   mov al, [bp - 5]                                ; Get requested file access
   mov es:[di + FILE_OPEN_ACCESS8], al             ; Set files access
@@ -126,13 +126,13 @@ fopen:
   cmp al, FILE_OPEN_ACCESS_APPEND_PLUS            ; Check if the requested access is APPEND_PLUS
   je .setPosEnd                                   ; If it is then set the current position to the end of the file
   
-  mov word es:[di + FILE_OPEN_POS16], 0      ; If its not append, initialize the files current read position to 0
+  mov word es:[di + FILE_OPEN_POS16], 0           ; If its not append, initialize the files current read position to 0
   jmp .afterSetPos                                ; skip APPEND access handler
 
 .setPosEnd:
-  mov si, [bp - 9] 
-  mov ax, ss:[si + 28]
-  mov es:[di + FILE_OPEN_POS16], ax     ; Initialize the files current read position to the end of the file
+  mov si, [bp - 9]                                ; Get a pointer to the files FAT entry
+  mov ax, ss:[si + 28]                            ; Get the files size
+  mov es:[di + FILE_OPEN_POS16], ax               ; Initialize the files current read position to the end of the file
 
 .afterSetPos:
   add di, FILE_OPEN_ENTRY256                      ; Add to the pointer the offset of the FAT entry, as we want to copy to it
