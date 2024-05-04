@@ -86,10 +86,6 @@ sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
-buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "folder/fld200/file.txt", 0
-txtForFile: db "Some stuff that should be in the file", NEWLINE, "after a newline?", 0
-
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -102,70 +98,16 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; lea di, pathStf
-  ; mov si, FILE_OPEN_ACCESS_WRITE
-  ; call fopen
-
-  ; push ax
-  ; PRINTF_M `fopen returned %u\n`, ax
-  ; pop dx
-
-  ; push dx
-  ; lea di, txtForFile
-  ; mov si, 37+16+2
-  ; call fwrite
-  ; PRINTF_M `fwrite returned %u\n`, ax
-  ; pop di
-
-  ; call fclose
-  ; PRINTF_M `fclose returned %u\n`, ax
-
-  ; lea di, pathStf
-  ; mov si, FILE_OPEN_ACCESS_READ
-  ; call fopen
-
-  ; push ax
-  ; PRINTF_M `second fopen returned %u\n`, ax
-  ; pop dx
-
-  ; mov bx, KERNEL_SEGMENT
-  ; mov es, bx
-  ; lea di, buffer
-  ; mov si, 100
-  ; call fread
-
-  ; PRINTF_M `fread returned %u\n`, ax
-
-  ; lea si, buffer
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  ; call printStr
-
   ; Main loop for reading commands
-kernel_readCommandsLoop:
-  PRINTF_LM shellStr, currentUserDirPath   ; Go down a line and print the shell
-
-%ifndef GET_ASCII_CODES
-  lea di, [commandEntered]          ;
-  mov si, COMMAND_MAX_LENGTH        ; Read the command to commandEntered
-  call read                         ; 
-
-  test ax, ax                       ; if zero bytes were read then just show a new shell
-  jz kernel_readCommandsLoop        ;
-
-  PRINT_NEWLINE 1
-  PRINT_NEWLINE 1
-
-  ; compares two strings, and if their equal then jump to given lable
-  CMDCMP_JUMP_EQUAL commandEntered, helpCmd, kernel_printHelp
-  CMDCMP_JUMP_EQUAL commandEntered, clearCmd, kernel_clear
-
-  PRINTF_LM errorUnknownCmd, commandEntered
-%endif
 
 
-  jmp kernel_readCommandsLoop       ; continue reading commands
 
-  jmp $                             ; jump to <this> location. should not get there.
+
+
+.halt:
+  ; cli
+  hlt
+  jmp .halt                             ; jump to <this> location. should not get there.
 
 
 ;
@@ -174,7 +116,7 @@ kernel_readCommandsLoop:
 
 %include "kernel/io/io.asm"
 %include "kernel/string/string.asm"
-%include "kernel/trmCommands/trmCommands.asm"
+; %include "kernel/trmCommands/trmCommands.asm"
 %include "kernel/filesystem/filesystem.asm"
 %include "kernel/isr/isr.asm"
 %include "kernel/time/time.asm"

@@ -6,6 +6,7 @@
 %define VGA_ASM
 
 %include "kernel/drivers/vga/cursor.asm"
+%include "kernel/drivers/vga/clear.asm"
 
 ; Write data to VGA port
 ; PARAMS
