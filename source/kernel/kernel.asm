@@ -90,7 +90,6 @@ openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 ; ---------- [ KERNEL MAIN ] ----------
 ;
 
-
 kernelMain:
   INIT_KERNEL             ; Initialize kernel.
 
@@ -98,11 +97,15 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; Main loop for reading commands
 
-
-
-
+  ;;;;;; DEBUG
+  mov cx, 1000
+.again:  
+  mov di, 'Q'
+  mov si, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  mov ax, INT_N_PUTCHAR
+  int INT_F_KERNEL 
+  loop .again
 
 .halt:
   ; cli

@@ -25,7 +25,7 @@ clean:
 	rm -f $(FDA)
 	rm -rf $(BLD)/*
 
-run: $(FDA)
+run: always $(FDA)
 	make clean
 	make
 	qemu-system-x86_64 -drive file=$(FDA),format=raw,index=0,media=disk -rtc base=localtime

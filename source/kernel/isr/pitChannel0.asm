@@ -99,7 +99,7 @@ ISR_pitChannel_0:
 
 ISR_pitChannel_0_afterScreenTimeUpdate:
 ISR_pitChannel_0_end:
-  PIC8259_SEND_EOI INT_PIT_CHANNEL0           ; Send EOI to pic so it knows we are finished with the interrupt
+  PIC8259_SEND_EOI IRQ_PIT_CHANNEL0           ; Send EOI to pic so it knows we are finished with the interrupt
 
   pop es                                      ; Restore segment
   pop dx

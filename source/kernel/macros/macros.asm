@@ -8,6 +8,7 @@
 %include "kernel/macros/errorCodes.asm"
 %include "kernel/macros/kbdKeyCodes.asm"
 %include "kernel/macros/colors.asm"
+%include "kernel/macros/interrupts.asm"
 
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh
@@ -171,6 +172,8 @@
 %define INT_CMOS_UPDATE (8 + 8)
 
 %define IRQ_KEYBOARD 1
+%define IRQ_PIT_CHANNEL0 0
+%define IRQ_RTC 8
 
 ; 1 - NMI is disabled
 %define NMI_STATUS_BIT_CMOS 1000_0000b
@@ -287,7 +290,7 @@
 
 ; Sends an EOI (End Of Interrupt) signal to the PICs.
 ; PARAMS
-;   - 0) The interrupt number (not the IRQ number)
+;   - 0) The IRQ
 %macro PIC8259_SEND_EOI 1
 
   mov al, PIC_EOI 

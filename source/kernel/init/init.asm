@@ -111,6 +111,9 @@
   SET_IVT INT_PIT_CHANNEL0, cs, ISR_pitChannel_0
   SET_IVT INT_CMOS_UPDATE, cs, ISR_cmosUpdate
 
+  ; Kernel services interrupts
+  SET_IVT INT_F_KERNEL, cs, ISR_kernelInt
+
 %ifdef KBD_DRIVER
   SET_IVT INT_KEYBOARD, cs, ISR_keyboard
 %endif

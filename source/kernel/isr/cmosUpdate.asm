@@ -60,7 +60,7 @@ ISR_cmosUpdate:
   out CMOS_ACCESS_REG_PORT, al                ; Tell CMOS we want access to register 0Ch
   in al, CMOS_DATA_REG_PORT                   ; Read registers value. We dont care what it is, just read it
 
-  PIC8259_SEND_EOI INT_CMOS_UPDATE            ; Tell PIC we are done with this interrupt
+  PIC8259_SEND_EOI IRQ_RTC                    ; Tell PIC we are done with this interrupt
   pop es                                      ; Restore segments
   pop di                                      ; Restore used registers
   pop cx                                      ;
