@@ -20,10 +20,10 @@ getFileEntry:
   ; *(bp - 4)     - Buffer offset
   ; *(bp - 6)     - File path segment
   ; *(bp - 8)     - File path offset
-  ; *(bp - 10)    - Memory from malloc, 1 sector for FAT(segment)
-  ; *(bp - 12)    - Memory from malloc, 1 sector for FAT(offset)
-  ; *(bp - 14)    - Memory from malloc, the cluster buffer (segment)
-  ; *(bp - 16)    - Memory from malloc, the cluster buffer (offset)
+  ; *(bp - 10)    - Sector for FAT(segment)
+  ; *(bp - 12)    - Sector for FAT(offset)
+  ; *(bp - 14)    - Cluster buffer (segment)
+  ; *(bp - 16)    - Cluster buffer (offset)
   ; *(bp - 17)    - Amount of directories/things in the path
   ; *(bp - 18)    - General counter
   ; *(bp - 20)    - LBA/cluster number
@@ -63,16 +63,10 @@ getFileEntry:
   mov [bp - 26], sp               ; Store beginning of allocated buffer
 
   ; Allocate memory for 1 sector, thats for reading the FAT
-  mov di, gs:[bpb_bytesPerSector] ; Argument for malloc in DI. Allocate soace for 1 sector. Used for storing a sector from FAT
-  call malloc                     ; Allocate memory for a sector of FAT
+  sub sp, gs:[bpb_bytesPerSector] ; Allocate space on the stack for 1 sector
 
-  mov bx, es                      ; Cant perform operations on segments directly, so copy the returned pointers segment to BX
-  test bx, bx                     ; Check if the segment is null (malloc will return a null segment if it could not allocate memory)
-  jz .err                         ; If null then return an error
-
-  mov [bp - 10], es               ; If not null then store the segment and the offset 
-  mov [bp - 12], di               ; Store offset
-  
+  mov [bp - 10], ss               ; If not null then store the segment and the offset 
+  mov [bp - 12], sp               ; Store offset
   
   ; Now we call a function that formats the path, and writes the new path to ES:DI
   mov bx, ss                      ; Formatted path buffer segment is SS
@@ -88,22 +82,10 @@ getFileEntry:
   mov bx, gs:[bpb_sectorPerCluster]   ; Get the amount of sectors in a cluster
   mul bx                              ; res = bytesPerSector * sectorsPerCluster
 
-  mov di, ax                      ; Argument for malloc goes in DI
-  call malloc                     ; Allocate memory for 1 cluster
-  
-  mov bx, es                      ; Get returned pointers segment in BX
-  test bx, bx                     ; Check if malloc returned a null pointer
-  jnz .clusterMallocSuccess       ; If not null then continue
+  sub sp, ax                      ; Argument for malloc goes in DI
 
-  ; If null, then free the memory we allocated for the formatted path, and then return
-  mov es, [bp - 10]               ; Get allocated sector pointer
-  mov di, [bp - 12]               ; Get offset
-  call free                       ; Free the memory
-  jmp .err                        ; Return a general error
-
-.clusterMallocSuccess:
-  mov [bp - 14], es               ; If not null then store the segment and the offset
-  mov [bp - 16], di               ; Store offset
+  mov [bp - 14], ss               ; If not null then store the segment and the offset
+  mov [bp - 16], sp               ; Store offset
 
   ; Here we get the LBA of the root directory, and the root directories size in sectors
   push ds                         ; Need to set DS to kernel segment, so the get regions functions read currect values
@@ -325,29 +307,16 @@ getFileEntry:
 
   ; Jump here with the error code in AX, the LBA of the entry in BX, and the offset in the LBA for the entry in CX
 .freeAndRet:
-  push ax                             ; Save error code
-  push cx                             ; Save byte offset in LBA
-  push bx                             ; Save cluster/LBA
-  
-  mov es, [bp - 10]                   ; Get pointer to the allocated sector
-  mov di, [bp - 12]                   ; Get offset
-  call free                           ; Free memory
-
-  mov es, [bp - 14]                   ; Get pointer to cluster buffer
-  mov di, [bp - 16]                   ; Get offset
-  call free                           ; Free memory
-
   cmp byte [bp - 27], 1               ; Check the amount of path parts (if its one, then BX was an LBA and there is no need to convert it)
-  je .getLBA                          ; If it is 1 then skip converting to LBA
+  je .end                             ; If it is 1 then skip converting to LBA
 
-  pop di                              ; If there is more than one path parts, then BX was the cluster number. Get the cluster number
+  push ax
+  push cx
+  mov di, bx 
   call clusterToLBA                   ; Convert it into an LBA address
-  push ax                             ; Save the result
-
-.getLBA:
-  pop bx                              ; Restore LBA
-  pop cx                              ; Restore byte offset in the LBA
-  pop ax                              ; Restore error code
+  mov bx, ax
+  pop cx
+  pop ax
 
 .end:
   mov gs, [bp - 22]                   ; Restore old GS segment

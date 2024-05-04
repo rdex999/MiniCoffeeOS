@@ -87,7 +87,7 @@ sysClock_20spaces:        times 20 db ' '
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 buffer:                     times 512 db 0         ;;;;;; DEBUG
-pathStf:                  db "kernel.bin", 0
+pathStf:                  db "folder/fld200/file.txt", 0
 txtForFile: db "Some stuff that should be in the file", NEWLINE, "after a newline?", 0
 
 ;
