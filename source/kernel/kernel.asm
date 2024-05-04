@@ -97,15 +97,13 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-
   ;;;;;; DEBUG
-  mov cx, 1000
-.again:  
-  mov di, 'Q'
-  mov si, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  mov ax, INT_N_PUTCHAR
-  int INT_F_KERNEL 
-  loop .again
+  ; mov dl, 60
+  ; mov dh, 12
+  ; mov si, 'Q'
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY) | 100h
+  ; mov ax, INT_N_PUTCHAR
+  ; int INT_F_KERNEL 
 
 .halt:
   ; cli
