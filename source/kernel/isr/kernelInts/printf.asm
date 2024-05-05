@@ -17,11 +17,10 @@
 ISR_printf:
   push bp                                       ; Save stack frame
   mov bp, sp                                    ;
-  sub sp, 4 + 5                                 ; Allocate space for local stuff, + a small buffer for printing integers and stuff
+  sub sp, 4 + 6                                 ; Allocate space for local stuff, + a small buffer for printing integers and stuff
 
   ; Those might change, so i made them macros
   %define INT_PRINTF_FIRST_ARG 18
-  %define INT_PRINTF_BUFFER (4 + 5)
 
   ; *(bp - 2)   - Arguments array pointer offset (segment is SS)
   ; *(bp - 4)   - Old DS segment
@@ -90,8 +89,6 @@ ISR_printf:
   jmp ISR_kernelInt_end                         ; Return from the interrupt
 
 %include "kernel/isr/kernelInts/printfRoutine/uint.asm"
-
-.int:
-
+%include "kernel/isr/kernelInts/printfRoutine/int.asm"
 
 %endif
