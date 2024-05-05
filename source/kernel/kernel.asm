@@ -85,8 +85,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-someString: db "a string?", 0
-printfTestStr: db "testing printf.. first: %i second: %X string: %s", NEWLINE, 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -98,16 +97,9 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ;;;;;; DEBUG
-  push word someString
-  push word 1000
-  push word -420
-  push word printfTestStr
-  mov ax, INT_N_PRINTF
-  int INT_F_KERNEL 
-  add sp, 6
-
-
+  ; mov ax, INT_N_WAIT_CHAR
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY) | 100h
+  ; int INT_F_KERNEL
 
 .halt:
   ; cli

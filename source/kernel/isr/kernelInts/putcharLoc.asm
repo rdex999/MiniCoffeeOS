@@ -62,6 +62,7 @@ ISR_putcharLoc:
 
   mov sp, bp                          ; Restore stack frame
   pop bp                              ;
+  xor ax, ax
   jmp ISR_kernelInt_end               ; Return from the interrupt
 
 %endif

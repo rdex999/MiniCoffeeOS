@@ -22,6 +22,7 @@ ISR_puts:
 
 .afterSetColor:
   call printStr                     ; Print the string (from DS:SI)
+  xor ax, ax
   jmp ISR_kernelInt_end             ; Return from the interrupt
 
 %endif

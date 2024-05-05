@@ -52,7 +52,12 @@
 ; Doesnt return anything
 %define INT_N_PRINTF 4
 
-
+; Wait for a character from the keyboard
+; PARAMS
+;   - 0) DI   => The color to echo the character with set bit 8 (value: 1_0000_0000b) for the current terminal color
+; RETURNS
+;   - 0) AX   => The character, in ascii (lower 8 bits - AL)
+%define INT_N_WAIT_CHAR 5
 
 
 %endif
