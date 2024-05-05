@@ -6,6 +6,7 @@
 %define INIT_ASM
 
 %include "kernel/macros/macros.asm"
+%include "kernel/init/process.asm"
 
 %ifdef KBD_DRIVER
   %include "kernel/init/ps2_8042.asm"
@@ -199,7 +200,7 @@
     PS2_8042_INIT
   %endif
 
-  call heapInit
+  PROCESSES_INIT
 
   call clear
 

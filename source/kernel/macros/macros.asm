@@ -37,37 +37,48 @@
 ; 512 * 32 = 16384   // 512 => root directory entries // 32 bytes per entry
 %define ROOT_DIRECTORY_SIZE 16384
 
-; struct heapChunk {
+; Each process has exactly one segment, and is loaded on offset 100h
+; struct processDesc {
 ;   uint16_t segment;
-;   uint16_t offset;
-;   uint16_t size;
-; };
+; }
+%define PROCESS_DESC_LEN 10
 
-; The amount heapChunk in the heapFreeChunks array
-%define HEAP_CHUNKS_LEN 32
-%define HEAP_END_SEG 9FC0h
+%define PROCESS_DESC_SEG16 0
+%define PROCESS_DESC_SIZEOF (PROCESS_DESC_SEG16 + 2)
 
-%define HEAP_MAX_CHUNK_SIZE 0FFF0h
 
-; ALC stands for "allocated"
 
-; The offset of the segment in the heap allocated chunk struct
-%define HEAP_CHUNK_SEG16 0
-; The offset of the offset in the heap allocated chunk struct
-%define HEAP_CHUNK_OFF16 (HEAP_CHUNK_SEG16 + 2)
-; The size of the chunk, in the heap allocated chunk struct
-%define HEAP_CHUNK_SIZE16 (HEAP_CHUNK_OFF16 + 2)
-; Flags for the chunk
-%define HEAP_CHUNK_FLAGS8 (HEAP_CHUNK_SIZE16 + 2)
+; ; struct heapChunk {
+; ;   uint16_t segment;
+; ;   uint16_t offset;
+; ;   uint16_t size;
+; ; };
 
-; The size of the heapChunk struct sizeof(heapChunk)
-%define HEAP_SIZEOF_HCHUNK (HEAP_CHUNK_FLAGS8 + 1)
+; ; The amount heapChunk in the heapFreeChunks array
+; %define HEAP_CHUNKS_LEN 32
+; %define HEAP_END_SEG 9FC0h
 
-; Flags values for heapChunk
+; %define HEAP_MAX_CHUNK_SIZE 0FFF0h
 
-; If owned then 1, if free then 0
-%define HEAP_CHUNK_F_OWNED 0000_0001b
-%define HEAP_CHUNK_F_ZERO 0000_00010b
+; ; ALC stands for "allocated"
+
+; ; The offset of the segment in the heap allocated chunk struct
+; %define HEAP_CHUNK_SEG16 0
+; ; The offset of the offset in the heap allocated chunk struct
+; %define HEAP_CHUNK_OFF16 (HEAP_CHUNK_SEG16 + 2)
+; ; The size of the chunk, in the heap allocated chunk struct
+; %define HEAP_CHUNK_SIZE16 (HEAP_CHUNK_OFF16 + 2)
+; ; Flags for the chunk
+; %define HEAP_CHUNK_FLAGS8 (HEAP_CHUNK_SIZE16 + 2)
+
+; ; The size of the heapChunk struct sizeof(heapChunk)
+; %define HEAP_SIZEOF_HCHUNK (HEAP_CHUNK_FLAGS8 + 1)
+
+; ; Flags values for heapChunk
+
+; ; If owned then 1, if free then 0
+; %define HEAP_CHUNK_F_OWNED 0000_0001b
+; %define HEAP_CHUNK_F_ZERO 0000_00010b
 
 %define EOF 0FFFFh
 

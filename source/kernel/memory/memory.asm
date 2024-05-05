@@ -5,9 +5,9 @@
 %ifndef MEMORY_ASM
 %define MEMORY_ASM
 
-%include "kernel/memory/heapInit.asm"
-%include "kernel/memory/malloc.asm"
-%include "kernel/memory/free.asm"
+; %include "kernel/memory/heapInit.asm"
+; %include "kernel/memory/malloc.asm"
+; %include "kernel/memory/free.asm"
 
 ; Converts a segment:offset pointer into the next segment:offset.
 ; For example you have 7E0:FFFF the function will return 17DF:000F
@@ -32,7 +32,7 @@ getNextSegOff:
 
 ; Print the heapChunks array
 ;;;;;;; THIS IS A DEBUG FUNCTION
-; heapPrintHChunks:
+; processPrintChunks:
 ;   push es                                         ; Save old ES segment
 ;   mov bx, KERNEL_SEGMENT                          ; Set ES segment to kernel segment
 ;   mov es, bx                                      ;
@@ -40,10 +40,10 @@ getNextSegOff:
 ;   xor cx, cx                                      ; CX is used as a counter for how many chunks were printed 
 ;   lea si, [heapChunks]                            ; SI is used as a pointer to a chunk in heapChunks
 
-; heapPrintHChunks_loop:
+; processPrintChunks_loop:
 ;   inc cx                                          ; Increase Chunks counter
 ;   cmp cx, HEAP_CHUNKS_LEN                         ; Check if the counter is greater then the amount of chunks
-;   ja heapPrintHChunks_end                         ; If it is then return
+;   ja processPrintChunks_end                         ; If it is then return
 
 ;   push cx                                         ; Save chunk counter
 ;   push si                                         ; Save chunk pointer
@@ -62,7 +62,7 @@ getNextSegOff:
 ;   add si, HEAP_SIZEOF_HCHUNK                      ; Increase pointer to point to next chunk in heapChunks
 
 ;   test cx, 4 - 1                                  ; Check if the amount of chunks printed is dividable by 4
-;   jnz heapPrintHChunks_loop                       ; If not then continue printing chunks
+;   jnz processPrintChunks_loop                       ; If not then continue printing chunks
 
 ;   ; If it is dividable by 4 then print a newline, then continue printing chunks
 ;   push cx                                         ; Save chunks counter
@@ -70,9 +70,9 @@ getNextSegOff:
 ;   PRINT_NEWLINE 1                                 ; Print the newline
 ;   pop si                                          ; Restore chunk pointer
 ;   pop cx                                          ; Restore chunk counter
-;   jmp heapPrintHChunks_loop                       ; Continue printing chunks data
+;   jmp processPrintChunks_loop                       ; Continue printing chunks data
 
-; heapPrintHChunks_end:
+; processPrintChunks_end:
 ;   pop es                                          ; Restore ES segment
 ;   ret
 

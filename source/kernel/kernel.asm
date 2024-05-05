@@ -68,7 +68,8 @@ trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 helpCmd:                  db "help", 0
 clearCmd:                 db "clear", 0
 
-heapChunks:               times (HEAP_CHUNKS_LEN * HEAP_SIZEOF_HCHUNK) db 0
+; heapChunks:               times (HEAP_CHUNKS_LEN * HEAP_SIZEOF_HCHUNK) db 0
+; processes:                times 
 
 ; For the system clock
 sysClock_milliseconds:    dw 0
@@ -86,6 +87,8 @@ sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
+processes:                times (PROCESS_DESC_LEN * PROCESS_DESC_SIZEOF) db 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -97,9 +100,18 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+;   lea si, processes
+;   mov cx, PROCESS_DESC_LEN
+; .printNext
+;   push si
+;   push cx
+;   mov ax, ds:[si]
+;   PRINTF_M `segment 0x%x\n`, ax
+;   pop cx
+;   pop si
+;   add si, PROCESS_DESC_SIZEOF
+;   loop .printNext
 
-  ; mov ax, INT_N_TRM_CLEAR
-  ; int INT_F_KERNEL
 
 
 .halt:
@@ -120,6 +132,7 @@ kernelMain:
 %include "kernel/time/time.asm"
 %include "kernel/drivers/vga/vga.asm"
 %include "kernel/memory/memory.asm"
+%include "kernel/process/process.asm"
 
 %ifdef KBD_DRIVER
   %include "kernel/drivers/ps2_8042/ps2_8042.asm"
