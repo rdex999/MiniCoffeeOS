@@ -89,5 +89,24 @@
 ; Doesnt return anything
 %define INT_N_SET_CURSOR_LOCATION 9
 
+; Clear the screen
+; Takes no parameters
+; Doesnt return anything
+%define INT_N_TRM_CLEAR 0Ah
+
+; Get the current color of the terminal
+; Doesnt take any parameters
+; RETURNS
+;   - 0) AX   => The color, lower 8 bits only (AL). 
+;        The low 4 bits are the text color, and the high 4 bits are the background color
+%define INT_N_TRM_GET_COLOR 0Bh
+
+; Set the terminal color
+; PARAMS
+;   - 0) DI   => The color, low 4 bits are the text color and the high 4 bits are the background color
+; Doesnt return anything
+%define INT_N_TRM_SET_COLOR 0Ch
+
+
 
 %endif

@@ -85,7 +85,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-strIdk: db "Cursor on column %u and row %u", NEWLINE, 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -98,26 +98,8 @@ kernelMain:
   call printStr
 
 
-  ; mov di, 12
-  ; mov si, 40
-  ; mov ax, INT_N_SET_CURSOR_LOCATION
+  ; mov ax, INT_N_TRM_CLEAR
   ; int INT_F_KERNEL
-
-  ; mov ax, INT_N_GET_CURSOR_LOCATION
-  ; int INT_F_KERNEL
-
-  ; mov bl, al
-  ; xor bh, bh
-
-  ; mov cl, ah
-  ; xor ch, ch
-
-  ; mov ax, INT_N_PRINTF
-  ; push cx
-  ; push bx
-  ; push word strIdk
-  ; int INT_F_KERNEL
-  ; add sp, 6
 
 
 .halt:
