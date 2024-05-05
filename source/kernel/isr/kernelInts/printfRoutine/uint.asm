@@ -20,6 +20,7 @@
   test al, al                                   ; Check if the division result is 0 (in which case we need to stop dividing)
   jnz .uint_getDigits                           ; If its not zero, continue getting digits
 
+.uint_printStr:
   lea dx, [bp - (4 + 1)]                        ; Get a pointer to the end of the buffer
   sub dx, si                                    ; Subtract from it the current location in the buffer, to get the strings length
 

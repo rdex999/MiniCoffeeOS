@@ -85,7 +85,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-printfTestStr: db "testing printf.. first: %i second: %u", NEWLINE, 0
+printfTestStr: db "testing printf.. first: %i second: %X", NEWLINE, 0
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
