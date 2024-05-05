@@ -14,6 +14,7 @@
 %include "kernel/isr/kernelInts/waitInput.asm"
 %include "kernel/isr/kernelInts/cursor.asm"
 %include "kernel/isr/kernelInts/terminal.asm"
+%include "kernel/isr/kernelInts/files.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
@@ -62,6 +63,15 @@ ISR_kernelInt:
 
   cmp ax, INT_N_TRM_SET_COLOR
   je ISR_trmSetColor
+
+  cmp ax, INT_N_FOPEN
+  je ISR_fopen
+
+  cmp ax, INT_N_FREAD
+  je ISR_fread
+
+  cmp ax, INT_N_FWRITE
+  je ISR_fwrite
 
 ISR_kernelInt_end:
   pop di                              ; Restore used registers
