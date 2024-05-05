@@ -8,6 +8,7 @@
 %include "kernel/isr/kernelInts/putchar.asm"
 %include "kernel/isr/kernelInts/putcharLoc.asm"
 %include "kernel/isr/kernelInts/puts.asm"
+%include "kernel/isr/kernelInts/putsLoc.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
@@ -26,6 +27,9 @@ ISR_kernelInt:
 
   cmp ax, INT_N_PUTS
   je ISR_puts
+
+  cmp ax, INT_N_PUTS_LOC
+  je ISR_putsLoc
 
 ISR_kernelInt_end:
   pop di
