@@ -98,11 +98,9 @@ kernelMain:
   call printStr
 
   ;;;;;; DEBUG
-  ; mov dl, 60
-  ; mov dh, 12
-  ; mov si, 'Q'
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY) | 100h
-  ; mov ax, INT_N_PUTCHAR
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY) ;| 100h
+  ; lea si, welcomeMsg
+  ; mov ax, INT_N_PUTS
   ; int INT_F_KERNEL 
 
 .halt:
