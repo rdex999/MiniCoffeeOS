@@ -85,7 +85,8 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-printfTestStr: db "testing printf.. first: %i second: %X", NEWLINE, 0
+someString: db "a string?", 0
+printfTestStr: db "testing printf.. first: %i second: %X string: %s", NEWLINE, 0
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -98,12 +99,13 @@ kernelMain:
   call printStr
 
   ;;;;;; DEBUG
-  ; push word 1000
-  ; push word -420
-  ; push word printfTestStr
-  ; mov ax, INT_N_PRINTF
-  ; int INT_F_KERNEL 
-  ; add sp, 6
+  push word someString
+  push word 1000
+  push word -420
+  push word printfTestStr
+  mov ax, INT_N_PRINTF
+  int INT_F_KERNEL 
+  add sp, 6
 
 
 

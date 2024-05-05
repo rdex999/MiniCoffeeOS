@@ -1,5 +1,5 @@
 ;
-; --------- [ A PRINTF SUB-ROUTINE FOR PRINTING UNSIGNED INTEGERS ] ---------
+; --------- [ A PRINTF SUB-ROUTINE FOR PRINTING HEXADECIMAL NUMBERS ] ---------
 ;
 
 .hexLow:

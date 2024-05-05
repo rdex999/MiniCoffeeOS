@@ -70,6 +70,9 @@ ISR_printf:
   cmp al, 'X'                                   ; Check if the formatting option is for a capital hexadecimal number
   je .hexCapital                                ; If it is, handle it
 
+  cmp al, 's'                                   ; Check if the formatting option is for a capital hexadecimal number
+  je .string                                ; If it is, handle it
+
   ; If the formatting option is none of the above, print an error message and return
   mov bx, KERNEL_SEGMENT                        ; Set DS to the kernels segment, because the error message is there
   mov ds, bx                                    ;
@@ -97,5 +100,6 @@ ISR_printf:
 %include "kernel/isr/kernelInts/printfRoutine/uint.asm"
 %include "kernel/isr/kernelInts/printfRoutine/int.asm"
 %include "kernel/isr/kernelInts/printfRoutine/hex.asm"
+%include "kernel/isr/kernelInts/printfRoutine/string.asm"
 
 %endif
