@@ -59,5 +59,27 @@
 ;   - 0) AX   => The character, in ascii (lower 8 bits - AL)
 %define INT_N_WAIT_CHAR 5
 
+; Wait for a character from the keyboard, but dont echo it back
+; Takes no parameters
+; RETURNS
+;   - 0) AX   => The character in ascii (low 8 bits - AL)
+%define INT_N_WAIT_CHAR_NO_ECHO 6
+
+; Wait for a string input, which ends when the user presses the ENTER key.
+; PARAMS
+;   - 0) ES:DI  => The buffer to store the data in
+;   - 1) SI     => The maximum amount of bytes to read
+; RETURNS
+;   - 0) AX     => The amount of bytes actualy read
+%define INT_N_WAIT_INPUT 7
+
+
+; Get the current cursor location
+; Takes to parameters
+; RETURNS
+;   - 0) DI   => The row (Y)
+;   - 1) SI   => The column (X)
+%define INT_N_GET_CURSOR_LOCATION 8
+
 
 %endif

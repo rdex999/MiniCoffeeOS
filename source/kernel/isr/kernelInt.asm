@@ -11,6 +11,7 @@
 %include "kernel/isr/kernelInts/putsLoc.asm"
 %include "kernel/isr/kernelInts/printf.asm"
 %include "kernel/isr/kernelInts/waitChar.asm"
+%include "kernel/isr/kernelInts/waitInput.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
@@ -38,6 +39,12 @@ ISR_kernelInt:
 
   cmp ax, INT_N_WAIT_CHAR
   je ISR_waitChar
+
+  cmp ax, INT_N_WAIT_CHAR_NO_ECHO
+  je ISR_waitCharNoEcho
+
+  cmp ax, INT_N_WAIT_INPUT
+  je ISR_waitInput
 
 ISR_kernelInt_end:
   pop di

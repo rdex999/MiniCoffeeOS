@@ -85,7 +85,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-
+; buffer: times 40 db 97
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -97,9 +97,19 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; mov ax, INT_N_WAIT_CHAR
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY) | 100h
+
+  ; lea di, buffer
+  ; mov si, 40
+  ; mov ax, INT_N_WAIT_INPUT
   ; int INT_F_KERNEL
+
+  ; mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_DARK_GRAY)
+  ; lea si, buffer
+  ; mov ax, INT_N_PUTS
+  ; int INT_F_KERNEL
+
+
+
 
 .halt:
   ; cli
