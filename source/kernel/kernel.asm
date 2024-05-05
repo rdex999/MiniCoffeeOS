@@ -85,7 +85,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-; buffer: times 40 db 97
+strIdk: db "Cursor on column %u and row %u", NEWLINE, 0
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -98,17 +98,26 @@ kernelMain:
   call printStr
 
 
-  ; lea di, buffer
+  ; mov di, 12
   ; mov si, 40
-  ; mov ax, INT_N_WAIT_INPUT
+  ; mov ax, INT_N_SET_CURSOR_LOCATION
   ; int INT_F_KERNEL
 
-  ; mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_DARK_GRAY)
-  ; lea si, buffer
-  ; mov ax, INT_N_PUTS
+  ; mov ax, INT_N_GET_CURSOR_LOCATION
   ; int INT_F_KERNEL
 
+  ; mov bl, al
+  ; xor bh, bh
 
+  ; mov cl, ah
+  ; xor ch, ch
+
+  ; mov ax, INT_N_PRINTF
+  ; push cx
+  ; push bx
+  ; push word strIdk
+  ; int INT_F_KERNEL
+  ; add sp, 6
 
 
 .halt:

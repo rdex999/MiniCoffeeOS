@@ -12,6 +12,7 @@
 %include "kernel/isr/kernelInts/printf.asm"
 %include "kernel/isr/kernelInts/waitChar.asm"
 %include "kernel/isr/kernelInts/waitInput.asm"
+%include "kernel/isr/kernelInts/cursor.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
@@ -46,12 +47,18 @@ ISR_kernelInt:
   cmp ax, INT_N_WAIT_INPUT
   je ISR_waitInput
 
+  cmp ax, INT_N_GET_CURSOR_LOCATION
+  je ISR_getCursorLocation
+
+  cmp ax, INT_N_SET_CURSOR_LOCATION
+  je ISR_setCursorLocation
+
 ISR_kernelInt_end:
-  pop di
-  pop si
-  pop dx
-  pop cx
-  pop bx
-  iret
+  pop di                              ; Restore used registers
+  pop si                              ;
+  pop dx                              ;
+  pop cx                              ;
+  pop bx                              ;
+  iret                                ; Return from the interrupt
 
 %endif

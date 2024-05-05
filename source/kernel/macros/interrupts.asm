@@ -77,9 +77,17 @@
 ; Get the current cursor location
 ; Takes to parameters
 ; RETURNS
+;   - 0) AH   => The row (Y)
+;   - 1) AL   => The column (X)
+%define INT_N_GET_CURSOR_LOCATION 8
+
+
+; Set the cursors location
+; PARAMS
 ;   - 0) DI   => The row (Y)
 ;   - 1) SI   => The column (X)
-%define INT_N_GET_CURSOR_LOCATION 8
+; Doesnt return anything
+%define INT_N_SET_CURSOR_LOCATION 9
 
 
 %endif
