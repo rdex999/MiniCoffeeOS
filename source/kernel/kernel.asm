@@ -22,7 +22,7 @@ bpbStart:
 %include "bootloader/bpbStruct/bpbStruct.asm"
 
 welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
-shellStr:                 db NEWLINE, "[ %s ]", NEWLINE, "|___/-=> $ ", 0
+shellStr:                 db NEWLINE, "[ %u ]", NEWLINE, "|___/-=> $ ", 0
 commandEntered:           times COMMAND_MAX_LENGTH db 0 
 errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
 currentUserDirPath:       db '/'
@@ -35,7 +35,7 @@ helpMsg:                  db "---< Mini Coffee OS >---", NEWLINE, NEWLINE, "Comm
 
 errPs2CtrlSelfTestFailed: db "[- KERNEL PANIC] Error, one of the PS/2 controller chips has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
 errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
-
+printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
 
 %ifdef KBD_DRIVER
   kbdKeycodes:
@@ -85,7 +85,7 @@ sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
 sysClock_20spaces:        times 20 db ' '
 
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
-
+printfTestStr: db "testing printf.. first: %u second: %u", NEWLINE, 0
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -98,12 +98,14 @@ kernelMain:
   call printStr
 
   ;;;;;; DEBUG
-  ; mov dh, 12
-  ; mov dl, 40
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY) ;| 100h
-  ; lea si, welcomeMsg
-  ; mov ax, INT_N_PUTS_LOC
-  ; int INT_F_KERNEL 
+  push word 1000
+  push word 420
+  push word printfTestStr
+  mov ax, INT_N_PRINTF
+  int INT_F_KERNEL 
+  add sp, 6
+
+
 
 .halt:
   ; cli

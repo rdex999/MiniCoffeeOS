@@ -103,8 +103,6 @@ printf_checkFormat:
   pop ds                                          ; Restore old DS segment
   jmp printf_end                                  ; Return
 
-  printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
-
   %include "kernel/io/printfFormat/uInt.asm"
   %include "kernel/io/printfFormat/int.asm"
   %include "kernel/io/printfFormat/char.asm"

@@ -42,4 +42,17 @@
 %define INT_N_PUTS_LOC 3
 
 
+; A C-like printf implementation.
+; Arguments are pushed to the stack, from right to left
+; Pointers are segmented from the DS segment
+; Clean the stack yourself!
+; PARAMS
+;   - 0) A null terminated string
+;   - ...) Arguments
+; Doesnt return anything
+%define INT_N_PRINTF 4
+
+
+
+
 %endif
