@@ -193,14 +193,14 @@
   IVT_INIT
 
   INIT_DATE_FROM_RTC
+
+  PROCESSES_INIT
   
   INIT_PIT PIT_CHANNEL0_IRQ_PER_SEC
 
   %ifdef KBD_DRIVER
     PS2_8042_INIT
   %endif
-
-  PROCESSES_INIT
 
   call clear
 
@@ -210,7 +210,6 @@
 
   mov di, NORM_SCREEN_START_IDX
   call setCursorIndex
-
 
   mov bx, cs
   mov es, bx

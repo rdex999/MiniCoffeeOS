@@ -48,7 +48,7 @@ createProcess:
   push ax                                                         ; Save the files handle
   mov dx, ax                                                      ; Get the handle in DX, for the fread function
   mov si, [bp - 10]                                               ; Get a pointer to the free process descriptor
-  mov es, ds:[si + PROCESS_DESC_SEG16]                            ; Get the segment of the free process
+  mov es, ds:[si + PROCESS_DESC_REG_CS16]                         ; Get the segment of the free process
   mov di, PROCESS_LOAD_OFFSET                                     ; Set the buffer offset to the offset that processes are loaded in (100h for DOS)
   mov si, 0FFFFh - PROCESS_LOAD_OFFSET                            ; Set the amount of bytes to read to the maximum amount that we can fit
   call fread                                                      ; Read the file into the process space
@@ -64,7 +64,7 @@ createProcess:
   mov al, [bp - 5]                                                ; Get the requested flags for the process
   or al, PROCESS_DESC_F_ALIVE                                     ; Set the processes ALIVE flag
   mov ds:[si + PROCESS_DESC_FLAGS8], al                           ; Write the flags to the process
-
+  mov word ds:[si + PROCESS_DESC_REG_IP16], PROCESS_LOAD_OFFSET   ; Set the initial value of ip to the load offset
   mov bl, [bp - 8]                                                ; Get the amount of processes left to check (from the search loop)
   mov al, PROCESS_DESC_LEN                                        ; Get the amount of processes in general
   sub al, bl                                                      ; Subtract the amount of processes left, from the amount of processes (to get the index)
