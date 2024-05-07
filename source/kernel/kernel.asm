@@ -22,9 +22,6 @@ bpbStart:
 %include "bootloader/bpbStruct/bpbStruct.asm"
 
 welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
-shellStr:                 db NEWLINE, "[ %u ]", NEWLINE, "|___/-=> $ ", 0
-commandEntered:           times COMMAND_MAX_LENGTH db 0 
-errorUnknownCmd:          db "[-] Error, unknown command ", 22h, "%s", 22h, 0
 currentUserDirPath:       db '/'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
@@ -65,9 +62,6 @@ printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLIN
 ; Low 4 bits are the text color, and the high 4 bits are the background color
 trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 
-helpCmd:                  db "help", 0
-clearCmd:                 db "clear", 0
-
 ; heapChunks:               times (HEAP_CHUNKS_LEN * HEAP_SIZEOF_HCHUNK) db 0
 ; processes:                times 
 
@@ -89,6 +83,8 @@ openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 processes:                times (PROCESS_DESC_LEN * PROCESS_DESC_SIZEOF) db 0
 
+shellExec:  db "/bin/shell", 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -100,9 +96,28 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+;   lea di, shellExec
+;   xor si, si
+;   call createProcess
+
+;   PRINTF_M `createProcess returned %u\n`, ax
+
+;   lea di, shellExec
+;   xor si, si
+;   call createProcess
+
+;   PRINTF_M `createProcess returned %u\n`, ax
+
+;   lea di, shellExec
+;   xor si, si
+;   call createProcess
+
+;   PRINTF_M `createProcess returned %u\n`, ax
+
+
 ;   lea si, processes
 ;   mov cx, PROCESS_DESC_LEN
-; .printNext
+; .printNext:
 ;   push si
 ;   push cx
 ;   mov ax, ds:[si]

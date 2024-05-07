@@ -51,7 +51,12 @@ getFileEntry:
   mov si, '/'                     ; What character to count
   call strFindLetterCount         ; Count the amount of '/' in the path
 
+  mov si, [bp - 8]                ; Get a pointer to the file path
+  cmp byte ds:[si], '/'           ; Check if it starts with a '/', which doesnt count as a directory
+  je .afterIncDirCnt              ; If it is, dont increment the directory count
+
   inc ax                          ; Increase the amount of '/' in the path by 1, because there is always at least one part
+.afterIncDirCnt:
   mov [bp - 17], al               ; Store the result, thats for later
   mov [bp - 27], al
 
