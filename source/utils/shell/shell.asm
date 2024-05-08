@@ -5,7 +5,14 @@ org 100h
   mov ax, 2
   int 20h
 
+  push sp
+  push ss
+  push word strData
+  mov ax, 4
+  int 20h
+  add sp, 6
+
   jmp $
 
 str: db "Hello from the shell!", 0Ah, 0
-dw 0AABBh      ;;; DEBUG
+strData: db "SS: 0x%X and SP: 0x%X", 0Ah, 0

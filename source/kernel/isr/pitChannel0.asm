@@ -128,11 +128,18 @@
   add si, ax                                                        ; Offset it
 
   ; Here we save the processes registers
+  mov ax, [bp + 4]
+  mov es:[si + PROCESS_DESC_REG_CS16], ax
+  
   mov ax, [bp + 2]
   mov es:[si + PROCESS_DESC_REG_IP16], ax
 
-  mov ax, [bp + 4]
-  mov es:[si + PROCESS_DESC_REG_CS16], ax
+  mov ax, [bp]
+  mov es:[si + PROCESS_DESC_REG_BP16], ax
+  mov es:[si + PROCESS_DESC_REG_SS16], ss
+  mov ax, bp
+  add ax, 8
+  mov es:[si + PROCESS_DESC_REG_SP16], ax
 
   mov ax, [bp - 2]
   mov es:[si + PROCESS_DESC_REG_AX16], ax
@@ -172,41 +179,32 @@
   mov es:[currentProcessIdx], al                                    ; Set the currently running process to the alive one
 
   ; Reset registers
-  mov ax, es:[si + PROCESS_DESC_REG_CS16]
-  mov [bp + 4], ax
-
-  mov ax, es:[si + PROCESS_DESC_REG_IP16]
-  mov [bp + 2], ax
-
   mov ax, es:[si + PROCESS_DESC_REG_AX16]
-  mov [bp - 2], ax
-  
-  mov ax, es:[si + PROCESS_DESC_REG_BX16]
-  mov [bp - 4], ax
-  
-  mov ax, es:[si + PROCESS_DESC_REG_CX16]
-  mov [bp - 6], ax
+  mov bx, es:[si + PROCESS_DESC_REG_BX16]
+  mov cx, es:[si + PROCESS_DESC_REG_CX16]
+  mov dx, es:[si + PROCESS_DESC_REG_DX16]
+  mov di, es:[si + PROCESS_DESC_REG_DI16]
+  mov ds, es:[si + PROCESS_DESC_REG_DS16]
+  mov fs, es:[si + PROCESS_DESC_REG_FS16]
+  mov gs, es:[si + PROCESS_DESC_REG_GS16]
 
-  mov ax, es:[si + PROCESS_DESC_REG_DX16]
-  mov [bp - 8], ax
+  mov ss, es:[si + PROCESS_DESC_REG_SS16]
+  mov sp, es:[si + PROCESS_DESC_REG_SP16]
+  mov bp, es:[si + PROCESS_DESC_REG_BP16]
 
-  mov ax, es:[si + PROCESS_DESC_REG_SI16]
-  mov [bp - 10], ax
+  ; Using a far return (RETF) to jump to the next process
+  push word es:[si + PROCESS_DESC_REG_CS16]   ; Save next process code segment
+  push word es:[si + PROCESS_DESC_REG_IP16]   ; Save next process instruction pointer
 
-  mov ax, es:[si + PROCESS_DESC_REG_DI16]
-  mov [bp - 12], ax
+  push word es:[si + PROCESS_DESC_REG_ES16]   ; Save next ES (because using it in the next line)
+  mov si, es:[si + PROCESS_DESC_REG_SI16]     ; Set next process SI register
+  pop es                                      ; Restore ES
 
-  mov ax, es:[si + PROCESS_DESC_REG_DS16]
-  mov [bp - 14], ax
-
-  mov ax, es:[si + PROCESS_DESC_REG_ES16]
-  mov [bp - 16], ax
-
-  mov ax, es:[si + PROCESS_DESC_REG_FS16]
-  mov [bp - 18], ax
-
-  mov ax, es:[si + PROCESS_DESC_REG_GS16]
-  mov [bp - 20], ax
+  push ax                                     ; Save AX because the EOI signal is using it
+  PIC8259_SEND_EOI IRQ_PIT_CHANNEL0           ; Send EOI to pic so it knows we are finished with the interrupt
+  pop ax                                      ; Restore AX
+  sti                                         ; Enable interrupts
+  retf                                        ; Jump to the next process
 
 %%handleProcesses_end
 
