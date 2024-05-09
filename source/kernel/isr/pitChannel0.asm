@@ -2,48 +2,48 @@
 ; ---------- [ HANDLER FOR PIT INTERRUPTS ] ----------
 ;
 
-%macro SYS_CLOCK_UPDATE_SCREEN_TIME 0
+; %macro SYS_CLOCK_UPDATE_SCREEN_TIME 0
 
-  pusha                                               ; Save all registers, as printf is using all of them
-  call getCursorIndex                                 ; Save the current cursor location, so we can change back to it later
-  push ax                                             ;
+;   pusha                                               ; Save all registers, as printf is using all of them
+;   call getCursorIndex                                 ; Save the current cursor location, so we can change back to it later
+;   push ax                                             ;
 
-  mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
-  call setCursorIndex                                 ;
+;   mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
+;   call setCursorIndex                                 ;
 
-  ; Clear the time that was printed there before
-  push ds                                             ; Save DS segment, bacuase we will change it
-  mov bx, es                                          ; Set DS segment to kernel segemnt
-  mov ds, bx                                          ; Doing this because the string pointer is using DS
-  mov di, COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)         ; White color, black background
-  lea si, [sysClock_20spaces]                         ; Print the 20 spaces string
-  mov dx, 20                                          ; Print 20 characters
-  call printStrLen                                    ; Perform
+;   ; Clear the time that was printed there before
+;   push ds                                             ; Save DS segment, bacuase we will change it
+;   mov bx, es                                          ; Set DS segment to kernel segemnt
+;   mov ds, bx                                          ; Doing this because the string pointer is using DS
+;   mov di, COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)         ; White color, black background
+;   lea si, [sysClock_20spaces]                         ; Print the 20 spaces string
+;   mov dx, 20                                          ; Print 20 characters
+;   call printStrLen                                    ; Perform
 
-  mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
-  call setCursorIndex                                 ; because printChar had changed it
+;   mov di, GET_CURSOR_INDEX(0, (40 - 20 / 2))          ; Set the cursor location to the middle of the first row on the screen
+;   call setCursorIndex                                 ; because printChar had changed it
 
-  mov al, ds:[sysClock_year]                          ; Get years
-  mov bl, ds:[sysClock_month]                         ; Get month
-  mov cl, ds:[sysClock_day]                           ; Get day
-  mov dl, ds:[sysClock_hours]                         ; Get hours
-  and dl, 0111_1111b                                  ; Disable PM bit
-  mov si, ds:[sysClock_minutes]                       ; Get minutes
-  mov di, ds:[sysClock_seconds]                       ; Get seconds
-  xor ah, ah                                          ; Zero out high parts of registers, as each value is 8 bits only
-  xor bh, bh                                          ;
-  xor ch, ch                                          ;
-  xor dh, dh                                          ;
-  and si, 0FFh                                        ; Remove the high 8 bits of the minutes
-  and di, 0FFh                                        ; Remove the high 8 bits of the seconds
-  PRINTF_LM sysClock_onScreenTime, ax, bx, cx, dx, si, di   ; Print all of them
-  pop ds                                              ; Restore data segment
+;   mov al, ds:[sysClock_year]                          ; Get years
+;   mov bl, ds:[sysClock_month]                         ; Get month
+;   mov cl, ds:[sysClock_day]                           ; Get day
+;   mov dl, ds:[sysClock_hours]                         ; Get hours
+;   and dl, 0111_1111b                                  ; Disable PM bit
+;   mov si, ds:[sysClock_minutes]                       ; Get minutes
+;   mov di, ds:[sysClock_seconds]                       ; Get seconds
+;   xor ah, ah                                          ; Zero out high parts of registers, as each value is 8 bits only
+;   xor bh, bh                                          ;
+;   xor ch, ch                                          ;
+;   xor dh, dh                                          ;
+;   and si, 0FFh                                        ; Remove the high 8 bits of the minutes
+;   and di, 0FFh                                        ; Remove the high 8 bits of the seconds
+;   PRINTF_LM sysClock_onScreenTime, ax, bx, cx, dx, si, di   ; Print all of them
+;   pop ds                                              ; Restore data segment
 
-  pop di                                              ; Restore original cursor location
-  call setCursorIndex                                 ; Set the cursor location to the one that was before
-  popa                                                ; Restore all registers
+;   pop di                                              ; Restore original cursor location
+;   call setCursorIndex                                 ; Set the cursor location to the one that was before
+;   popa                                                ; Restore all registers
 
-%endmacro
+; %endmacro
 
 %macro SYS_CLOCK_HANDLE_PIT 0
 

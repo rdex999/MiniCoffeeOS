@@ -11,7 +11,7 @@
 ;   - 0) In AX, the low time. (In milliseconds)
 ISR_getLowTime:
   call getLowTime
-  jmp ISR_kernelInt_end
+  jmp ISR_kernelInt_end_restBX
 
 ; Get the current system time
 ; Doesnt take any parameters

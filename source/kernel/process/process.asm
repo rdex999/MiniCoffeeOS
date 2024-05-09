@@ -60,6 +60,7 @@ createProcess:
   test ax, ax                                                     ; Check if it was 0
   jz .end                                                         ; If it was 0, return it (which is set to 0)
 
+  cli
   mov si, [bp - 10]                                               ; Get a pointer to the free process descriptor
   mov al, [bp - 5]                                                ; Get the requested flags for the process
   or al, PROCESS_DESC_F_ALIVE                                     ; Set the processes ALIVE flag
@@ -71,6 +72,7 @@ createProcess:
   mov al, PROCESS_DESC_LEN                                        ; Get the amount of processes in general
   sub al, bl                                                      ; Subtract the amount of processes left, from the amount of processes (to get the index)
   inc al                                                          ; Increase by 1, because handles start from 1
+  sti
 
 .end:
   mov es, [bp - 2]                                                ; Restore used segments

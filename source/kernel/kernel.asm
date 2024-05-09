@@ -102,10 +102,6 @@ kernelMain:
   xor si, si
   call createProcess
 
-  mov ax, PROCESS_DESC_SIZEOF
-  PRINTF_M `sizeof processDesc %u\n`, ax
-
-
 .halt:
   ; cli
   hlt
