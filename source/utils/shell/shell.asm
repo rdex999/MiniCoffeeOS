@@ -1,4 +1,5 @@
 %include "shared/interrupts.asm"
+%include "utils/shell/drawTopBar.asm"
 
 %define FPS 30
 
@@ -9,43 +10,14 @@ main:
   push bp                                         ; Save stack frame
   mov bp, sp                                      ;
 
-  ;;;;; DEBUG
-  mov ax, INT_N_GET_LOW_TIME
-  int INT_F_KERNEL
-  mov [secCntTime], ax
-
   ; This loop runs on 30 FPS
 shellFPSloop:
-
-  ;;;;;; DEBUG 
-  mov di, 12
-  xor si, si
-  mov ax, INT_N_SET_CURSOR_LOCATION
-  int INT_F_KERNEL 
-  
   ; Get the start time of the current iteration
   mov ax, INT_N_GET_LOW_TIME                      ; Interrupt number for the current MS
   int INT_F_KERNEL                                ; Get the current MS (seconds * 1000 + milliseconds)
   mov [prevStartTime], ax                         ; Store it
 
-  inc word [fpsCnt]
-
-  ; ;;;;;; DEBUG
-  sub ax, [secCntTime]
-  jz shellFPSloop_delay
-  cmp ax, 1000
-  jb shellFPSloop_delay
-
-  push word [fpsCnt] 
-  push word fpsStr
-  mov ax, INT_N_PRINTF
-  int INT_F_KERNEL
-  add sp, 4
-
-  mov byte [fpsCnt], 0
-  mov ax, INT_N_GET_LOW_TIME
-  int INT_F_KERNEL
-  mov [secCntTime], ax
+  DRAW_TOP_BAR                                    ; Draw the top bar, (tasks, time&date, other stuff)
 
 shellFPSloop_delay:
   ; To calculate the amount of delay to put between each frame: delay = (currentTime - prevTime) - (1000 / FPS)
@@ -69,8 +41,5 @@ main_end:
 ; ---------- [ DATA SECTION ] ---------
 ;
 
-timeAndDate:                db "20%u-%u-%u   %u:%u:%u  ", 0
-prevStartTime:              dw 0
-secCntTime: dw 0
-fpsCnt: dw 0
-fpsStr: db "shell fps: %u", 0Ah, 0
+timeAndDateStr:               db "20%u-%u-%u   %u:%u:%u ", 0
+prevStartTime:                dw 0
