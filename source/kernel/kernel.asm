@@ -99,31 +99,31 @@ kernelMain:
   call printStr
 
   ; Start one process, wait 3 seconds, then start a second process and print all processes DS segments
-;   lea di, shellExec
-;   xor si, si
-;   call createProcess
+  lea di, shellExec
+  xor si, si
+  call createProcess
 
-;   mov di, 3000
-;   call sleep
+  mov di, 3000
+  call sleep
 
-;   lea di, shellExec
-;   xor si, si
-;   call createProcess
+  lea di, shellExec
+  xor si, si
+  call createProcess
 
-;   mov ax, [processes + PROCESS_DESC_SIZEOF + PROCESS_DESC_REG_IP16]
-;   PRINTF_M `process 2 instruction pointer: 0x%x\n`, ax
+  mov ax, [processes + PROCESS_DESC_SIZEOF + PROCESS_DESC_REG_IP16]
+  PRINTF_M `process 2 instruction pointer: 0x%x\n`, ax
 
-;   lea si, processes
-;   mov cx, PROCESS_DESC_LEN
-; .printNext:
-;   push si
-;   push cx
-;   mov ax, ds:[si + PROCESS_DESC_REG_DS16]
-;   PRINTF_M `segment 0x%x\n`, ax
-;   pop cx
-;   pop si
-;   add si, PROCESS_DESC_SIZEOF
-;   loop .printNext
+  lea si, processes
+  mov cx, PROCESS_DESC_LEN
+.printNext:
+  push si
+  push cx
+  mov ax, ds:[si + PROCESS_DESC_REG_DS16]
+  PRINTF_M `segment 0x%x\n`, ax
+  pop cx
+  pop si
+  add si, PROCESS_DESC_SIZEOF
+  loop .printNext
 
 
 

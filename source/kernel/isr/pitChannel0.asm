@@ -128,6 +128,10 @@
   add si, ax                                                        ; Offset it
 
   ; Here we save the processes registers
+  mov ax, [bp + 6]
+  or ax, 1 << 9
+  mov es:[si + PROCESS_DESC_REG_FLAGS16], ax
+
   mov ax, [bp + 4]
   mov es:[si + PROCESS_DESC_REG_CS16], ax
   
@@ -192,7 +196,8 @@
   mov sp, es:[si + PROCESS_DESC_REG_SP16]
   mov bp, es:[si + PROCESS_DESC_REG_BP16]
 
-  ; Using a far return (RETF) to jump to the next process
+  ; The IRET instruction will first pop the instruction pointer, then the code segment, and then the flags (16 bit) 
+  push word es:[si + PROCESS_DESC_REG_FLAGS16]
   push word es:[si + PROCESS_DESC_REG_CS16]   ; Save next process code segment
   push word es:[si + PROCESS_DESC_REG_IP16]   ; Save next process instruction pointer
 
@@ -203,8 +208,7 @@
   push ax                                     ; Save AX because the EOI signal is using it
   PIC8259_SEND_EOI IRQ_PIT_CHANNEL0           ; Send EOI to pic so it knows we are finished with the interrupt
   pop ax                                      ; Restore AX
-  sti                                         ; Enable interrupts
-  retf                                        ; Jump to the next process
+  iret
 
 %%handleProcesses_end
 

@@ -17,6 +17,11 @@
   mov ax, KERNEL_SEGMENT                          ; Reset ES to the kernels segment
   mov es, ax                                      ;
 
+  pushf
+  mov di, sp
+  mov dx, ss:[di]
+  popf
+
 %%processesInit_nextSeg:
   mov es:[si + PROCESS_DESC_REG_DS16], bx         ; Reset current process descriptor segments, to the current segment
   mov es:[si + PROCESS_DESC_REG_ES16], bx         ; 
@@ -24,6 +29,7 @@
   mov es:[si + PROCESS_DESC_REG_GS16], bx         ; 
   mov es:[si + PROCESS_DESC_REG_CS16], bx         ; 
   mov es:[si + PROCESS_DESC_REG_SS16], bx         ; 
+  mov es:[si + PROCESS_DESC_REG_FLAGS16], dx
   mov word es:[si + PROCESS_DESC_REG_SP16], PROCESS_LOAD_OFFSET   ; Reset the stack pointer to the load offset, just before where the process is loaded
   mov byte es:[si + PROCESS_DESC_FLAGS8], 0                       ; Set process to dead
 
@@ -39,6 +45,7 @@
   mov word es:[processes + PROCESS_DESC_REG_FS16], KERNEL_SEGMENT
   mov word es:[processes + PROCESS_DESC_REG_GS16], KERNEL_SEGMENT
   mov word es:[processes + PROCESS_DESC_REG_CS16], cs
+  mov word es:[processes + PROCESS_DESC_REG_FLAGS16], dx
   mov byte es:[processes + PROCESS_DESC_FLAGS8], PROCESS_DESC_F_ALIVE
 
 %%processesInit_end:
