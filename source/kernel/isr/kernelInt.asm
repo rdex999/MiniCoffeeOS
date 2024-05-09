@@ -19,6 +19,7 @@
 %include "kernel/isr/kernelInts/files.asm"
 %include "kernel/isr/kernelInts/time.asm"
 %include "kernel/isr/kernelInts/process.asm"
+%include "kernel/isr/kernelInts/user.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
@@ -96,6 +97,9 @@ ISR_kernelInt:
 
   cmp ax, INT_N_EXIT
   je ISR_exit
+
+  cmp ax, INT_N_GET_USER_PATH
+  je ISR_getUserPath
 
 ISR_kernelInt_end:
 ; *NOTE: "rest" == restore

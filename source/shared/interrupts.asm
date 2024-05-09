@@ -178,4 +178,11 @@
 ; Doesnt return anything
 %define INT_N_EXIT 14h
 
+; Get the current directory that the user is at
+; PARAMETERS
+;   - 0) ES:DI  => A buffer to write the data into
+; Doesnt return anything
+%define INT_N_GET_USER_PATH 15h
+
+
 %endif

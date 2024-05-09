@@ -125,4 +125,31 @@ memset_end:
   sub di, dx
   ret
 
+
+; Copy a string into a buffer
+; PARAMETERS
+;   - 0) ES:DI    => The destination, where to copy the string into
+;   - 1) DS:SI    => The source, the string to copy
+; RETURNS
+;   - 0) ES:DI    => A pointer to the destination buffer
+strcpy:
+  push di
+
+  mov cx, 0FFFFh
+  sub cx, di
+
+  cld
+.copyLoop:
+  lodsb
+  test al, al
+  jz .end
+
+  stosb
+  loop .copyLoop
+
+.end:
+  stosb
+  pop di
+  ret
+
 %endif

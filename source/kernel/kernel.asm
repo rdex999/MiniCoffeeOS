@@ -25,11 +25,6 @@ welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'he
 currentUserDirPath:       db '/'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
-helpMsg:                  db "---< Mini Coffee OS >---", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
-  db "help", TAB, "| prints this help message.", NEWLINE, TAB,
-  db "clear", TAB, "| clears the screen", NEWLINE, 
-  db 0
-
 errPs2CtrlSelfTestFailed: db "[- KERNEL PANIC] Error, one of the PS/2 controller chips has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
 errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
 printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
