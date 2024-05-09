@@ -65,6 +65,8 @@ createProcess:
   or al, PROCESS_DESC_F_ALIVE                                     ; Set the processes ALIVE flag
   mov ds:[si + PROCESS_DESC_FLAGS8], al                           ; Write the flags to the process
   mov word ds:[si + PROCESS_DESC_REG_IP16], PROCESS_LOAD_OFFSET   ; Set the initial value of ip to the load offset
+  mov word ds:[si + PROCESS_DESC_REG_SP16], PROCESS_LOAD_OFFSET   ; Set the initial value of sp to the load offset
+  mov word ds:[si + PROCESS_DESC_SLEEP_MS16], 0                   ; Set the processes sleep time to 0 (its now asleep)
   mov bl, [bp - 8]                                                ; Get the amount of processes left to check (from the search loop)
   mov al, PROCESS_DESC_LEN                                        ; Get the amount of processes in general
   sub al, bl                                                      ; Subtract the amount of processes left, from the amount of processes (to get the index)

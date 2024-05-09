@@ -172,4 +172,10 @@
 ; Doesnt return anything
 %define INT_N_SLEEP 13h
 
+
+; Terminate the current process. (exit)
+; Doesnt take any parameters
+; Doesnt return anything
+%define INT_N_EXIT 14h
+
 %endif
