@@ -1,18 +1,34 @@
+%include "shared/interrupts.asm"
+
 org 100h
 
-  mov di, 0Dh | 100h
-  lea si, str
-  mov ax, 2
-  int 20h
+main:
+  mov ax, INT_N_GET_SYS_DATE
+  int INT_F_KERNEL
 
-  push sp
-  push ss
-  push word strData
-  mov ax, 4
-  int 20h
-  add sp, 6
+  xor dh, dh
 
+  mov dl, ah
+  push dx
+
+  mov dl, bl
+  push dx
+
+  mov dl, bh
+  push dx
+
+  push str 
+  mov ax, INT_N_PRINTF
+  int INT_F_KERNEL
+
+  add sp, 8
+
+main_end:
   jmp $
 
-str: db "Hello from the shell!", 0Ah, 0
-strData: db "SS: 0x%X and SP: 0x%X", 0Ah, 0
+
+str: db "date from shell: 20%u-%u-%u", 0Ah, 0
+;
+; ---------- [ DATA SECTION ] ---------
+;
+

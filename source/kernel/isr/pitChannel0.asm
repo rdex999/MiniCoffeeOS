@@ -241,9 +241,9 @@ ISR_pitChannel_0:
 
   ; Update the screen clock, checking if the milliseconds are a multiple of 256, so we dont update the screen at 1000 fps
   ; Instead we are updating it on a low fps, on 1000/32 = 31.25 fps (more like 32, but still)
-  test word es:[sysClock_milliseconds], 32 - 1
-  jnz ISR_pitChannel_0_afterScreenTimeUpdate    ; If not, then dont update the screen timer
-  SYS_CLOCK_UPDATE_SCREEN_TIME                  ; 
+  ; test word es:[sysClock_milliseconds], 32 - 1
+  ; jnz ISR_pitChannel_0_afterScreenTimeUpdate    ; If not, then dont update the screen timer
+  ; SYS_CLOCK_UPDATE_SCREEN_TIME                  ; 
 
 ISR_pitChannel_0_afterScreenTimeUpdate:
 

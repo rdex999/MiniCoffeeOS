@@ -76,9 +76,6 @@ sysClock_month:           db 0
 sysClock_year:            db 0
 
 ; Day-Month-Year Hour:Minute:Second
-sysClock_onScreenTime:    db "20%u-%u-%u  %u:%u:%u", 0
-sysClock_20spaces:        times 20 db ' '
-
 openFiles:                times (FILE_OPEN_LEN * FILE_OPEN_SIZEOF) db 0
 
 processes:                times (PROCESS_DESC_LEN * PROCESS_DESC_SIZEOF) db 0
@@ -103,27 +100,6 @@ kernelMain:
   xor si, si
   call createProcess
 
-  mov di, 3000
-  call sleep
-
-  lea di, shellExec
-  xor si, si
-  call createProcess
-
-  mov ax, [processes + PROCESS_DESC_SIZEOF + PROCESS_DESC_REG_IP16]
-  PRINTF_M `process 2 instruction pointer: 0x%x\n`, ax
-
-  lea si, processes
-  mov cx, PROCESS_DESC_LEN
-.printNext:
-  push si
-  push cx
-  mov ax, ds:[si + PROCESS_DESC_REG_DS16]
-  PRINTF_M `segment 0x%x\n`, ax
-  pop cx
-  pop si
-  add si, PROCESS_DESC_SIZEOF
-  loop .printNext
 
 
 

@@ -5,10 +5,10 @@
 %ifndef MACROS_ASM
 %define MACROS_ASM
 
-%include "kernel/macros/errorCodes.asm"
-%include "kernel/macros/kbdKeyCodes.asm"
-%include "kernel/macros/colors.asm"
-%include "kernel/macros/interrupts.asm"
+%include "shared/errorCodes.asm"
+%include "shared/kbdKeyCodes.asm"
+%include "shared/colors.asm"
+%include "shared/interrupts.asm"
 
 ; LC stands for: Line Feed, Carriage Return
 %define NEWLINE_LC 0Ah, 0Dh

@@ -5,6 +5,8 @@
 %ifndef KERNEL_INT_ASM
 %define KERNEL_INT_ASM
 
+%define KERNEL_INT_STACK (2 * 5)
+
 %include "kernel/isr/kernelInts/putchar.asm"
 %include "kernel/isr/kernelInts/putcharLoc.asm"
 %include "kernel/isr/kernelInts/puts.asm"
@@ -15,15 +17,20 @@
 %include "kernel/isr/kernelInts/cursor.asm"
 %include "kernel/isr/kernelInts/terminal.asm"
 %include "kernel/isr/kernelInts/files.asm"
+%include "kernel/isr/kernelInts/time.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
-  push bx                             ; Save general purpos registers (PUSHA & POPA sucks)
-  push cx                             ; 
-  push dx                             ;
-  push si                             ;
-  push di                             ;
+  push bp
+  mov bp, sp 
+  sub sp, KERNEL_INT_STACK
 
+  mov [bp - 2], bx
+  mov [bp - 4], cx
+  mov [bp - 6], dx
+  mov [bp - 8], si
+  mov [bp - 10], di
+  
   ; A switch-case for the interrupt number
   cmp ax, INT_N_PUTCHAR
   je ISR_putchar
@@ -73,12 +80,30 @@ ISR_kernelInt:
   cmp ax, INT_N_FWRITE
   je ISR_fwrite
 
+  cmp ax, INT_N_GET_LOW_TIME
+  je ISR_getLowTime
+
+  cmp ax, INT_N_GET_SYS_TIME
+  je ISR_getSysTime
+
+  cmp ax, INT_N_GET_SYS_DATE
+  je ISR_getSysDate
+
 ISR_kernelInt_end:
-  pop di                              ; Restore used registers
-  pop si                              ;
-  pop dx                              ;
-  pop cx                              ;
-  pop bx                              ;
+; *NOTE: "rest" == restore
+ISR_kernelInt_end_restBX:
+  mov bx, [bp - 2]
+ISR_kernelInt_end_restCX:
+  mov cx, [bp - 4]
+ISR_kernelInt_end_restDX:
+  mov dx, [bp - 6]
+ISR_kernelInt_end_restSI:
+  mov si, [bp - 8]
+ISR_kernelInt_end_restDI:
+  mov di, [bp - 10]
+ISR_kernelInt_end_dontRest:
+  mov sp, bp
+  pop bp 
   iret                                ; Return from the interrupt
 
 %endif

@@ -133,7 +133,6 @@
 ;   - 0) In AX, the amount of bytes read, can be less then the parameter if an error occurred.
 %define INT_N_FREAD 0Eh
 
-
 ; Write to the current position in a file.
 ; PARAMS
 ;   - 0) ES:DI  => The buffer of data to be written to the file
@@ -142,5 +141,31 @@
 ; RETURNS
 ;   - 0) In AX, the amount of bytes written. Can be less than the requested amount if an error occurs
 %define INT_N_FWRITE 0Fh
+
+; Get the system low time, means (lowTime = seconds * 1000 + milliseconds)
+; Doesnt take any parameters
+; RETURNS
+;   - 0) In AX, the low time. (In milliseconds)
+%define INT_N_GET_LOW_TIME 10h
+
+; Get the current system time
+; Doesnt take any parameters
+; RETURNS
+;   - 0) In AX, the milliseconds (1000ms = 1 seconds)
+;   - 1) In BL, the seconds
+;   - 2) In BH, the minutes
+;   - 3) In CL, the hour
+%define INT_N_GET_SYS_TIME 11h
+
+; Get the current date
+; Doesnt take any parameters
+; RETURNS
+;   - 0) In AL, the week day
+;   - 1) In AH, the day in the month
+;   - 2) In BL, the month
+;   - 3) In BH, the year (add 2000)
+%define INT_N_GET_SYS_DATE 12h
+
+
 
 %endif

@@ -20,7 +20,7 @@ ISR_printf:
   sub sp, 4 + 6                                 ; Allocate space for local stuff, + a small buffer for printing integers and stuff
 
   ; Those might change, so i made them macros
-  %define INT_PRINTF_FIRST_ARG 18
+  %define INT_PRINTF_FIRST_ARG (2 + KERNEL_INT_STACK + 8)
 
   ; *(bp - 2)   - Arguments array pointer offset (segment is SS)
   ; *(bp - 4)   - Old DS segment
