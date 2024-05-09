@@ -93,7 +93,6 @@ ISR_printf:
 
 .end:
   mov ds, [bp - 4]                              ; Get the original DS segment
-  xor ax, ax
   mov sp, bp                                    ; Restore stack frame
   pop bp                                        ;
   jmp ISR_kernelInt_end                         ; Return from the interrupt

@@ -33,7 +33,7 @@ ISR_waitChar:
   call printChar              ; Print it
   pop ax                      ; Restore the character so we return it
 
-  jmp ISR_kernelInt_end       ; Return from the interrupt, while the character is in AL
+  jmp ISR_kernelInt_end_restBX; Return from the interrupt, while the character is in AL
 
 
 ; Wait for a character from the keyboard, but dont echo it back
@@ -41,8 +41,8 @@ ISR_waitChar:
 ; RETURNS
 ;   - 0) AX   => The character in ascii (low 8 bits - AL)
 ISR_waitCharNoEcho:
-  call kbd_waitForChar        ; Wait for a character from the keyboard
-  xor ah, ah                  ; Zero out high 8 bits (should be 0 but still)
-  jmp ISR_kernelInt_end       ; Return from the interrupt
+  call kbd_waitForChar          ; Wait for a character from the keyboard
+  xor ah, ah                    ; Zero out high 8 bits (should be 0 but still)
+  jmp ISR_kernelInt_end_restBX  ; Return from the interrupt
 
 %endif

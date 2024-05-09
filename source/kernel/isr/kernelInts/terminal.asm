@@ -10,7 +10,6 @@
 ; Doesnt return anything
 ISR_trmClear:
   call clear                  ; Clear the screen
-  xor ax, ax                  ; Zero out return value
   jmp ISR_kernelInt_end       ; Return from the interrupt
 
 
@@ -20,14 +19,14 @@ ISR_trmClear:
 ;   - 0) AX   => The color, lower 8 bits only (AL). 
 ;        The low 4 bits are the text color, and the high 4 bits are the background color
 ISR_trmGetColor:
-  push fs                     ; Push FS because changing it for a sec
-  mov bx, KERNEL_SEGMENT      ; Set FS to the kernels segment so we can access the terminals color
-  mov fs, bx                  ;
+  push fs                       ; Push FS because changing it for a sec
+  mov bx, KERNEL_SEGMENT        ; Set FS to the kernels segment so we can access the terminals color
+  mov fs, bx                    ;
 
-  mov al, fs:[trmColor]       ; Get the terminals color
-  xor ah, ah                  ; Zero out high 8 bits
-  pop fs                      ; Restore FS
-  jmp ISR_kernelInt_end       ; Return from the interrupt
+  mov al, fs:[trmColor]         ; Get the terminals color
+  xor ah, ah                    ; Zero out high 8 bits
+  pop fs                        ; Restore FS
+  jmp ISR_kernelInt_end_restBX  ; Return from the interrupt
   
 
 
@@ -43,7 +42,6 @@ ISR_trmSetColor:
   mov ax, di                  ; Get the requested color in AL
   mov fs:[trmColor], al       ; Set the terminal color to the requested color
   pop fs                      ; Restore FS
-  xor ax, ax                  ; Zero out result register
   jmp ISR_kernelInt_end       ; Return from the interrupt
 
 

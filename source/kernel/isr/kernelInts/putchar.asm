@@ -26,7 +26,6 @@ ISR_putchar:
   or di, si                           ; Color in high 8 bits of DI, and character in low 8 bits
   call printChar                      ; Print the character with it being in the low 8 bits of DI and the color in the high 8 bits
 
-  xor ax, ax
   jmp ISR_kernelInt_end               ; Return from the interrupt
 
 %endif

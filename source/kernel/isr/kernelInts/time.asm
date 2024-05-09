@@ -55,4 +55,28 @@ ISR_getSysDate:
   pop gs
   jmp ISR_kernelInt_end_restCX
 
+
+; Pause the current process for N milliseconds (1000ms = 1sec)
+; PARAMETERS
+;   - 0) DI   => The time to sleep, in milliseconds
+; Doesnt return anything
+ISR_sleep:
+  push gs                                       ; Set GS to the kernels segment, so we can access the processes array
+  mov bx, KERNEL_SEGMENT                        ;
+  mov gs, bx                                    ;
+
+  mov al, gs:[currentProcessIdx]                ; Get the current process index
+  xor ah, ah                                    ; Zero out high 8 bits
+  mov bx, PROCESS_DESC_SIZEOF                   ; We want to multiply by the size of a process descriptor
+  mul bx                                        ; Get the process descriptor offset in AX
+
+  lea si, processes                             ; Get a pointer to the processes array
+  add si, ax                                    ; Offset it into the current process descriptor
+
+  mov gs:[si + PROCESS_DESC_SLEEP_MS16], di     ; Set the current process sleep time (in MS) to the requested sleep time
+
+  pop gs                                        ; Restore GS
+  
+  jmp ISR_kernelInt_end                         ; Return from the interrupt
+
 %endif

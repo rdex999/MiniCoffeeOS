@@ -65,6 +65,8 @@ trmColor:                 db COLOR(VGA_TXT_WHITE, VGA_TXT_BLACK)
 ; heapChunks:               times (HEAP_CHUNKS_LEN * HEAP_SIZEOF_HCHUNK) db 0
 ; processes:                times 
 
+sysClock_untilMS:         db SYS_CLOCK_UNTIL_MS_RELOAD
+
 ; For the system clock
 sysClock_milliseconds:    dw 0
 sysClock_seconds:         db 0
@@ -100,7 +102,8 @@ kernelMain:
   xor si, si
   call createProcess
 
-
+  mov ax, PROCESS_DESC_SIZEOF
+  PRINTF_M `sizeof processDesc %u\n`, ax
 
 
 .halt:

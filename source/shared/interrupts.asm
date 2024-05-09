@@ -166,6 +166,10 @@
 ;   - 3) In BH, the year (add 2000)
 %define INT_N_GET_SYS_DATE 12h
 
-
+; Pause the current process for N milliseconds (1000ms = 1sec)
+; PARAMETERS
+;   - 0) DI   => The time to sleep, in milliseconds
+; Doesnt return anything
+%define INT_N_SLEEP 13h
 
 %endif

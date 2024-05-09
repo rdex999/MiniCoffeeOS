@@ -47,6 +47,11 @@
 
 %macro SYS_CLOCK_HANDLE_PIT 0
 
+  dec byte es:[sysClock_untilMS]
+  jnz %%isr_sysClockHandlePit_end
+
+  mov byte es:[sysClock_untilMS], SYS_CLOCK_UNTIL_MS_RELOAD
+
   inc word es:[sysClock_milliseconds]         ; The PIT triggers an interrupt every millisecond, so each time increment the sysClock milliseconds
   cmp word es:[sysClock_milliseconds], 1000   ; Check if the milliseconds are more than 1000 (1000ms == 1 seconds)
   jb %%isr_sysClockHandlePit_end              ; If not, we can return
@@ -78,7 +83,7 @@
 
 %endmacro
 
-%macro HANDLE_PROCESSES 0
+%macro SWITCH_PROCESS 0
 
   ; Prepare for searching a process thats alive
   mov al, es:[currentProcessIdx]                                    ; Get the current running process index
@@ -92,31 +97,35 @@
   add si, ax                                                        ; Offset it into the next process
   mov ax, cx                                                        ; Set AX to the next process index
   xor bx, bx                                                        ; BX will be used to determin if we scan the whole array twice (because there might be things before the current index)
-%%handleProcesses_searchAlive:
+%%switchProcess_searchAlive:
   test byte es:[si + PROCESS_DESC_FLAGS8], PROCESS_DESC_F_ALIVE     ; Check if the current process descriptor is alive
-  jnz %%handleProcesses_foundAlive                                  ; If it is, process it and give it controll
+  jz %%switchProcess_isDead                                         ; If it is, process it and give it controll
 
+  cmp word es:[si + PROCESS_DESC_SLEEP_MS16], 0
+  je %%switchProcess_foundAlive
+
+%%switchProcess_isDead:
   add si, PROCESS_DESC_SIZEOF                                       ; If its not alive, increase the process descriptor pointer to point to the next process
   inc ax                                                            ; Increase index
   cmp ax, PROCESS_DESC_LEN                                          ; Check if the index is above the limit
-  jb %%handleProcesses_searchAlive                                  ; As long as its not, continue searching for a living process
+  jb %%switchProcess_searchAlive                                  ; As long as its not, continue searching for a living process
 
   test bx, bx                                                       ; If its above the length, check if BX is set
-  jnz %%handleProcesses_end                                         ; If it is, return.
+  jnz %%switchProcess_end                                         ; If it is, return.
 
   mov bx, 1                                                         ; If not, set it, so the next time we will return
   lea si, processes                                                 ; Reset the process descriptor pointer
   xor ax, ax                                                        ; Reset the index
-  jmp %%handleProcesses_searchAlive                                 ; Continue searching for a living process
+  jmp %%switchProcess_searchAlive                                 ; Continue searching for a living process
 
 
-%%handleProcesses_foundAlive:
+%%switchProcess_foundAlive:
 
   push ax                                                           ; If we found Save the alive process index
   push si                                                           ; Save the pointer to it in the processes array
   mov al, es:[currentProcessIdx]                                    ; Get the currently running process index
   cmp al, PROCESS_DESC_LEN                                          ; Check if its above the length (it can be)
-  jae %%handleProcesses_afterSetPrev                                ; If it is, then dont save the current process registers and stuff
+  jae %%switchProcess_afterSetPrev                                ; If it is, then dont save the current process registers and stuff
 
   ; Save the registers of the processes thats currently running, so its possible to get back to it
   ; Calculate the currently running process offset (for the processes array)
@@ -175,7 +184,7 @@
   mov ax, [bp - 20]
   mov es:[si + PROCESS_DESC_REG_GS16], ax
 
-%%handleProcesses_afterSetPrev:
+%%switchProcess_afterSetPrev:
   ; After we saved the currently running process registers, we need to restore the next processes registers
   pop si                                                            ; Restore the alive process descriptor pointer 
   pop ax                                                            ; Restore its index
@@ -210,12 +219,31 @@
   pop ax                                      ; Restore AX
   iret
 
-%%handleProcesses_end
-
+%%switchProcess_end
 
 %endmacro
 
+%macro HANDLE_PROCESSES 0
 
+  cmp byte es:[sysClock_untilMS], SYS_CLOCK_UNTIL_MS_RELOAD   ; Check if a millisecond have just passed
+  jne %%handleProcesses_end                                   ; If it wasnt a millisecond, dont check processes
+
+  ; If a millisecond has passed, decrement each processes sleep time by 1 (if their asleep)
+  lea si, processes                                           ; Get a pointer to the process descriptor array
+  mov cx, PROCESS_DESC_LEN                                    ; Get the amount of process descriptors in the array
+%%handleProcesses_loop:
+  cmp word es:[si + PROCESS_DESC_SLEEP_MS16], 0               ; Check if the current process is asleep
+  je %%handleProcesses_afterCheckSleep                        ; Is its not, then dont decrement the milliseconds left to sleep
+
+  dec word es:[si + PROCESS_DESC_SLEEP_MS16]                  ; If its asleep, decrement the milliseconds left to sleep
+
+%%handleProcesses_afterCheckSleep:
+
+  add si, PROCESS_DESC_SIZEOF                                 ; Increase process pointer
+  loop %%handleProcesses_loop                                 ; Continue until there are no more processes
+%%handleProcesses_end:
+
+%endmacro
 
 
 ISR_pitChannel_0:
@@ -248,6 +276,8 @@ ISR_pitChannel_0:
 ISR_pitChannel_0_afterScreenTimeUpdate:
 
   HANDLE_PROCESSES
+
+  SWITCH_PROCESS
 
 ISR_pitChannel_0_end:
   PIC8259_SEND_EOI IRQ_PIT_CHANNEL0           ; Send EOI to pic so it knows we are finished with the interrupt

@@ -23,7 +23,7 @@ ISR_getCursorLocation:
 
   mov ah, al                        ; Get the row in AH
   mov al, dl                        ; Get column in AL
-  jmp ISR_kernelInt_end             ; Return from the interrupt
+  jmp ISR_kernelInt_end_restBX      ; Return from the interrupt
 
 
 ; Set the cursors location
@@ -41,7 +41,6 @@ ISR_setCursorLocation:
   add ax, si                        ; Add the column to it
   mov di, ax                        ; Get index in DI
   call setCursorIndex               ; Set the cursor location to it
-  xor ax, ax                        ; Zero out return value
   jmp ISR_kernelInt_end             ; Return from the interrupt
 
 %endif

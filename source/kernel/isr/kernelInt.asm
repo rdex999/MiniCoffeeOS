@@ -5,7 +5,7 @@
 %ifndef KERNEL_INT_ASM
 %define KERNEL_INT_ASM
 
-%define KERNEL_INT_STACK (2 * 5)
+%define KERNEL_INT_STACK (2 * 6)
 
 %include "kernel/isr/kernelInts/putchar.asm"
 %include "kernel/isr/kernelInts/putcharLoc.asm"
@@ -25,11 +25,12 @@ ISR_kernelInt:
   mov bp, sp 
   sub sp, KERNEL_INT_STACK
 
-  mov [bp - 2], bx
-  mov [bp - 4], cx
-  mov [bp - 6], dx
-  mov [bp - 8], si
-  mov [bp - 10], di
+  mov [bp - 2], ax
+  mov [bp - 4], bx
+  mov [bp - 6], cx
+  mov [bp - 8], dx
+  mov [bp - 10], si
+  mov [bp - 12], di
   
   ; A switch-case for the interrupt number
   cmp ax, INT_N_PUTCHAR
@@ -89,18 +90,23 @@ ISR_kernelInt:
   cmp ax, INT_N_GET_SYS_DATE
   je ISR_getSysDate
 
+  cmp ax, INT_N_SLEEP
+  je ISR_sleep
+
 ISR_kernelInt_end:
 ; *NOTE: "rest" == restore
+ISR_kernelInt_restAX:
+  mov ax, [bp - 2]
 ISR_kernelInt_end_restBX:
-  mov bx, [bp - 2]
+  mov bx, [bp - 4]
 ISR_kernelInt_end_restCX:
-  mov cx, [bp - 4]
+  mov cx, [bp - 6]
 ISR_kernelInt_end_restDX:
-  mov dx, [bp - 6]
+  mov dx, [bp - 8]
 ISR_kernelInt_end_restSI:
-  mov si, [bp - 8]
+  mov si, [bp - 10]
 ISR_kernelInt_end_restDI:
-  mov di, [bp - 10]
+  mov di, [bp - 12]
 ISR_kernelInt_end_dontRest:
   mov sp, bp
   pop bp 

@@ -19,8 +19,8 @@
 ; RETURNS
 ;   - 0) In AX, the file handle. A non-zero value on success. (0 on failure)
 ISR_fopen:
-  call fopen                  ; Open the file, while the filename is in ES:DI and the requested access is in SI
-  jmp ISR_kernelInt_end       ; Return with the handle/error code in AX
+  call fopen                    ; Open the file, while the filename is in ES:DI and the requested access is in SI
+  jmp ISR_kernelInt_end_restBX  ; Return with the handle/error code in AX
 
 
 ; Read from an open file at the current read position
@@ -33,7 +33,7 @@ ISR_fopen:
 ;   - 0) In AX, the amount of bytes read, can be less then the parameter if an error occurred.
 ISR_fread:
   call fread
-  jmp ISR_kernelInt_end
+  jmp ISR_kernelInt_end_restBX
 
 
 ; Write to the current position in a file.
@@ -45,7 +45,7 @@ ISR_fread:
 ;   - 0) In AX, the amount of bytes written. Can be less than the requested amount if an error occurs
 ISR_fwrite:
   call fwrite
-  jmp ISR_kernelInt_end
+  jmp ISR_kernelInt_end_restBX
 
 
 %endif
