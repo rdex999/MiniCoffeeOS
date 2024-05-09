@@ -84,7 +84,8 @@ processes:                times (PROCESS_DESC_LEN * PROCESS_DESC_SIZEOF) db 0
 
 currentProcessIdx:        db 0
 
-shellExec:  db "/bin/shell", 0
+uiExec:                   db "/bin/ui", 0
+shellExec:                db "/bin/shell", 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -97,10 +98,14 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  ; Start one process, wait 3 seconds, then start a second process and print all processes DS segments
+  lea di, uiExec
+  xor si, si
+  call createProcess
+
   lea di, shellExec
   xor si, si
   call createProcess
+
 
 .halt:
   ; cli

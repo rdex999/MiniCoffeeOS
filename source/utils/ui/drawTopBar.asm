@@ -5,12 +5,7 @@
 %ifndef DRAW_TOP_BAR_ASM
 %define DRAW_TOP_BAR_ASM
 
-%macro DRAW_TOP_BAR 0
-
-  ; We will change the cursors location, so save the current one
-  mov ax, INT_N_GET_CURSOR_LOCATION             ; Interrupt for getting the cursors location
-  int INT_F_KERNEL                              ; Get the cursor location in AX
-  push ax                                       ; Save it
+%macro DRAW_TOP_BAR_TIME_DATE 0
 
   ; Set the cursor location to the middle of the first row, minus the size of the time&date / 2
   mov di, 0                                     ; Set row 0
@@ -49,17 +44,7 @@
   mov ax, INT_N_PRINTF                          ; Interrupt for using system printf
   int INT_F_KERNEL                              ; Print it
 
-  add sp, 14                                    ; Free the stack space that was used for printf's arguments
-
-  pop ax                                        ; Get the previous cursor location
-  xor bh, bh                                    ; Set the column in SI, which is it AL
-  mov bl, al                                    ;
-  mov si, bx                                    ;
-
-  mov bl, ah                                    ; Set the row in DI, which is in AH
-  mov di, bx                                    ;
-  mov ax, INT_N_SET_CURSOR_LOCATION             ; Interrupt number for setting the cursors location
-  int INT_F_KERNEL                              ; Set the cursor location to the original one
+  add sp, 2 * 7                                 ; Free the stack space that was used for printf's arguments
 
 %endmacro
 
