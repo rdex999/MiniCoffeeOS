@@ -97,14 +97,14 @@ terminateProcess:
   mov bx, KERNEL_SEGMENT                          ; Set GS to the kernels segment, so we can access the processes array
   mov gs, bx                                      ;
 
-  test di, di
-  jz .err
+  cmp di, 1                                       ; Check if the handle is one or 0, because 0 is invalid
+  jbe .err                                        ; and 1 is the kernels PID. If its 1 or 0 then return an error
 
-  cmp di, PROCESS_DESC_LEN
-  ja .err
+  cmp di, PROCESS_DESC_LEN                        ; Check if the PID exceeds the amount of processes
+  ja .err                                         ; If it is, return an error
 
-  mov ax, di
-  dec ax
+  mov ax, di                                      ; Get the PID in AX
+  dec ax                                          ; Convert it into an index
   mov bx, PROCESS_DESC_SIZEOF                     ; We want to multiply by the size of a process descriptor
   mul bx                                          ; Get the offset into the processes array, for the current process (offset in AX)
 
@@ -121,7 +121,24 @@ terminateProcess:
   ret
 
 .err:
-  mov ax, ERR_INVALID_PID
-  jmp .end
+  mov ax, ERR_INVALID_PID                         ; In this function, the only error thats possible is an invalid PID
+  jmp .end                                        ; Return with the error code
+
+
+; Terminate the currently running process
+; Doesnt take any parameters
+; RETURNS
+;   - 0) AX   => The error code, 0 on success
+terminateCurrentProcess:
+  push gs                                         ; Save current GS because were changing it
+  mov bx, KERNEL_SEGMENT                          ; Set GS to the kernels segment so we can access the currently running process
+  mov gs, bx                                      ;
+  mov di, gs:[currentProcessIdx]                  ; Get the current process index
+  inc di                                          ; Convert it into a PID
+  and di, 0FFh                                    ; PID is only 8 bits
+  pop gs                                          ; Restore GS
+
+  call terminateProcess                           ; Terminate the process
+  ret
 
 %endif

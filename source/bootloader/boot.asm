@@ -54,6 +54,8 @@ afterCodeSegCheck:
   mov ax, KERNEL_SEGMENT
   mov ds, ax
   mov es, ax
+  mov gs, ax
+  mov fs, ax
 
   jmp KERNEL_SEGMENT:KERNEL_OFFSET
 

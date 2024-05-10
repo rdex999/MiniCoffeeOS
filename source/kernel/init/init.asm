@@ -119,6 +119,8 @@
   SET_IVT INT_KEYBOARD, cs, ISR_keyboard
 %endif
 
+  SET_IVT INT_INVALID_OPCODE, cs, ISR_invalidOpcode
+
   pop es                          ; Restore ES segment
   sti                             ; Enable interrupts
 

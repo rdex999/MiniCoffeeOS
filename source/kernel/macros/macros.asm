@@ -180,6 +180,9 @@
 %define INT_KEYBOARD 9
 %define INT_PIT_CHANNEL0 (0 + 8)
 %define INT_CMOS_UPDATE (8 + 8)
+%define INT_INVALID_OPCODE 6
+%define INT_DOUBLE_FAULT 8
+%define INT_STACK_SEG_FAULT 0Ch
 
 %define IRQ_KEYBOARD 1
 %define IRQ_PIT_CHANNEL0 0
