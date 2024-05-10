@@ -86,4 +86,42 @@ createProcess:
   jmp .end                                                        ; Return
 
 
+
+; Stop a running process.
+; PARAMETERS
+;   - 0) DI     => The processes PID
+; RETURNS
+;   - 0) The error code. (0 on success)
+terminateProcess:
+  push gs                                         ; Save GS, because were gonna change it
+  mov bx, KERNEL_SEGMENT                          ; Set GS to the kernels segment, so we can access the processes array
+  mov gs, bx                                      ;
+
+  test di, di
+  jz .err
+
+  cmp di, PROCESS_DESC_LEN
+  ja .err
+
+  mov ax, di
+  dec ax
+  mov bx, PROCESS_DESC_SIZEOF                     ; We want to multiply by the size of a process descriptor
+  mul bx                                          ; Get the offset into the processes array, for the current process (offset in AX)
+
+  lea si, processes                               ; Get a pointer to the processes array
+  add si, ax                                      ; Offset it into the current process
+
+  mov byte gs:[si + PROCESS_DESC_FLAGS8], 0       ; Set the processes flags to 0
+  mov word gs:[si + PROCESS_DESC_SLEEP_MS16], 0   ; Set its sleep time to 0
+
+  xor ax, ax
+
+.end:
+  pop gs                                          ; Restore GS
+  ret
+
+.err:
+  mov ax, ERR_INVALID_PID
+  jmp .end
+
 %endif
