@@ -1,9 +1,10 @@
 %include "shared/interrupts.asm"
+%include "shared/process.asm"
 %include "utils/ui/drawTopBar.asm"
 
 %define FPS 30
 
-org 100h
+org PROCESS_LOAD_OFFSET
 
 main:
   ; Dont realy need this, but its good practice

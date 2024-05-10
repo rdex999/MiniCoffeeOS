@@ -152,4 +152,28 @@ strcpy:
   pop di
   ret
 
+; Comapre two memory chunks
+; PARAMETERS
+;   - 0) ES:DI  => First chunk
+;   - 1) DS:SI  => Second chunk
+;   - 2) DX     => Amount of bytes to comapre
+; RETURNS
+;   - 0) AX     => 0 if both chunks are equal
+memcmp:
+  push si                       ; Save both pointers
+  push di                       ;
+  mov cx, dx                    ; Get the amount of bytes to comapre
+  repe cmpsb                    ; Compare both chunks
+  je .equal                     ; If they are equal, return 0
+
+  mov ax, 1                     ; If not equal, return 1
+  jmp .end                      ; Return
+
+.equal:
+  xor ax, ax                    ; If equal return 0
+.end:
+  pop di                        ; Restore first chunk pointer
+  pop si                        ; Restore second chunk pointer
+  ret
+
 %endif

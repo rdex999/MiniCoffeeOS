@@ -5,6 +5,8 @@
 %ifndef SYSTEM_ASM
 %define SYSTEM_ASM
 
+%include "kernel/system/parseCmd.asm"
+
 ; Comapre two commands, and just if equal
 ; PARAMETERS
 ;   - 0) The lable to just to
@@ -31,40 +33,67 @@
 
 ; Execute a system command
 ; PARAMETERS
-;   - 0) ES:DI    => The command string to execute
+;   - 0) ES:DI    => The command string to execute (destructive)
 ; RETURNS
 ;   - 0) AX       => The commands error code
 system:
-  push bp
-  mov bp, sp
-  sub sp, 2
+  push bp                                   ; Save stack frame
+  mov bp, sp                                ;
+  sub sp, 4                                 ; Allocate space for local stuff
 
-  mov [bp - 2], ds
+  mov [bp - 2], ds                          ; Save used segments
+  mov [bp - 4], es                          ;
 
-  mov bx, KERNEL_SEGMENT
-  mov ds, bx
+  mov bx, KERNEL_SEGMENT                    ; DS will be used as the kernels segment
+  mov ds, bx                                ;
 
+  ; The way this command works is that most commands are executables in the /bin folder, 
+  ; but some simple commands like "clear" and "help" are just built in
+
+  ; Check for built it
   CMDCMP_JUMP .help, di, cmdHelp
   CMDCMP_JUMP .clear, di, cmdClear
+
+  ; If its not a build in, parse the first part of the command 
+  ; into a binary in the bin folder ("move" => "/bin/move")
+  ; Then parse the arguments, and save an array of pointers for it on this functions stack
+  sub sp, 11 + 1                            ; Allocate space for the file path
+
+  mov bx, es                                ; Set DS:SI point to the command string
+  mov ds, bx                                ; Set segment
+  mov si, di                                ; Set offset
+  
+  mov bx, ss                                ; Set ES:DI point to the path buffer on the stack
+  mov es, bx                                ; Set segment
+  mov di, sp                                ; Set offset
+  call parseExecCmd                         ; Parse the first part of the file path
+
+  ;;;;;;; DEBUG
+  mov bx, ss
+  mov ds, bx
+  mov si, sp
+  mov di, VGA_TXT_YELLOW
+  call printStr
 
   jmp .end
 
 .help:
-  mov di, ds:[trmColor]
-  lea si, helpMsg
-  call printStr
+  mov di, ds:[trmColor]                     ; Get the terminals current color
+  lea si, helpMsg                           ; Get a pointer to the help message
+  call printStr                             ; Print the help message
 
-  xor ax, ax
-  jmp .end
+  xor ax, ax                                ; Exit with 0
+  jmp .end                                  ; Return
 
 .clear:
-  call clear
-  xor ax, ax
+  call clear                                ; Clear the screen
+  xor ax, ax                                ; Return 0
 
 .end:
-  mov ds, [bp - 2] 
-  mov sp, bp
-  pop bp
+  mov ds, [bp - 2]                          ; Restore used segments
+  mov es, [bp - 4]                          ;
+  mov sp, bp                                ; Restore stack frame 
+  pop bp                                    ;
   ret
 
 
@@ -76,37 +105,38 @@ system:
 ; RETURNS
 ;   - 0) In AX, 0 if the commands are equal, 1 if not equal
 cmdcmp:
-  push di
-  cld
-  mov cx, 0FFFFh
-  sub cx, di
+  push di                                   ; Save entered command
+  cld                                       ; Clear direction flag so LODSB and SCASB will increment SI and DI respectively
+  mov cx, 0FFFFh                            ; Maximum amount of bytes its possible to copy
+  sub cx, di                                ; Subtract the entered commands offset from it
 
 .cmpLoop:
-  lodsb
+  lodsb                                     ; Get the current character in the string were comparing to
 
-  test al, al
-  jnz .notNull
+  test al, al                               ; Check if its the end of the string
+  jnz .notNull                              ; If not, compare letters normaly
 
-  scasb
-  je .equal
+  scasb                                     ; Check if its the end of the entered command too
+  je .equal                                 ; If it is, then they are equal
 
-  cmp byte es:[di - 1], ' '
-  je .equal
+  ; If its not the end of the source command, check if the letter in the source command is ' ' (which means they are equal)
+  cmp byte es:[di - 1], ' '                 ; Check if the letter in the source command is a space ' '
+  je .equal                                 ; If it is, then they are equal
 
-  jmp .notEqual
+  jmp .notEqual                             ; If its not a space, then they are not equal
 
 .notNull:
-  scasb
-  je .cmpLoop
+  scasb                                     ; Compare the character from the command to the source command
+  je .cmpLoop                               ; As long as its equal, continue comparing
 
 .notEqual:
-  mov ax, 1
+  mov ax, 1                                 ; If not equal, return 1
   jmp .end
 
 .equal:
-  xor ax, ax
+  xor ax, ax                                ; If equal, return 0
 .end:
-  pop di
+  pop di                                    ; Restore source command pointer offset
   ret
 
 

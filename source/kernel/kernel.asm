@@ -92,6 +92,8 @@ cmdClear:                 db "clear", 0
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
 
+args: dw KERNEL_SEGMENT, uiExec
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -103,12 +105,15 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+
   lea di, uiExec
-  xor si, si
+  xor cl, cl 
   call createProcess
 
+  lea si, args
   lea di, shellExec
-  xor si, si
+  xor cl, cl
+  mov dx, 1
   call createProcess
 
 

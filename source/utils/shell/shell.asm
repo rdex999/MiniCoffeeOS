@@ -8,12 +8,27 @@
 %include "shared/colors.asm"
 %include "shared/print.asm"
 %include "shared/cmd.asm"
+%include "shared/process.asm"
 
-org 100h
+org PROCESS_LOAD_OFFSET
 
 main:
   push bp
   mov bp, sp
+
+  mov ds, ax
+  mov si, bx
+  
+  push word ds:[si + 2] 
+  mov ds, ds:[si]
+  pop si
+  
+  mov di, 100h
+  mov ax, INT_N_PUTS
+  int INT_F_KERNEL
+
+  mov bx, es
+  mov ds, bx
 
 
 readCommandsLoop:
@@ -39,6 +54,7 @@ readCommandsLoop:
   lea di, enteredCommand
   mov ax, INT_N_SYSTEM
   int INT_F_KERNEL
+
   jmp readCommandsLoop
 
 
@@ -69,3 +85,4 @@ shellStr:             db NEWLINE
                       db "|___/-=> $ ", 0
 
 enteredCommand:       times MAX_COMMAND_LENGTH db 0
+stack: db "ss: 0x%X", NEWLINE, "sp: 0x%X", NEWLINE, 0

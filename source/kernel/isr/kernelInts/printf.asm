@@ -61,7 +61,7 @@ ISR_printf:
   cmp al, 'u'                                   ; Check if the formatting option is for an unsigned integer
   je .uint                                      ; If it is, handle it
 
-  cmp al, 'i'                                   ; Check if the formatting option is for a signed integer
+  cmp al, 'd'                                   ; Check if the formatting option is for a signed integer
   je .int                                       ; If it is, handle it
 
   cmp al, 'x'                                   ; Check if the formatting option is for a lower-case hexadecimal number

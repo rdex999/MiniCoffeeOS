@@ -1,0 +1,6 @@
+%ifndef SHARED_PROCESS_ASM
+%define SHARED_PROCESS_ASM
+
+%define PROCESS_LOAD_OFFSET 100h
+
+%endif

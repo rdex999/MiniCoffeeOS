@@ -12,6 +12,7 @@
 %include "shared/ascii.asm"
 %include "shared/filesystem.asm"
 %include "shared/cmd.asm"
+%include "shared/process.asm"
 
 %define TXT_TAB_SIZE 4
 
@@ -63,8 +64,6 @@
 %define PROCESS_DESC_SIZEOF (PROCESS_DESC_REG_FLAGS16 + 2)
 
 %define PROCESS_DESC_F_ALIVE 0000_0001b
-
-%define PROCESS_LOAD_OFFSET 100h
 
 ; ; struct heapChunk {
 ; ;   uint16_t segment;
