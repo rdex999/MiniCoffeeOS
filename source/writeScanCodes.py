@@ -250,7 +250,7 @@ keys.sort(key=attrgetter("scanCode"))
 for akey in keys:
     keyDefStr += f"%define KBD_KEY_{akey.name} {akey.keyCode}\n"
 
-keyDefFile = open("source/kernel/macros/kbdKeyCodes.asm", "+w")
+keyDefFile = open("source/shared/kbdKeyCodes.asm", "+w")
 keyDefFile.write(keyDefStr)
 keyDefFile.close()
 

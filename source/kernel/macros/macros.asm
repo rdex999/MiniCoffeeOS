@@ -11,6 +11,7 @@
 %include "shared/interrupts.asm"
 %include "shared/ascii.asm"
 %include "shared/filesystem.asm"
+%include "shared/cmd.asm"
 
 %define TXT_TAB_SIZE 4
 

@@ -101,6 +101,9 @@ ISR_kernelInt:
   cmp ax, INT_N_GET_USER_PATH
   je ISR_getUserPath
 
+  cmp ax, INT_N_SYSTEM
+  je ISR_system
+
 ISR_kernelInt_end:
 ; *NOTE: "rest" == restore
 ISR_kernelInt_restAX:

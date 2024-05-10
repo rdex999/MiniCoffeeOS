@@ -45,5 +45,13 @@ ISR_trmSetColor:
   jmp ISR_kernelInt_end       ; Return from the interrupt
 
 
+; Execute a system command
+; PARAMETERS
+;   - 0) ES:DI  => The command string
+; RETURNS
+;   - 0) AX     => The exit code of the command
+ISR_system:
+  call system
+  jmp ISR_kernelInt_end_restBX
 
 %endif

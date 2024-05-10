@@ -7,8 +7,7 @@
 %include "shared/filesystem.asm"
 %include "shared/colors.asm"
 %include "shared/print.asm"
-
-%define MAX_COMMAND_LENGTH 300
+%include "shared/cmd.asm"
 
 org 100h
 
@@ -31,6 +30,17 @@ readCommandsLoop:
   mov si, MAX_COMMAND_LENGTH                        ; Set the maximum amount of characters to read
   mov ax, INT_N_WAIT_INPUT                          ; Interrupt number for reading a string
   int INT_F_KERNEL                                  ; Read a string from the keyboard into the specified buffer
+
+  mov di, 100h
+  mov si, NEWLINE
+  mov ax, INT_N_PUTCHAR
+  int INT_F_KERNEL
+
+  lea di, enteredCommand
+  mov ax, INT_N_SYSTEM
+  int INT_F_KERNEL
+  jmp readCommandsLoop
+
 
 main_end:
   mov sp, bp

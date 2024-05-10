@@ -22,6 +22,13 @@ bpbStart:
 %include "bootloader/bpbStruct/bpbStruct.asm"
 
 welcomeMsg:               db "[*] Welcome to MiniCoffeeOS!", NEWLINE, "Enter 'help' for more info.", NEWLINE, 0
+
+helpMsg:                  db NEWLINE
+  db "---< Mini Coffee OS >---", NEWLINE, NEWLINE, "Commands:", NEWLINE, TAB
+  db "help", TAB, "| prints this help message.", NEWLINE, TAB,
+  db "clear", TAB, "| clears the screen", NEWLINE, 
+  db 0
+
 currentUserDirPath:       db '/'
                           times (MAX_PATH_FORMATTED_LENGTH - 1) db 0
 
@@ -79,6 +86,9 @@ processes:                times (PROCESS_DESC_LEN * PROCESS_DESC_SIZEOF) db 0
 
 currentProcessIdx:        db 0
 
+cmdHelp:                  db "help", 0
+cmdClear:                 db "clear", 0
+
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
 
@@ -114,13 +124,13 @@ kernelMain:
 
 %include "kernel/io/io.asm"
 %include "kernel/string/string.asm"
-; %include "kernel/trmCommands/trmCommands.asm"
 %include "kernel/filesystem/filesystem.asm"
 %include "kernel/isr/isr.asm"
 %include "kernel/time/time.asm"
 %include "kernel/drivers/vga/vga.asm"
 %include "kernel/memory/memory.asm"
 %include "kernel/process/process.asm"
+%include "kernel/system/system.asm"
 
 %ifdef KBD_DRIVER
   %include "kernel/drivers/ps2_8042/ps2_8042.asm"

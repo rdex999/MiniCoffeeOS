@@ -184,5 +184,11 @@
 ; Doesnt return anything
 %define INT_N_GET_USER_PATH 15h
 
+; Execute a system command
+; PARAMETERS
+;   - 0) ES:DI  => The command string
+; RETURNS
+;   - 0) AX     => The exit code of the command
+%define INT_N_SYSTEM 16h
 
 %endif
