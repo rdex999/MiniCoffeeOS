@@ -39,7 +39,7 @@
 system:
   push bp                                   ; Save stack frame
   mov bp, sp                                ;
-  sub sp, 6                                 ; Allocate space for local stuff
+  sub sp, 9                                 ; Allocate space for local stuff
 
   mov [bp - 2], ds                          ; Save used segments
   mov [bp - 4], es                          ;
@@ -58,17 +58,34 @@ system:
   ; If its not a build in, parse the first part of the command 
   ; into a binary in the bin folder ("move" => "/bin/move")
   ; Then parse the arguments, and save an array of pointers for it on this functions stack
-  call countCmdArgBytes
-  test ax, ax
-  jz .retZero
+  call countCmdArgBytes                     ; Get the length of the first argument
+  test ax, ax                               ; Check if its zero
+  jz .retZero                               ; If it is, just return 0
 
-  add ax, 5 + 1
-  sub sp, ax
+  cmp ax, 10
+  jae .errNotFound
 
-  call countCmdArgs
+  add ax, 5 + 1                             ; If its not zero, increase the amount by 5+1 because we might add "/bin/" to the name.
+  sub sp, ax                                ; Allocate space for formatted command
+  mov [bp - 8], sp                          ; Save allocated buffer
 
-  shl ax, 1
-  sub sp, ax
+  mov bx, es                                ; Set DS:SI point to the command string
+  mov ds, bx                                ; Set segment
+  mov si, di                                ; Set offset
+
+  mov bx, ss                                ; Set ES:DI to the buffer we just allocated
+  mov es, bx                                ; Set segment
+  mov di, sp                                ; Set offset
+  push si                                   ; Save the offset of the command string pointer
+  call parseExecArg                         ; Parse the fist argument into an executables path
+
+  mov es, [bp - 4]                          ; Restore command string segment
+  pop di                                    ; Restore command string offset
+
+  call countCmdArgs                         ; Count the amount of arguments in the command
+  mov [bp - 9], al                          ; Store it
+  shl ax, 1                                 ; Multiply it by 2, because were creating an array of near pointers (each pointer is 2 bytes)
+  sub sp, ax                                ; Allocate space for the array
 
   mov bx, es                                ; Set DS:SI point to the command string
   mov ds, bx                                ; Set segment
@@ -77,25 +94,56 @@ system:
   mov bx, ss                                ; Set ES:DI point to the path buffer on the stack
   mov es, bx                                ; Set segment
   mov di, sp                                ; Set offset
-  call parseCmdArgs
+  call parseCmdArgs                         ; Parse the command, null terminate arguments and create an array of pointers with the arguments
+
+  mov bx, ss                                ; Set ES:DI to the executables path
+  mov es, bx                                ; Set segment
+  mov di, [bp - 8]                          ; Set offset
+
+  mov ds, bx                                ; Set DS:SI point to the array of arguments
+  mov si, sp                                ; Set offset
+
+  mov dl, [bp - 9]                          ; Set DL to the amount of arguments in the array
+  xor dh, dh                                ; Zero out high 8 bits
+
+  mov cl, PROCESS_DESC_F_ALIVE              ; Set the alive flag so the process will run
+  mov bx, [bp - 2]                          ; The segment of each argument string
+  call createProcess                        ; Create the process and get a handle to it in AX
+  test bx, bx                               ; Check error code
+  jz .createdProcess                        ; If there was no error, skip printing an error message
+
+.errNotFound:
+  mov bx, KERNEL_SEGMENT                    ; Make DS:SI point to the "command not found" error message
+  mov ds, bx                                ;
+  lea si, errCmdNotFound                    ;
+  mov di, ds:[trmColor]                     ; Get the current terminal color
+  call printStr                             ; Print the error message
+  mov ax, ERR_FILE_NOT_FOUND 
+  jmp .end                                  ; Return with it
+
+.createdProcess:
 
   ;;;;;;; DEBUG
-  mov di, sp
-  mov cx, 3
-.loopA:
-  push di
-  push cx
-  mov si, ss:[di]
-  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  call printStr
+  xor ah, ah
+  mov bx, KERNEL_SEGMENT                    ; 
+  mov ds, bx
+  push ax
+  PRINTF_M `process PID: %u\n`, ax
+  pop ax
 
-  PRINT_NEWLINE 0
-  pop cx
-  pop di
-  add di, 2
-  loop .loopA
 
-  jmp .end
+  dec ax                                    ; Decrement the PID by 1, to get processes index
+  mov bx, PROCESS_DESC_SIZEOF               ; We want to multiply by the size of a process descriptor
+  mul bx                                    ; Get the offset into the processes array for the new process
+
+  lea si, processes                         ; Get a pointer to the processes array
+  add si, ax                                ; Offset it so it points to the new process
+.waitProcessExit:
+  hlt                                       ; Halt so the CPU wont explode
+  test byte ds:[si + PROCESS_DESC_FLAGS8], PROCESS_DESC_F_ALIVE   ; Check if the process is still alive
+  jnz .waitProcessExit                                            ; If it is alive, continue waiting
+
+  jmp .end                                                        ; When the processes has died, return
 
 .help:
   mov di, ds:[trmColor]                     ; Get the terminals current color

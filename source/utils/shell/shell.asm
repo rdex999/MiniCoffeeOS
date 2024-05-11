@@ -16,21 +16,6 @@ main:
   push bp
   mov bp, sp
 
-  mov ds, ax
-  mov si, bx
-  
-  push word ds:[si + 2] 
-  mov ds, ds:[si]
-  pop si
-  
-  mov di, 100h
-  mov ax, INT_N_PUTS
-  int INT_F_KERNEL
-
-  mov bx, es
-  mov ds, bx
-
-
 readCommandsLoop:
   ; We want to first get the current directory that the user is in, and then print the shell with the directory
   lea di, userDir                                   ; Set the destination, where to write the data to

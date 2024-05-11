@@ -2,7 +2,7 @@
 %include "shared/process.asm"
 %include "utils/ui/drawTopBar.asm"
 
-%define FPS 30
+%define FPS 20
 
 org PROCESS_LOAD_OFFSET
 

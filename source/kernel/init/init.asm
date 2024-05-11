@@ -213,18 +213,19 @@
   mov di, NORM_SCREEN_START_IDX
   call setCursorIndex
 
-  mov bx, cs
-  mov es, bx
-  mov di, %%afterSegOffCall
-  call getNextSegOff
+;   mov bx, cs
+;   mov es, bx
+;   mov di, %%afterSegOffCall
+;   call getNextSegOff
 
-  push word es
-  push word di
-  retf
+;   ; It breaks the OS apparently
+;   push word es
+;   push word di
+;   retf
 
-%%afterSegOffCall:
-  mov bx, KERNEL_SEGMENT
-  mov es, bx
+; %%afterSegOffCall:
+;   mov bx, KERNEL_SEGMENT
+;   mov es, bx
 %endmacro
 
 %endif

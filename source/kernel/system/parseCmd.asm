@@ -61,12 +61,13 @@ parseExecArg:
   mov di, [bp - 8]                ; Offset
   call countCmdArgBytes           ; Get the length of the first argument (the first part of the command)
 
+  mov bx, es
+  mov ds, bx                      ; Get a pointer to the command string
+  mov si, di                      ; Get offset
+
   mov es, [bp - 2]                ; Get a pointer to the given buffer
   mov di, [bp - 4]                ; Get offset
   add di, 5                       ; Offset the buffer so it pointes at the character after the "/bin/"
-
-  mov ds, [bp - 6]                ; Get a pointer to the command string
-  mov si, [bp - 8]                ; Get offset
 
   mov dx, ax                      ; Set the amount of bytes to copy to the length of the argument
   push ax                         ; Save the amount of bytes were gonna copy
@@ -124,12 +125,12 @@ parseCmdArgs:
   ret
 
 ; Get the length of the current argument
-; Note: parameters stay unchanged
 ; PARAMETERS
 ;   - 0) ES:DI  => The command string
 ;  RETURNS
 ;   - 0) AX     => The length of the current argument
 ;   - 1) DS:SI  => A pointer to the next argument
+;   - 2) ES:DI  => Will change to the first byte of the current argument (skips spaces)
 countCmdArgBytes:
   mov bx, es                      ; Set DS:SI to the command string, because LODSB is using DS:SI
   mov ds, bx                      ; Set segment

@@ -34,7 +34,8 @@ currentUserDirPath:       db '/'
 
 errPs2CtrlSelfTestFailed: db "[- KERNEL PANIC] Error, one of the PS/2 controller chips has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
 errPs2SelfTestFailed:     db "[- KERNEL PANIC] Error, the PS/2 controller has failed the self-test. (Is there a keyboard?)", NEWLINE, 0
-printf_errorFormat: db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
+printf_errorFormat:       db "[ - printf ]: Error, invalid formatting option.", NEWLINE, 0
+errCmdNotFound:         db "[-] Error, command not found.", NEWLINE, 0
 
 %ifdef KBD_DRIVER
   kbdKeycodes:

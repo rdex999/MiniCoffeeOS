@@ -14,6 +14,7 @@
 ;   - 4) BX     => The segment of each argument
 ; RETURNS
 ;   - 0) AX   => A handle to the new process, null on error
+;   - 1) BX   => The error code
 createProcess:
   push bp                                                         ; Save stack frame
   mov bp, sp                                                      ;
@@ -25,7 +26,7 @@ createProcess:
   mov [bp - 7], ds                                                ; Save argument list segment
   mov [bp - 12], si                                               ; Save argument list offset
   mov [bp - 14], dx                                               ; Save amount of arguments
-  mov [bp - 16], bx
+  mov [bp - 16], bx                                               ; Save segment of each argument
 
   mov bx, KERNEL_SEGMENT                                          ; DS will be used as the kernels segment
   mov ds, bx                                                      ;
@@ -48,8 +49,12 @@ createProcess:
   mov si, FILE_OPEN_ACCESS_READ                                   ; We only need to read the file, so request read access for the file
   call fopen                                                      ; Open the file
   test ax, ax                                                     ; Check if the handle is null
-  jz .end                                                         ; If it is, return it (its already set to 0)
+  jnz .fileOpened                                                         ; If it is, return it (its already set to 0)
 
+  mov bx, ERR_FILE_NOT_FOUND
+  jmp .err
+
+.fileOpened:
   push ax                                                         ; Save the files handle
   mov dx, ax                                                      ; Get the handle in DX, for the fread function
   mov si, [bp - 10]                                               ; Get a pointer to the free process descriptor
@@ -63,8 +68,12 @@ createProcess:
   call fclose                                                     ; Close the file
   pop ax                                                          ; Restore amount of bytes read
   test ax, ax                                                     ; Check if it was 0
-  jz .end                                                         ; If it was 0, return it (which is set to 0)
+  jnz .fileRead                                                   ; If it was 0, return it (which is set to 0)
 
+  mov bx, ERR_EMPTY_FILE
+  jmp .err
+
+.fileRead:
   cli
   mov si, [bp - 10]                                               ; Get a pointer to the free process descriptor
   mov al, [bp - 5]                                                ; Get the requested flags for the process
@@ -74,24 +83,25 @@ createProcess:
   mov word ds:[si + PROCESS_DESC_REG_SP16], PROCESS_LOAD_OFFSET   ; Set the initial value of sp to the load offset
   mov word ds:[si + PROCESS_DESC_SLEEP_MS16], 0                   ; Set the processes sleep time to 0 (its now asleep)
 
-  mov ax, [bp - 7] 
-  mov ds:[si + PROCESS_DESC_REG_AX16], ax
+  mov ax, [bp - 7]                                                ; Get arguments array segment
+  mov ds:[si + PROCESS_DESC_REG_AX16], ax                         ; Set processes AX register to the arguments array segment
 
-  mov ax, [bp - 12]
-  mov ds:[si + PROCESS_DESC_REG_BX16], ax
+  mov ax, [bp - 12]                                               ; Get arguments array offset
+  mov ds:[si + PROCESS_DESC_REG_BX16], ax                         ; Set processes BX register to the arguments array offset
 
-  mov ax, [bp - 14]
-  mov ds:[si + PROCESS_DESC_REG_CX16], ax
+  mov ax, [bp - 14]                                               ; Get the amount of arguments in the argument array
+  mov ds:[si + PROCESS_DESC_REG_CX16], ax                         ; Set the CX register to it
 
-  mov ax, [bp - 16]
-  mov ds:[si + PROCESS_DESC_REG_DX16], ax
+  mov ax, [bp - 16]                                               ; Get the segment of each argument offset
+  mov ds:[si + PROCESS_DESC_REG_DX16], ax                         ; Set DX to it
 
   mov bl, [bp - 8]                                                ; Get the amount of processes left to check (from the search loop)
   mov al, PROCESS_DESC_LEN                                        ; Get the amount of processes in general
   sub al, bl                                                      ; Subtract the amount of processes left, from the amount of processes (to get the index)
   inc al                                                          ; Increase by 1, because handles start from 1
-  sti
+  sti                                                             ; Enable interrupts, because disabled it before
 
+  xor bx, bx                                                      ; Zero out error code
 .end:
   mov es, [bp - 2]                                                ; Restore used segments
   mov ds, [bp - 7]                                                ;
