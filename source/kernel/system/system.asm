@@ -39,10 +39,11 @@
 system:
   push bp                                   ; Save stack frame
   mov bp, sp                                ;
-  sub sp, 4                                 ; Allocate space for local stuff
+  sub sp, 6                                 ; Allocate space for local stuff
 
   mov [bp - 2], ds                          ; Save used segments
   mov [bp - 4], es                          ;
+  mov [bp - 6], di                          ;
 
   mov bx, KERNEL_SEGMENT                    ; DS will be used as the kernels segment
   mov ds, bx                                ;
@@ -57,7 +58,26 @@ system:
   ; If its not a build in, parse the first part of the command 
   ; into a binary in the bin folder ("move" => "/bin/move")
   ; Then parse the arguments, and save an array of pointers for it on this functions stack
-  sub sp, 11 + 1                            ; Allocate space for the file path
+  call countCmdArgBytes
+  add ax, 5 + 1
+  sub sp, ax
+
+  push ax
+  push di
+
+  call countCmdArgs
+
+  mov bx, KERNEL_SEGMENT
+  mov ds, bx
+
+  PRINTF_M `args count: %u\n`, ax
+
+
+  pop di
+  pop ax
+
+  shl ax, 1
+  sub sp, ax
 
   mov bx, es                                ; Set DS:SI point to the command string
   mov ds, bx                                ; Set segment
@@ -66,14 +86,9 @@ system:
   mov bx, ss                                ; Set ES:DI point to the path buffer on the stack
   mov es, bx                                ; Set segment
   mov di, sp                                ; Set offset
-  call parseExecCmd                         ; Parse the first part of the file path
+  ; call parseCmdArgs
 
-  ;;;;;;; DEBUG
-  mov bx, ss
-  mov ds, bx
-  mov si, sp
-  mov di, VGA_TXT_YELLOW
-  call printStr
+
 
   jmp .end
 

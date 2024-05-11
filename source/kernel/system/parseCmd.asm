@@ -12,7 +12,7 @@
 ;   - 0) ES:DI  => A buffer to store the parsed command in
 ;   - 1) DS:SI  => The command to parse
 ; Doesnt return anything
-parseExecCmd:
+parseExecArg:
   push bp                         ; Save stack frame
   mov bp, sp                      ;
   sub sp, 8                       ; Allocate space for local shit
@@ -82,39 +82,111 @@ parseExecCmd:
   ret
 
 
+; Parse the whole command string, create an array of pointers for each argument and null terminate the arguments
+; PARAMETERS
+;   - 0) ES:DI  => The buffer to store the argument array in
+;   - 1) DS:SI  => The command string
+; Doesnt return anything
+parseCmdArgs:
+  ret
+
 ; Get the length of the current argument
 ; Note: parameters stay unchanged
 ; PARAMETERS
 ;   - 0) ES:DI  => The command string
 ;  RETURNS
 ;   - 0) AX     => The length of the current argument
+;   - 1) DS:SI  => A pointer to the next argument
 countCmdArgBytes:
-  push ds                         ; Save DS segment because changing it
-
   mov bx, es                      ; Set DS:SI to the command string, because LODSB is using DS:SI
   mov ds, bx                      ; Set segment
   mov si, di                      ; Set offset
+
+  ; We want to skip the first spaces
+  mov bx, di                      ; Save DI in BX because changing it
+  mov cx, 0FFFFh                  ; Set maximum amount of bytes to check
+  mov al, ' '                     ; Character to check for
+  repe scasb                      ; Skip all spaces
+
+  dec di                          ; Decrement string pointer, because it points to the character after the character thats not a space
+  mov si, di                      ; Reset DS:SI to the first character of the argument
+  mov di, bx                      ; Restore DI
+
+  xor cx, cx                      ; Zero out bytes count
 
   cld                             ; Clear direction flag so LODSB will increment SI each time
 .cntLoop:
   lodsb                           ; Get the next character from the command string
 
   test al, al                     ; Check if its null
-  jz .retCnt                      ; If it is, return the legnth
+  jnz .notNull                    ; If it is, return the legnth
 
+  dec si                          ; If null, decrement string pointer so it points to the null byte
+  jmp .retCnt                     ; Return the amount of bytes
+
+.notNull:
   cmp al, ' '                     ; Check if the character is a space
-  je .retCnt                      ; If it is, return the legnth
+  je .isSpace                     ; If it is, return the legnth
+
+  inc cx                          ; If its not null nor a space, increase the bytes count
 
   jmp .cntLoop                    ; Continue counting characters
 
+.isSpace:
+  push cx                         ; Save current byte count
+  mov bx, di                      ; Save DI in BX
+
+  mov di, si                      ; Get string pointer in ES:DI (ES already set)
+  mov cx, 0FFFFh                  ; Set the amount of bytes to check to the maximum amount we can
+
+  ; Skip all of the spaces, when getting out of this instruction, 
+  ; ES:DI will point to the character after the character thats not a space
+  repe scasb                      ; Skip all spaces
+
+  mov si, di                      ; Get a pointer to the next argument
+  dec si                          ; Decrement by 1 so DS:SI points to the first character of the next argument
+
+  mov di, bx                      ; Restore DI
+  pop cx                          ; Restore byte count
+
 .retCnt:
-  mov ax, si                      ; Get the current character location in AX
-  sub ax, di                      ; Subtract the location of the first character from it
-  dec ax                          ; Decrement by 1 because DS:SI was pointing to the character after the last one
+  mov ax, cx                      ; Return the amount of bytes in the argument
 
 .end:
-  pop ds                          ; Restore DS segment
   ret
 
+
+; Count the amount of arguments in a command string
+; Note: parameters stay unchanged
+; PARAMETERS
+;   - 0) ES:DI  => The command string
+; RETURNS
+;   - 0) AX     => The amount of arguments in the command
+countCmdArgs:
+  push di                         ; Save DI because changing it
+  push ds                         ; Save used segment
+
+  xor ax, ax                      ; Zero out arguments counter
+
+.cntLoop:
+  push ax                         ; Save arguments count
+  call countCmdArgBytes           ; Get a pointer to the next argument
+  test ax, ax                     ; Check if the length of the current one is 0
+  pop ax                          ; Restore arguments count
+  jz .end                         ; If the length was zero, return
+
+  mov bx, ds                      ; Set ES:DI to the next argument
+  mov es, bx                      ; Set segment
+  mov di, si                      ; Set offset
+
+  inc ax                          ; Increase arguments count
+
+  cmp byte es:[di], 0             ; Check if its the end of the command
+  jne .cntLoop                    ; As long as its not the end, continue counting
+
+.end:
+  pop ds                          ; Restore used segment
+  pop di                          ; Restore offset
+  ret
 
 %endif

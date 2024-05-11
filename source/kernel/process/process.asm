@@ -11,12 +11,13 @@
 ;   - 1) DS:SI  => Argument list for the new process
 ;   - 2) DX     => Amount of arguments in the arguments list
 ;   - 3) CL     => Flags for the new process
+;   - 4) BX     => The segment of each argument
 ; RETURNS
 ;   - 0) AX   => A handle to the new process, null on error
 createProcess:
   push bp                                                         ; Save stack frame
   mov bp, sp                                                      ;
-  sub sp, 14                                                      ; Allocate 10 bytes for local stuff
+  sub sp, 16                                                      ; Allocate 10 bytes for local stuff
 
   mov [bp - 2], es                                                ; Save file name
   mov [bp - 4], di                                                ; Save offset
@@ -24,6 +25,7 @@ createProcess:
   mov [bp - 7], ds                                                ; Save argument list segment
   mov [bp - 12], si                                               ; Save argument list offset
   mov [bp - 14], dx                                               ; Save amount of arguments
+  mov [bp - 16], bx
 
   mov bx, KERNEL_SEGMENT                                          ; DS will be used as the kernels segment
   mov ds, bx                                                      ;
@@ -80,7 +82,10 @@ createProcess:
 
   mov ax, [bp - 14]
   mov ds:[si + PROCESS_DESC_REG_CX16], ax
-  
+
+  mov ax, [bp - 16]
+  mov ds:[si + PROCESS_DESC_REG_DX16], ax
+
   mov bl, [bp - 8]                                                ; Get the amount of processes left to check (from the search loop)
   mov al, PROCESS_DESC_LEN                                        ; Get the amount of processes in general
   sub al, bl                                                      ; Subtract the amount of processes left, from the amount of processes (to get the index)
