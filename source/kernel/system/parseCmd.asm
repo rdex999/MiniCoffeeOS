@@ -88,6 +88,39 @@ parseExecArg:
 ;   - 1) DS:SI  => The command string
 ; Doesnt return anything
 parseCmdArgs:
+  push bp                         ; Save stack frame
+  mov bp, sp                      ;
+  sub sp, 8                       ; Allocate space for local stuff
+
+  mov [bp - 2], ds                ; Save command string pointer
+  mov [bp - 4], si                ;
+  mov [bp - 6], es                ; Save buffer pointer
+  mov [bp - 8], di                ;
+
+.parseNextArg:
+  mov es, [bp - 2]                ; Get the command string pointer, for countCmdArgBytes
+  mov di, [bp - 4]                ;
+
+  mov ds, [bp - 6]                ; Get the buffer pointer
+  mov si, [bp - 8]                ;
+  mov ds:[si], di                 ; Set the current location in the buffer to the string pointer (we fill the buffer with pointers)
+
+  call countCmdArgBytes           ; Get a pointer to the next argument, (DS:SI) and the length of the current one
+
+  add di, ax                      ; Offset the current argument to the space after it
+  mov byte es:[di], 0             ; Null terminate the argument
+
+  mov [bp - 2], ds                ; Update command string pointer so it points to the next argument
+  mov [bp - 4], si                ;
+
+  add word [bp - 8], 2            ; Increase buffer pointer so it points to the next pointer (its an array of pointers)
+
+  cmp byte ds:[si], 0             ; Check if its the end of the command
+  jne .parseNextArg               ; As long as its not the end, continue parsing
+
+.end:
+  mov sp, bp                      ; Restore stack frame
+  pop bp                          ;
   ret
 
 ; Get the length of the current argument
@@ -103,14 +136,12 @@ countCmdArgBytes:
   mov si, di                      ; Set offset
 
   ; We want to skip the first spaces
-  mov bx, di                      ; Save DI in BX because changing it
   mov cx, 0FFFFh                  ; Set maximum amount of bytes to check
   mov al, ' '                     ; Character to check for
   repe scasb                      ; Skip all spaces
 
   dec di                          ; Decrement string pointer, because it points to the character after the character thats not a space
   mov si, di                      ; Reset DS:SI to the first character of the argument
-  mov di, bx                      ; Restore DI
 
   xor cx, cx                      ; Zero out bytes count
 

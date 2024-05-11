@@ -59,22 +59,13 @@ system:
   ; into a binary in the bin folder ("move" => "/bin/move")
   ; Then parse the arguments, and save an array of pointers for it on this functions stack
   call countCmdArgBytes
+  test ax, ax
+  jz .retZero
+
   add ax, 5 + 1
   sub sp, ax
 
-  push ax
-  push di
-
   call countCmdArgs
-
-  mov bx, KERNEL_SEGMENT
-  mov ds, bx
-
-  PRINTF_M `args count: %u\n`, ax
-
-
-  pop di
-  pop ax
 
   shl ax, 1
   sub sp, ax
@@ -86,9 +77,23 @@ system:
   mov bx, ss                                ; Set ES:DI point to the path buffer on the stack
   mov es, bx                                ; Set segment
   mov di, sp                                ; Set offset
-  ; call parseCmdArgs
+  call parseCmdArgs
 
+  ;;;;;;; DEBUG
+  mov di, sp
+  mov cx, 3
+.loopA:
+  push di
+  push cx
+  mov si, ss:[di]
+  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  call printStr
 
+  PRINT_NEWLINE 0
+  pop cx
+  pop di
+  add di, 2
+  loop .loopA
 
   jmp .end
 
@@ -102,6 +107,7 @@ system:
 
 .clear:
   call clear                                ; Clear the screen
+.retZero:
   xor ax, ax                                ; Return 0
 
 .end:
