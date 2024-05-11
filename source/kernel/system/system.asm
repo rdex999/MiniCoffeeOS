@@ -139,8 +139,4 @@ cmdcmp:
   pop di                                    ; Restore source command pointer offset
   ret
 
-
-
-
-
 %endif
