@@ -54,4 +54,19 @@ ISR_system:
   call system
   jmp ISR_kernelInt_end_restBX
 
+
+; Get the last exit code a command has returned
+; Takes no parameters
+; RETURNS
+;   - 0) AX     => The exit c
+ISR_getExitCode:
+  push gs
+  mov bx, KERNEL_SEGMENT
+  mov gs, bx
+
+  mov al, gs:[cmdLastExitCode]
+  xor ah, ah
+  pop gs
+  jmp ISR_kernelInt_end_restBX
+
 %endif

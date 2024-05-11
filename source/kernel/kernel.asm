@@ -87,6 +87,8 @@ processes:                times (PROCESS_DESC_LEN * PROCESS_DESC_SIZEOF) db 0
 
 currentProcessIdx:        db 0
 
+cmdLastExitCode:          db 0
+
 cmdHelp:                  db "help", 0
 cmdClear:                 db "clear", 0
 
@@ -116,7 +118,6 @@ kernelMain:
   xor cl, cl
   mov dx, 1
   call createProcess
-
 
 .halt:
   ; cli

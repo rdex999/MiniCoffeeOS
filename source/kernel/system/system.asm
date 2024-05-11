@@ -122,20 +122,14 @@ system:
   jmp .end                                  ; Return with it
 
 .createdProcess:
-
-  ;;;;;;; DEBUG
   xor ah, ah
-  mov bx, KERNEL_SEGMENT                    ; 
-  mov ds, bx
-  push ax
-  PRINTF_M `process PID: %u\n`, ax
-  pop ax
-
-
   dec ax                                    ; Decrement the PID by 1, to get processes index
   mov bx, PROCESS_DESC_SIZEOF               ; We want to multiply by the size of a process descriptor
   mul bx                                    ; Get the offset into the processes array for the new process
 
+  mov bx, KERNEL_SEGMENT                    ; Set DS to the kernels segment so we can access the processes array
+  mov ds, bx                                ;
+  
   lea si, processes                         ; Get a pointer to the processes array
   add si, ax                                ; Offset it so it points to the new process
 .waitProcessExit:
@@ -143,6 +137,7 @@ system:
   test byte ds:[si + PROCESS_DESC_FLAGS8], PROCESS_DESC_F_ALIVE   ; Check if the process is still alive
   jnz .waitProcessExit                                            ; If it is alive, continue waiting
 
+  mov al, ds:[si + PROCESS_DESC_EXIT_CODE8]
   jmp .end                                                        ; When the processes has died, return
 
 .help:
@@ -159,6 +154,10 @@ system:
   xor ax, ax                                ; Return 0
 
 .end:
+  mov bx, KERNEL_SEGMENT
+  mov ds, bx
+  mov ds:[cmdLastExitCode], al
+
   mov ds, [bp - 2]                          ; Restore used segments
   mov es, [bp - 4]                          ;
   mov sp, bp                                ; Restore stack frame 

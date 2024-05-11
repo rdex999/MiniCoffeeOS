@@ -17,6 +17,7 @@ ISR_invalidOpcode:
   pusha 
 
   PRINT_CHAR 'I', VGA_TXT_RED
+  mov di, 255
   call terminateCurrentProcess            ; Terminate the current process
   popa
   iret                                    ; Return from the interrupt

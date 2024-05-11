@@ -118,6 +118,7 @@ createProcess:
 ; Stop a running process.
 ; PARAMETERS
 ;   - 0) DI     => The processes PID
+;   - 1) SI     => Exit code
 ; RETURNS
 ;   - 0) The error code. (0 on success)
 terminateProcess:
@@ -125,6 +126,7 @@ terminateProcess:
   mov bx, KERNEL_SEGMENT                          ; Set GS to the kernels segment, so we can access the processes array
   mov gs, bx                                      ;
 
+  mov cx, si
   cmp di, 1                                       ; Check if the handle is one or 0, because 0 is invalid
   jbe .err                                        ; and 1 is the kernels PID. If its 1 or 0 then return an error
 
@@ -141,6 +143,7 @@ terminateProcess:
 
   mov byte gs:[si + PROCESS_DESC_FLAGS8], 0       ; Set the processes flags to 0
   mov word gs:[si + PROCESS_DESC_SLEEP_MS16], 0   ; Set its sleep time to 0
+  mov gs:[si + PROCESS_DESC_EXIT_CODE8], cl
 
   xor ax, ax
 
@@ -154,10 +157,12 @@ terminateProcess:
 
 
 ; Terminate the currently running process
-; Doesnt take any parameters
+; PARAMETERS
+;   - 0) DI   => The error code, lower 8 bits only
 ; RETURNS
 ;   - 0) AX   => The error code, 0 on success
 terminateCurrentProcess:
+  mov si, di
   push gs                                         ; Save current GS because were changing it
   mov bx, KERNEL_SEGMENT                          ; Set GS to the kernels segment so we can access the currently running process
   mov gs, bx                                      ;

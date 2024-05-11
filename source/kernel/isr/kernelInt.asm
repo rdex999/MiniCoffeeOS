@@ -104,6 +104,9 @@ ISR_kernelInt:
   cmp ax, INT_N_SYSTEM
   je ISR_system
 
+  cmp ax, INT_N_GET_EXIT_CODE
+  je ISR_getExitCode
+
 ISR_kernelInt_end:
 ; *NOTE: "rest" == restore
 ISR_kernelInt_restAX:

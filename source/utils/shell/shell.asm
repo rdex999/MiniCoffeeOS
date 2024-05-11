@@ -21,9 +21,28 @@ readCommandsLoop:
   lea di, userDir                                   ; Set the destination, where to write the data to
   mov ax, INT_N_GET_USER_PATH                       ; Interrupt number for getting the user directory
   int INT_F_KERNEL                                  ; Get the current user directory
+  
+  PRINTF_INT_LM shellHighHalf, userDir
 
-  ; Print the shell with the user directory
-  PRINTF_INT_LM shellStr, userDir
+  mov ax, INT_N_GET_EXIT_CODE
+  int INT_F_KERNEL
+
+  test al, al
+  jz .printGreen
+
+  mov di, VGA_TXT_RED
+  mov si, '-'
+  jmp .afterSetPrintData
+
+.printGreen:
+  mov di, VGA_TXT_LIGHT_GREEN
+  mov si, '+'
+
+.afterSetPrintData:
+  mov ax, INT_N_PUTCHAR
+  int INT_F_KERNEL
+
+  PUTS_INT 100h, shellLowHalf
 
   ; Wait for command input (wait for a string)
   lea di, enteredCommand                            ; Set the destination, where to store the command in
@@ -31,10 +50,7 @@ readCommandsLoop:
   mov ax, INT_N_WAIT_INPUT                          ; Interrupt number for reading a string
   int INT_F_KERNEL                                  ; Read a string from the keyboard into the specified buffer
 
-  mov di, 100h
-  mov si, NEWLINE
-  mov ax, INT_N_PUTCHAR
-  int INT_F_KERNEL
+  PRINT_CHAR_INT 100h, NEWLINE
 
   lea di, enteredCommand
   mov ax, INT_N_SYSTEM
@@ -42,11 +58,11 @@ readCommandsLoop:
 
   jmp readCommandsLoop
 
-
 main_end:
   mov sp, bp
   pop bp
 
+  xor di, di
   mov ax, INT_N_EXIT
   int INT_F_KERNEL
 
@@ -65,9 +81,8 @@ helpMsg:
 
 userDir:              times MAX_PATH_FORMATTED_LENGTH db 0
 
-shellStr:             db NEWLINE
-                      db "[ %s ]", NEWLINE
-                      db "|___/-=> $ ", 0
+shellHighHalf:        db NEWLINE, "[ %s ] | ", 0
+shellLowHalf:           db NEWLINE, "|___/-=> $ ", 0
+
 
 enteredCommand:       times MAX_COMMAND_LENGTH db 0
-stack: db "ss: 0x%X", NEWLINE, "sp: 0x%X", NEWLINE, 0

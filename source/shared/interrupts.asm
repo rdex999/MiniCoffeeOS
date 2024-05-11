@@ -191,4 +191,11 @@
 ;   - 0) AX     => The exit code of the command
 %define INT_N_SYSTEM 16h
 
+; Get the last exit code a command has returned
+; Takes no parameters
+; RETURNS
+;   - 0) AX     => The exit code
+%define INT_N_GET_EXIT_CODE 17h
+
+
 %endif

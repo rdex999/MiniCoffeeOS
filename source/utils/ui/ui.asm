@@ -49,6 +49,8 @@ uiFPSloop_delay:
 main_end:
   mov sp, bp                                      ; Restore stack frame (dont realy need this but good practice)
   pop bp                                          ;
+
+  xor di, di
   mov ax, INT_N_EXIT                              ; Interrupt number for terminating the process
   int INT_F_KERNEL                                ; Exit out of the process
 

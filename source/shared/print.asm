@@ -29,4 +29,32 @@
 %endmacro
 
 
+%macro PRINT_CHAR_INT 2
+
+  %if %1 != di
+    mov di, %1
+  %endif
+
+  %if %2 != si
+    mov si, %2
+  %endif
+
+  mov ax, INT_N_PUTCHAR
+  int INT_F_KERNEL
+
+%endmacro
+
+%macro PUTS_INT 2
+
+  %if %1 != di
+    mov di, %1
+  %endif
+
+  mov si, %2
+
+  mov ax, INT_N_PUTS
+  int INT_F_KERNEL
+
+%endmacro
+
 %endif
