@@ -77,6 +77,9 @@ ISR_kernelInt:
   cmp ax, INT_N_FOPEN
   je ISR_fopen
 
+  cmp ax, INT_N_FCLOSE
+  je ISR_fclose
+
   cmp ax, INT_N_FREAD
   je ISR_fread
 

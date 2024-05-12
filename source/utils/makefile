@@ -4,9 +4,9 @@
 
 # When using this file, specify -f = .
 
-.PHONY: all ui shell
+.PHONY: all ui shell text
 
-all: ui shell
+all: ui shell text
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui
@@ -15,4 +15,8 @@ $(BLD)/bin/ui: $(SRC)/utils/ui/ui.asm
 
 shell: $(BLD)/bin/shell
 $(BLD)/bin/shell: $(SRC)/utils/shell/shell.asm
+	$(AS) $(AS_FLAGS) -o $@ $?
+
+text: $(BLD)/bin/text
+$(BLD)/bin/text: $(SRC)/utils/text/text.asm
 	$(AS) $(AS_FLAGS) -o $@ $?

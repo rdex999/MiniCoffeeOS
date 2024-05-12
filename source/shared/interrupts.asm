@@ -122,6 +122,12 @@
 ;   - 0) In AX, the file handle. A non-zero value on success. (0 on failure)
 %define INT_N_FOPEN 0Dh
 
+; Close an open file
+; PARAMETERS
+;   - 0) DI   => File handle
+; RETURNS
+;   - 0) In AX, 0 success and EOF (0FFFFh) on failure
+%define INT_N_FCLOSE 0Eh
 
 ; Read from an open file at the current read position
 ; **Parameters are a bit different from the C fread.
@@ -131,7 +137,7 @@
 ;   - 2) DX     => File handle
 ; RETURNS
 ;   - 0) In AX, the amount of bytes read, can be less then the parameter if an error occurred.
-%define INT_N_FREAD 0Eh
+%define INT_N_FREAD 0Fh
 
 ; Write to the current position in a file.
 ; PARAMS
@@ -140,13 +146,13 @@
 ;   - 2) DX     => A handle to the file
 ; RETURNS
 ;   - 0) In AX, the amount of bytes written. Can be less than the requested amount if an error occurs
-%define INT_N_FWRITE 0Fh
+%define INT_N_FWRITE 10h
 
 ; Get the system low time, means (lowTime = seconds * 1000 + milliseconds)
 ; Doesnt take any parameters
 ; RETURNS
 ;   - 0) In AX, the low time. (In milliseconds)
-%define INT_N_GET_LOW_TIME 10h
+%define INT_N_GET_LOW_TIME 11h
 
 ; Get the current system time
 ; Doesnt take any parameters
@@ -155,7 +161,7 @@
 ;   - 1) In BL, the seconds
 ;   - 2) In BH, the minutes
 ;   - 3) In CL, the hour
-%define INT_N_GET_SYS_TIME 11h
+%define INT_N_GET_SYS_TIME 12h
 
 ; Get the current date
 ; Doesnt take any parameters
@@ -164,38 +170,38 @@
 ;   - 1) In AH, the day in the month
 ;   - 2) In BL, the month
 ;   - 3) In BH, the year (add 2000)
-%define INT_N_GET_SYS_DATE 12h
+%define INT_N_GET_SYS_DATE 13h
 
 ; Pause the current process for N milliseconds (1000ms = 1sec)
 ; PARAMETERS
 ;   - 0) DI   => The time to sleep, in milliseconds
 ; Doesnt return anything
-%define INT_N_SLEEP 13h
+%define INT_N_SLEEP 14h
 
 
 ; Terminate the current process. (exit)
 ; Doesnt take any parameters
 ; Doesnt return anything
-%define INT_N_EXIT 14h
+%define INT_N_EXIT 15h
 
 ; Get the current directory that the user is at
 ; PARAMETERS
 ;   - 0) ES:DI  => A buffer to write the data into
 ; Doesnt return anything
-%define INT_N_GET_USER_PATH 15h
+%define INT_N_GET_USER_PATH 16h
 
 ; Execute a system command
 ; PARAMETERS
 ;   - 0) ES:DI  => The command string
 ; RETURNS
 ;   - 0) AX     => The exit code of the command
-%define INT_N_SYSTEM 16h
+%define INT_N_SYSTEM 17h
 
 ; Get the last exit code a command has returned
 ; Takes no parameters
 ; RETURNS
 ;   - 0) AX     => The exit code
-%define INT_N_GET_EXIT_CODE 17h
+%define INT_N_GET_EXIT_CODE 18h
 
 
 %endif

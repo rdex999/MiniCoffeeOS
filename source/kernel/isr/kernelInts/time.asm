@@ -76,7 +76,11 @@ ISR_sleep:
   mov gs:[si + PROCESS_DESC_SLEEP_MS16], di     ; Set the current process sleep time (in MS) to the requested sleep time
 
   pop gs                                        ; Restore GS
-  
+
+  mov cx, 0FFFFh
+.delay:
+  loop .delay
+
   jmp ISR_kernelInt_end                         ; Return from the interrupt
 
 %endif

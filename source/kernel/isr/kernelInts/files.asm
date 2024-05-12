@@ -23,6 +23,11 @@ ISR_fopen:
   jmp ISR_kernelInt_end_restBX  ; Return with the handle/error code in AX
 
 
+ISR_fclose:
+  call fclose
+  jmp ISR_kernelInt_end_restBX
+
+
 ; Read from an open file at the current read position
 ; **Parameters are a bit different from the C fread.
 ; PARAMETERS
