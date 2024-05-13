@@ -21,29 +21,66 @@
 printCharRoutine:
   ; Check for special characters, If special than handle it, if not then just print it
   cmp al, NEWLINE                               ; Check for newline character
-  je printCharRoutine_newline                   ; If newline then handle it
+  je .newline                   ; If newline then handle it
 
   cmp al, CARRIAGE_RETURN                       ; Check for carriage return character
-  je printCharRoutine_carriageReturn            ; If carriage return then handle it
+  je .carriageReturn            ; If carriage return then handle it
 
   cmp al, TAB                                   ; Check for tab character
-  je printCharRoutine_tab                       ; If tab then handle it
+  je .tab                       ; If tab then handle it
 
   cld                                           ; Clear direction flag so STOSW will increase DI
   stosw                                         ; Store AX in the address of ES:DI ( *(ES:DI) ) and increase DI by 2
-  ret
+  jmp .checkScreenEnd
 
-printCharRoutine_newline:
+.newline:
   PRINT_SPECIAL_SAVE_REGS printNewlineRoutine         ; Save registers and call printNewlineRoutine
-  ret
+  jmp .checkScreenEnd
 
-printCharRoutine_carriageReturn:
+.carriageReturn:
   PRINT_SPECIAL_SAVE_REGS printCarriageReturnRoutine  ; Save registers and call printCarriageReturnRoutine
+  jmp .checkScreenEnd
+
+.tab:
+  PRINT_SPECIAL_SAVE_REGS printTabRoutine             ; Save registers and call printTabnRoutine
+
+.checkScreenEnd:
+  cmp di, 2 * (80 * 25)                         ; Check if its the end of the screen (bottom left corner)
+  jb .end                                       ; If its not the end, just return
+
+  push ds                                       ; If it is the end, save the registers we promised to save, because changin them
+  push si                                       ;
+  push dx                                       ;
+  push ax                                       ;
+
+  mov bx, es                                    ; Set DS = ES because using MOVSB, and we want to copy lines from VGA to another location in VGA
+  mov ds, bx                                    ;
+
+  mov si, 2 * 80                                ; Copy starting from the first character of the second line
+  mov cx, 24 * 80                               ; Amount of characters to copy, because starting from the second line, copy one line less
+  xor di, di                                    ; The destination, store the characters starting from the first character of the first line
+  cld                                           ; Clear direction flag so MOVSB will increment DI and SI
+  rep movsw                                     ; Copy the whole screen one line up
+
+  ; Clear the last line
+  pop ax                                        ; Get the given color
+  push ax                                       ; Save it once again
+
+  xor al, al                                    ; Set the character to null (could use MOV AX, ' ')
+  mov di, 2 * (80 * 24)                         ; The destination, where to print the null characters (the last row of the VGA)
+  mov cx, 80                                    ; Amount of characters to print
+  rep stosw                                     ; Set the last row to spaces (clear it)
+
+  mov di, 2 * (80 * 24)                         ; Set the cursors location (return value) to the beginning of the last row
+
+  pop ax                                        ; Restore registers
+  pop dx                                        ;
+  pop si                                        ;
+  pop ds                                        ;
+
+.end:
   ret
 
-printCharRoutine_tab:
-  PRINT_SPECIAL_SAVE_REGS printTabRoutine             ; Save registers and call printTabnRoutine
-  ret
 
 ; Prints a null terminated string
 ; PARAMS
