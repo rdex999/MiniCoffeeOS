@@ -52,13 +52,26 @@ main:
   jmp main_end                            ; Exit
 
 .fileOpened:
-  mov di, ax                              ; Get the file handle in DI (argument for fclose)
+  ; Will get here if the file opened successfully, and the handle will be in AX
+  mov bx, ds                                      ; We changed ES before, so reset to its original value. (Which is in DS)
+  mov es, bx                                      ;
+  lea di, dataEnd                                 ; Get a pointer to the end of this executable, which will bne used as a buffer to store the file.
+  mov si, 0FFFFh - PROCESS_LOAD_OFFSET - dataEnd  ; Set the amount of bytes to read to rest of the executables space
+  mov dx, ax                                      ; File handle in DX
+
+  mov bx, ax                                      ; Store the file handle in BX, which wont change after the interrupts
+
+  mov ax, INT_N_FREAD                             ; Interrupts number for reading a file
+  int INT_F_KERNEL                                ; Read the file into the buffer
+
+  PUTS_INT 100h, dataEnd                  ; Print the files content from the buffer
+
+  mov di, bx                              ; Get file handle in DI
+
   mov ax, INT_N_FCLOSE                    ; Interrupt number for closing a file
   int INT_F_KERNEL                        ; Close the file
 
-  mov di, ax                              ; Exit with the error code fclose has returned
-
-  ; xor di, di
+  xor di, di                              ; Zero out exit code
 main_end:
   mov sp, bp                              ; Restore stack frame
   mov ax, INT_N_EXIT                      ; Interrupt number for quiting
@@ -70,10 +83,6 @@ main_end:
 
 errFileDoesntExit:    db "[ - text] Error, the given file does not exist.", NEWLINE, 0
 errNotEnoughArgs:     db "[ - text] Error, not enough arguments.", NEWLINE, 0
-
-exitCode: db "fopen returned %u", NEWLINE, 0
-
-
 
 dataEnd:
 
