@@ -46,11 +46,11 @@
 
 %macro PUTS_INT 2
 
+  mov si, %2
+  
   %if %1 != di
     mov di, %1
   %endif
-
-  mov si, %2
 
   mov ax, INT_N_PUTS
   int INT_F_KERNEL
