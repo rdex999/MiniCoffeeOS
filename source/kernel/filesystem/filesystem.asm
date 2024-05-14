@@ -20,6 +20,7 @@
 %include "kernel/filesystem/remove.asm"
 %include "kernel/filesystem/readClusterBytes.asm"
 %include "kernel/filesystem/writeClusterBytes.asm"
+%include "kernel/filesystem/readRootDirBytes.asm"
 ; %include "kernel/filesystem/readFile.asm"
 ; %include "kernel/filesystem/searchInRootDir.asm"
 %include "kernel/filesystem/parsePath.asm"

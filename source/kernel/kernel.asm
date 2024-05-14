@@ -99,7 +99,8 @@ cmdClear:                 db "clear", 0
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
 
-args: dw KERNEL_SEGMENT, uiExec
+dbgRootDir: db "/", 0
+
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------
@@ -112,19 +113,19 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
+  lea di, dbgRootDir
+  mov si, FILE_OPEN_ACCESS_READ
+  call fopen
 
   lea di, uiExec
   xor cl, cl 
   call createProcess
 
-  lea si, args
-  lea di, shellExec
+  lea di, shellExec 
   xor cl, cl
-  mov dx, 1
   call createProcess
 
 .halt:
-  ; cli
   hlt
   jmp .halt                             ; jump to <this> location. should not get there.
 

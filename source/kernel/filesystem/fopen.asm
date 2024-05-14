@@ -40,6 +40,47 @@ fopen:
   mov [bp - 5], al                                ;
   mov [bp - 11], di                               ; The files path offset
 
+  cmp word es:[di], '/' & 0FFh                    ; Check if the requested file is the root directory
+  jne .afterRootDirFlag                           ; If not, process and open the file normaly
+
+  mov bx, KERNEL_SEGMENT                          ; Set DS to the kernels segment so we can access the openFiles array
+  mov ds, bx                                      ;
+  lea si, openFiles                               ; Get a pointer to openFiles
+  mov cx, FILE_OPEN_LEN                           ; Amount of files in openFiles
+  mov bx, 0FFFFh                                  ; Empty slot index, initialize as 0FFFFh (as not found)
+.searchEmptyForRoot:
+  ; if(openFiles[i].fatEntry.cluster == 0 && openFiles[i].entryLBA != 0) { *** file is closed; ***}
+  cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0   ; Check if the current file descriptor first cluster is 0
+  jne .afterFreeCheck                             ; If not, then the file used
+
+  cmp word ds:[si + FILE_OPEN_ENTRY_LBA16], 0     ; If the cluster number is zero, check if the LBA of the files entry is 0
+  jne .err                                        ; If its not zero, then the root directory is already open
+
+  cmp bx, 0FFFFh                                  ; Check if we already found a free descriptor
+  jne .afterFreeCheck                             ; If a free descriptor was already found, dont set it again
+
+  mov bx, cx                                      ; Set BX to the amount of descriptors left (will be used to calculate the handle)
+  mov di, si                                      ; Set DI to point to the free descriptor
+
+.afterFreeCheck:
+  add si, FILE_OPEN_SIZEOF                        ; Increase descriptor pointer to point to the next entry
+  loop .searchEmptyForRoot                        ; Continue searching
+
+  cmp bx, 0FFFFh                                  ; Check if a free entry was found
+  je .err                                         ; If there is no free file descriptor, return null
+
+  mov al, [bp - 5]                                ; Get the requested file access
+  mov ds:[di + FILE_OPEN_ACCESS8], al             ; Set it
+
+  mov word ds:[di + FILE_OPEN_POS16], 0           ; Set the position in the file to 0
+  mov word ds:[di + FILE_OPEN_ENTRY_LBA16], 1     ; Indicate the file is open as the root directory
+  mov ax, FILE_OPEN_LEN + 1                       ; Get the amount of files in openFiles
+  sub ax, bx                                      ; Subtract the amount left from the free descriptor, to get the file handle
+
+  jmp .end                                        ; Return the file handle
+
+
+.afterRootDirFlag:
   cmp si, FILE_OPEN_ACCESS_WRITE                  ; Check if the requested access is WRITE, in which we delete and create the file again
   je .handleWriteAccess                           ; If it is WRITE then handle it
 

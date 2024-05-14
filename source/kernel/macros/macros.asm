@@ -111,11 +111,15 @@
 
 ; The length of the openFiles array
 %define FILE_OPEN_LEN 10
+
+; The file is open as the root directory if the cluster number is 0, and the entry LBA is not 0
+; if(desc.FATentry.cluster == 0 && desc.entryLBA != 0) { *** file is open as root directory *** }
+
 ; Access for the file
 %define FILE_OPEN_ACCESS8 0
 ; The current read position in a file
 %define FILE_OPEN_POS16 (FILE_OPEN_ACCESS8 + 1)
-; The FAT file entries LBA address
+; The FAT files entry LBA address.
 %define FILE_OPEN_ENTRY_LBA16 (FILE_OPEN_POS16 + 2)
 ; The offset in the LBA for the FAT entry
 %define FILE_OPEN_ENTRY_OFFSET16 (FILE_OPEN_ENTRY_LBA16 + 2)
