@@ -38,6 +38,7 @@
   push dx                                       ; Push it
 
   mov dl, bh                                    ; Get the year in DX
+  add dx, 2000                                  ; Year starts from 2000
   push dx                                       ; Push it
 
   push timeAndDateStr                           ; Push the formatting string were gonna use

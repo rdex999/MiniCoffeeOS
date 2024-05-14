@@ -58,5 +58,5 @@ main_end:
 ; ---------- [ DATA SECTION ] ---------
 ;
 
-timeAndDateStr:               db "20%u-%u-%u   %u:%u:%u  ", 0
+timeAndDateStr:               db "%u-%u-%u   %u:%u:%u  ", 0
 prevStartTime:                dw 0

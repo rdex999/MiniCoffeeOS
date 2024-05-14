@@ -119,7 +119,7 @@ main:
   mov cx, [si + 16]                     ; Get the files creation date in CX
   mov ax, cx                            ; The year will be in AX
   shr ax, 9                             ; Get the year in AX
-  sub ax, 20                            ; Decrement by 20, because the year starts from 20
+  add ax, 2000 - 20                     ; Get year, starting from the 2000 (-20 because it starts from 20 idk why)
 
   mov bx, cx                            ; Month will be in BX
   and bx, 0F0h                          ; Zero out all bits except the month bits
@@ -127,7 +127,26 @@ main:
 
   and cx, 1Fh                           ; Get day in CX
 
-  PRINTF_INT_LM fileFormatDateStr, ax, bx, cx
+  mov si, [si + 14]                     ; Get the creation time in SI
+
+  mov dx, si                            ; The hour will be in DX
+  shr dx, 11                            ; Get the hour
+
+  mov di, si                            ; The minute will be in DI
+  and di, 111_1110_0000b                ; Zero out all bits except the minute bits
+  shr di, 5                             ; Get minute
+
+  and si, 1Fh                           ; Zero out all bits except the seconds bits
+  shl si, 1                             ; Get seconds
+
+  ; When getting here, registers will have the creation time&date
+  ; AX  - year
+  ; BX  - month
+  ; CX  - day
+  ; DX  - hour
+  ; DI  - minute
+  ; SI  - second
+  PRINTF_INT_LM fileFormatDateStr, ax, bx, cx, dx, di, si   ; Print the files creation time
   pop si                                ; Restore current file in directory pointer
   pop cx                                ; Restore amount of files left to read
 
@@ -140,8 +159,7 @@ main:
   mov ax, INT_N_FCLOSE                  ; Interrupt number for closing a file
   int INT_F_KERNEL                      ; Close the directory file
 
-
-  mov di, ax
+  xor di, di                            ; Exit with 0 on success
 main_end:
   mov sp, bp                            ; Restore stack frame
   mov ax, INT_N_EXIT                    ; Interrupts number for exiting from the process
@@ -160,7 +178,7 @@ listFilesOnDirMsg:    db "[ * files] Listing files on ", 0
 dirTypeStr:           db "DIR", 0
 fileTypeStr:          db "FILE", 0
 fileFormatStr:        db TAB, "%s", TAB, "%s ", TAB, "Size %u.%u kB ", TAB, 0
-fileFormatDateStr:    db "Creation date 20%u-%u-%u", NEWLINE, 0
+fileFormatDateStr:    db "Creation date %u-%u-%u  %u:%u:%u", NEWLINE, 0
 userDir:              times MAX_PATH_FORMATTED_LENGTH db 0
 
 dirBuffer:
