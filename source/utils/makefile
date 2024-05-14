@@ -4,10 +4,9 @@
 
 # When using this file, specify -f = .
 
-.PHONY: all ui shell text files
+.PHONY: all ui shell text files move
 
-all: ui shell text files
-	cp build/kernel.bin build/bin/	
+all: ui shell text files move
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui
@@ -24,4 +23,8 @@ $(BLD)/bin/text: $(SRC)/utils/text/text.asm
 
 files: $(BLD)/bin/files
 $(BLD)/bin/files: $(SRC)/utils/files/files.asm
+	$(AS) $(AS_FLAGS) -o $@ $?
+
+move: $(BLD)/bin/move
+$(BLD)/bin/move: $(SRC)/utils/move/move.asm
 	$(AS) $(AS_FLAGS) -o $@ $?

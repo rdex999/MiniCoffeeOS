@@ -53,4 +53,13 @@ ISR_fwrite:
   jmp ISR_kernelInt_end_restBX
 
 
+; Delete a file from the filesystem
+; PARAMETERS
+;   - 0) ES:DI    => Path to the file
+; RETURNS
+;   - 0) AX       => Error code
+ISR_remove:
+  call remove
+  jmp ISR_kernelInt_end_restBX
+
 %endif

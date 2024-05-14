@@ -91,6 +91,9 @@ main:
   int INT_F_KERNEL                      ; Read the directory into the directory buffer
 
   mov cx, ax                            ; Get the amount of bytes actually read in CX, will be used as a counter
+
+  PUTS_INT 100h, tableStr               ; Print a table indicating what is the file name, size, type, and other stuff
+
   lea si, dirBuffer                     ; Get a pointer to the directory buffer
 .printFilesLoop:
   cmp byte [si], 0                      ; Check if the first byte of the directory is null, in which case its the end of the directory
@@ -175,10 +178,11 @@ errPathDoesntExist:   db "[ - files] Error, the given path does not exist.", NEW
 
 listFilesOnDirMsg:    db "[ * files] Listing files on ", 0
 
+tableStr:             db NEWLINE, TAB, "FILE NAME  ", TAB, "TYPE ", TAB, "SIZE      ", TAB, "CREATION DATE", NEWLINE, NEWLINE, 0
 dirTypeStr:           db "DIR", 0
 fileTypeStr:          db "FILE", 0
-fileFormatStr:        db TAB, "%s", TAB, "%s ", TAB, "Size %u.%u kB ", TAB, 0
-fileFormatDateStr:    db "Creation date %u-%u-%u  %u:%u:%u", NEWLINE, 0
+fileFormatStr:        db TAB, "%s", TAB, "%s ", TAB, "%u.%u kB  ", TAB, 0
+fileFormatDateStr:    db "%u-%u-%u  %u:%u:%u", NEWLINE, 0
 userDir:              times MAX_PATH_FORMATTED_LENGTH db 0
 
 bytesRead: db "bytes read %u", NEWLINE, 0

@@ -148,11 +148,22 @@
 ;   - 0) In AX, the amount of bytes written. Can be less than the requested amount if an error occurs
 %define INT_N_FWRITE 10h
 
+
+; Not yet implemented
+%define INT_N_FSEEK 11h
+
+; Delete a file from the filesystem
+; PARAMETERS
+;   - 0) ES:DI    => Path to the file
+; RETURNS
+;   - 0) AX       => Error code
+%define INT_N_REMOVE 12h
+
 ; Get the system low time, means (lowTime = seconds * 1000 + milliseconds)
 ; Doesnt take any parameters
 ; RETURNS
 ;   - 0) In AX, the low time. (In milliseconds)
-%define INT_N_GET_LOW_TIME 11h
+%define INT_N_GET_LOW_TIME 13h
 
 ; Get the current system time
 ; Doesnt take any parameters
@@ -161,7 +172,7 @@
 ;   - 1) In BL, the seconds
 ;   - 2) In BH, the minutes
 ;   - 3) In CL, the hour
-%define INT_N_GET_SYS_TIME 12h
+%define INT_N_GET_SYS_TIME 14h
 
 ; Get the current date
 ; Doesnt take any parameters
@@ -170,38 +181,54 @@
 ;   - 1) In AH, the day in the month
 ;   - 2) In BL, the month
 ;   - 3) In BH, the year (add 2000)
-%define INT_N_GET_SYS_DATE 13h
+%define INT_N_GET_SYS_DATE 15h
 
 ; Pause the current process for N milliseconds (1000ms = 1sec)
 ; PARAMETERS
 ;   - 0) DI   => The time to sleep, in milliseconds
 ; Doesnt return anything
-%define INT_N_SLEEP 14h
+%define INT_N_SLEEP 16h
 
 
 ; Terminate the current process. (exit)
 ; Doesnt take any parameters
 ; Doesnt return anything
-%define INT_N_EXIT 15h
+%define INT_N_EXIT 17h
 
 ; Get the current directory that the user is at
 ; PARAMETERS
 ;   - 0) ES:DI  => A buffer to write the data into
 ; Doesnt return anything
-%define INT_N_GET_USER_PATH 16h
+%define INT_N_GET_USER_PATH 18h
 
 ; Execute a system command
 ; PARAMETERS
 ;   - 0) ES:DI  => The command string
 ; RETURNS
 ;   - 0) AX     => The exit code of the command
-%define INT_N_SYSTEM 17h
+%define INT_N_SYSTEM 19h
 
 ; Get the last exit code a command has returned
 ; Takes no parameters
 ; RETURNS
 ;   - 0) AX     => The exit code
-%define INT_N_GET_EXIT_CODE 18h
+%define INT_N_GET_EXIT_CODE 1Ah
 
+; Copy a chunk of memory from one location to another
+; PARAMS
+;   - 0) ES:DI    => Memory to copy to, the destination.
+;   - 1) DS:SI    => Memory to copy data from, the source.
+;   - 2) DX       => The amount of memory to copy, in bytes.
+; RETURNS
+;   - ES:AX       => The original destination pointer
+%define INT_N_MEMCPY 1Bh
+
+
+; Get the length of a null-terminated string.
+; PARAMETERS
+;   - 0) ES:DI    => The string, null terminated
+; RETURNS
+;   - 0) AX       => The length of the string, in bytes.
+%define INT_N_STRLEN 1Ch
 
 %endif

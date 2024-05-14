@@ -20,6 +20,7 @@
 %include "kernel/isr/kernelInts/time.asm"
 %include "kernel/isr/kernelInts/process.asm"
 %include "kernel/isr/kernelInts/user.asm"
+%include "kernel/isr/kernelInts/memory.asm"
 
 ; Interrupt number in AX, and other parameters are as documented in "source/kernel/macros/interrupts.asm"
 ISR_kernelInt:
@@ -86,6 +87,9 @@ ISR_kernelInt:
   cmp ax, INT_N_FWRITE
   je ISR_fwrite
 
+  cmp ax, INT_N_REMOVE
+  je ISR_remove
+
   cmp ax, INT_N_GET_LOW_TIME
   je ISR_getLowTime
 
@@ -109,6 +113,12 @@ ISR_kernelInt:
 
   cmp ax, INT_N_GET_EXIT_CODE
   je ISR_getExitCode
+
+  cmp ax, INT_N_MEMCPY
+  je ISR_memcpy
+
+  cmp ax, INT_N_STRLEN
+  je ISR_strlen
 
 ISR_kernelInt_end:
 ; *NOTE: "rest" == restore
