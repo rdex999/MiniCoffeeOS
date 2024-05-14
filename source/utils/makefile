@@ -7,6 +7,7 @@
 .PHONY: all ui shell text files
 
 all: ui shell text files
+	cp build/kernel.bin build/bin/	
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui

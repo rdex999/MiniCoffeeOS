@@ -48,6 +48,13 @@ system:
   mov bx, KERNEL_SEGMENT                    ; DS will be used as the kernels segment
   mov ds, bx                                ;
 
+  mov cx, 0FFFFh
+  mov al, ' '
+  cld
+  repe scasb
+
+  dec di
+
   ; The way this command works is that most commands are executables in the /bin folder, 
   ; but some simple commands like "clear" and "help" are just built in
 

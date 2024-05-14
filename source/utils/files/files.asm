@@ -107,12 +107,29 @@ main:
   lea di, fileTypeStr                   ; If its a file, set the file time string to FILE
 
 .afterSetType:
+  mov ax, [si + 28]                     ; File size in bytes in AX
+  mov bx, 1024                          ; We want to divide by the size of 1 kilobyte
+  xor dx, dx                            ; Zero out remainder before division
+  div bx                                ; Convert file size into kilobytes, while the kilobytes are in AX and the bytes are in DX
   
-  push si                               ; Save current file in directory pointer
   push cx                               ; Save amount of files left to read
-  PRINTF_INT_LM fileFormatStr, si, di
-  pop cx                                ; Restore amount of files left to read
+  push si                               ; Save current file in directory pointer
+  PRINTF_INT_LM fileFormatStr, si, di, ax, dx   ; Print the file name, type, and size in Kilibytes
+
+  mov cx, [si + 16]                     ; Get the files creation date in CX
+  mov ax, cx                            ; The year will be in AX
+  shr ax, 9                             ; Get the year in AX
+  sub ax, 20                            ; Decrement by 20, because the year starts from 20
+
+  mov bx, cx                            ; Month will be in BX
+  and bx, 0F0h                          ; Zero out all bits except the month bits
+  shr bx, 5                             ; Get month in BX
+
+  and cx, 1Fh                           ; Get day in CX
+
+  PRINTF_INT_LM fileFormatDateStr, ax, bx, cx
   pop si                                ; Restore current file in directory pointer
+  pop cx                                ; Restore amount of files left to read
 
   add si, 32                            ; Increase file pointer so it points to the next file in the directory
   sub cx, 32                            ; Decreemnt the amount of bytes left to read in the directory
@@ -125,7 +142,6 @@ main:
 
 
   mov di, ax
-  ; xor di, di
 main_end:
   mov sp, bp                            ; Restore stack frame
   mov ax, INT_N_EXIT                    ; Interrupts number for exiting from the process
@@ -143,8 +159,8 @@ listFilesOnDirMsg:    db "[ * files] Listing files on ", 0
 
 dirTypeStr:           db "DIR", 0
 fileTypeStr:          db "FILE", 0
-fileFormatStr:        db TAB, "%s", TAB, "%s ", NEWLINE, 0
-
+fileFormatStr:        db TAB, "%s", TAB, "%s ", TAB, "Size %u.%u kB ", TAB, 0
+fileFormatDateStr:    db "Creation date 20%u-%u-%u", NEWLINE, 0
 userDir:              times MAX_PATH_FORMATTED_LENGTH db 0
 
 dirBuffer:
