@@ -181,6 +181,8 @@ fileFormatStr:        db TAB, "%s", TAB, "%s ", TAB, "Size %u.%u kB ", TAB, 0
 fileFormatDateStr:    db "Creation date %u-%u-%u  %u:%u:%u", NEWLINE, 0
 userDir:              times MAX_PATH_FORMATTED_LENGTH db 0
 
+bytesRead: db "bytes read %u", NEWLINE, 0
+
 dirBuffer:
 
 %endif

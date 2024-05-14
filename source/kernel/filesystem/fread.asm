@@ -41,9 +41,6 @@ fread:
   lea si, [openFiles]                               ; Get a pointer to the start of the openFiles array
   add si, ax                                        ; Add the offset (AX) to the openFiles pointer
 
-  cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0     ; Check if the file is even open
-  je .err                                           ; If the file is not open then return an error
-
   ; Check if the file has read acces
   ; Basicaly check if the files access is some access that doesnt have read access (which is only write ("w") and append ("a"))
   cmp byte ds:[si + FILE_OPEN_ACCESS8], FILE_OPEN_ACCESS_WRITE    ; Check if the files access is WRITE
@@ -52,7 +49,24 @@ fread:
   cmp byte ds:[si + FILE_OPEN_ACCESS8], FILE_OPEN_ACCESS_APPEND   ; Check if the files access is APPEND
   je .err                                                         ; If it is, then dont read the file and return 0 
 
-  test byte ds:[si + FILE_OPEN_ENTRY256 + 11], FAT_F_DIRECTORY
+  cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0                   ; Check if the files first cluster number is 0
+  jne .checkDir                                                   ; If its not zero, then the file is not the root directory, read it normaly
+
+  cmp word ds:[si + FILE_OPEN_ENTRY_LBA16], 0                     ; If the cluster number is 0, check if the files entry LBA address is 0
+  je .err                                                         ; If the LBA is 0, then the file is closed, return on error
+
+  ; If the LBA is not 0, then the file is open as the root directory
+  mov si, ds:[si + FILE_OPEN_POS16]                               ; Get the current read position in the file
+  add si, 32                                                      ; Increase by 32 so we skip the first thing in the root directory (volume name or some shit)
+  mov dx, [bp - 4]                                                ; Get the requested amount of bytes to read
+  push si                                                         ; Save file descriptor pointer
+  call readRootDirBytes                                           ; Read the root directory
+  pop si                                                          ; Restore file descriptor pointer
+  add ds:[si + FILE_OPEN_POS16], ax                               ; Increase the current read position by the amount of bytes read
+  jmp .end                                                        ; Return the amount of bytes read
+
+.checkDir:
+  test byte ds:[si + FILE_OPEN_ENTRY256 + 11], FAT_F_DIRECTORY    ; Check if the file is a directory
   jz .notDirectory
 
   mov cx, [bp - 4]                                  ; Set the amount of bytes to read to the requested amount

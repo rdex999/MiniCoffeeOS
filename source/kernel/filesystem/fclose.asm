@@ -40,9 +40,15 @@ fclose:
   add si, ax                                      ; Add to the pointer the offset we just calculated
   mov [bp - 6], si
   
-  cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0   ; Check if the file is open
-  je .err                                         ; If the file is not open then return an error
+  cmp word ds:[si + FILE_OPEN_ENTRY256 + 26], 0   ; Check if the files first cluster number is 0, which can mean its the root directory
+  jne .notRootDir                                 ; If its not 0, then its a normal file. Proceed for a normal file
 
+  cmp word ds:[si + FILE_OPEN_ENTRY_LBA16], 0     ; If the cluster number is 0, check if the LBA is not 0 (which means the file is the root directory)
+  je .err                                         ; If the entry of the file is 0 and the cluster number is 0, return an error because the file is not even open
+
+  jmp .closeFileInOpenFiles                       ; If its not zero, then the file is the root directory. Proceed for it
+
+.notRootDir:
   ; Read the sector of the entry, update the entry, and write the sector back into the hard disk
   sub sp, ds:[bpb_bytesPerSector]                 ; Allocate space for 1 sector
   
@@ -89,6 +95,7 @@ fclose:
   mov ds, bx                                      ; Set segment
   mov si, [bp - 6]                                ; Set offset
 
+.closeFileInOpenFiles:
   mov word ds:[si + FILE_OPEN_ENTRY256 + 26], 0   ; Set the files first cluster number to 0, to indicate this slot is empty
   mov word ds:[si + FILE_OPEN_ENTRY_LBA16], 0     ; Set the LBA of the files FAT entry to 0, to indiacate this slot is empty
 
