@@ -90,6 +90,7 @@ fclose:
   mov si, [bp - 6]                                ; Set offset
 
   mov word ds:[si + FILE_OPEN_ENTRY256 + 26], 0   ; Set the files first cluster number to 0, to indicate this slot is empty
+  mov word ds:[si + FILE_OPEN_ENTRY_LBA16], 0     ; Set the LBA of the files FAT entry to 0, to indiacate this slot is empty
 
   xor ax, ax                                      ; Zero out result, because we return 0 on success
 

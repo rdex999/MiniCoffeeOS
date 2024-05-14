@@ -99,7 +99,9 @@ cmdClear:                 db "clear", 0
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
 
-dbgRootDir: db "/", 0
+
+buffer: times 2048 db 0
+
 
 
 ;
@@ -113,9 +115,17 @@ kernelMain:
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
 
-  lea di, dbgRootDir
-  mov si, FILE_OPEN_ACCESS_READ
-  call fopen
+  ; lea di, buffer
+  ; mov si, 32 * 1
+  ; mov dx, 32 * 2
+  ; call readRootDirBytes
+
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  ; lea si, buffer
+  ; mov dx, 512
+  ; call printStrLen
+
+
 
   lea di, uiExec
   xor cl, cl 

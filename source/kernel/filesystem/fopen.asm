@@ -133,6 +133,9 @@ fopen:
   cmp word es:[di + FILE_OPEN_ENTRY256 + 26], 0   ; Check if the files first cluster number is zero.
   jne .afterSetIdx                                ; If not zero then skip setting the found index
 
+  cmp word es:[di + FILE_OPEN_ENTRY_LBA16], 0
+  jne .afterSetIdx
+
   mov bx, cx                                      ; If the slot if empty, then copy its index (CX) to BX
   mov dx , di                                     ; Make DX point to the empty slot
 
