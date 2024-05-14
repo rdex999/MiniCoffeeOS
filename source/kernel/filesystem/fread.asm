@@ -52,6 +52,18 @@ fread:
   cmp byte ds:[si + FILE_OPEN_ACCESS8], FILE_OPEN_ACCESS_APPEND   ; Check if the files access is APPEND
   je .err                                                         ; If it is, then dont read the file and return 0 
 
+  test byte ds:[si + FILE_OPEN_ENTRY256 + 11], FAT_F_DIRECTORY
+  jz .notDirectory
+
+  mov cx, [bp - 4]                                  ; Set the amount of bytes to read to the requested amount
+  mov dx, ds:[si + FILE_OPEN_POS16]                 ; Get the current read position in the file
+  mov si, ds:[si + FILE_OPEN_ENTRY256 + 26]         ; Get the directories first cluster number
+  call readClusterBytes                             ; Read the directory
+  test bx, bx                                       ; Check error code
+  jnz .err                                          ; If there was an error, return 0
+  jmp .afterRead                                    ; If no error, set the read position and stuff
+
+.notDirectory:
   ; If the file has read access, then check if the requested amount of bytes to read is less than the files size
   ; If not then read the maximum amount that we can
 
@@ -74,7 +86,7 @@ fread:
   ; If it is greater than the files size then calculate the maximum amount of bytes that we can read
   ; readSize = file.size - file.readPos;
   mov cx, ds:[si + FILE_OPEN_ENTRY256 + 28]           ; Get the files size
-  sub cx, ds:[si + FILE_OPEN_POS16]              ; Subtract from it the current read position in the file
+  sub cx, ds:[si + FILE_OPEN_POS16]                   ; Subtract from it the current read position in the file
 
 .afterSetReadAmount:
 
@@ -82,11 +94,12 @@ fread:
   ; Note: ES:DI, the destination buffer argument for readClusterBytes, is already set,
   ; as well as the amount of bytes to read (CX)
   push si
-  mov dx, ds:[si + FILE_OPEN_POS16]            ; Get the current read position in the file
+  mov dx, ds:[si + FILE_OPEN_POS16]                 ; Get the current read position in the file
   mov si, ds:[si + FILE_OPEN_ENTRY256 + 26]         ; Get the files first cluster number
   call readClusterBytes                             ; Read the file into the given buffer (the parameter, ES:DI)
 
   pop si
+.afterRead:
   add ds:[si + FILE_OPEN_POS16], ax            ; Add the amount of bytes we read to the read position
 
 .end:
