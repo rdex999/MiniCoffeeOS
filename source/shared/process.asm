@@ -6,6 +6,6 @@
 ; while each argument is a near pointer (2 bytes, just an offset) all arguments have the same segment, which is placed in the DX register
 ; The amount of arguments is stored in the CX register
 
-%define PROCESS_LOAD_OFFSET 850h
+%define PROCESS_LOAD_OFFSET 100h
 
 %endif

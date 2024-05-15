@@ -28,7 +28,10 @@
 
 %endmacro
 
-
+; Print a single character on the current cursor position
+; PARAMETERS
+;   - 0) Color, 100h for the current terminal color
+;   - 1) The character
 %macro PRINT_CHAR_INT 2
 
   %if %1 != di
@@ -44,6 +47,10 @@
 
 %endmacro
 
+; Print a null-terminated string, on the current cursor position with a specific color
+; PARAMETERS
+;   - 0) Color, 100h for the current terminal
+;   - 1) String, segmented from DS
 %macro PUTS_INT 2
 
   mov si, %2

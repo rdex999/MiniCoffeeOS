@@ -162,7 +162,8 @@ main:
   mov ax, INT_N_FCLOSE                  ; Interrupt number for closing a file
   int INT_F_KERNEL                      ; Close the directory file
 
-  xor di, di                            ; Exit with 0 on success
+  mov di, ax
+  ; xor di, di                            ; Exit with 0 on success
 main_end:
   mov sp, bp                            ; Restore stack frame
   mov ax, INT_N_EXIT                    ; Interrupts number for exiting from the process
