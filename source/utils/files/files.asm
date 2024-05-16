@@ -96,8 +96,8 @@ main:
 
   lea si, dirBuffer                     ; Get a pointer to the directory buffer
 .printFilesLoop:
-  cmp byte [si], 0                      ; Check if the first byte of the directory is null, in which case its the end of the directory
-  je .dirEnd                            ; If its the end, break out of the loop
+  cmp byte [si], 0                      ; Check if the first byte of the directory is null, in which case the entry is not set to a file
+  je .nextDir                           ; If the entry is empty, dont print it, just skip to the next
 
   test byte [si + 11], FAT_F_DIRECTORY  ; Check if the current file in the directroy is a file or a directory
   mov byte [si + 11], 0                 ; Null terminate the filename
@@ -153,6 +153,7 @@ main:
   pop si                                ; Restore current file in directory pointer
   pop cx                                ; Restore amount of files left to read
 
+.nextDir:
   add si, 32                            ; Increase file pointer so it points to the next file in the directory
   sub cx, 32                            ; Decreemnt the amount of bytes left to read in the directory
   jg .printFilesLoop                    ; As long as its not zero or negative, continue printing files

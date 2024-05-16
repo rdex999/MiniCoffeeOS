@@ -173,7 +173,14 @@ main:
   mov ax, INT_N_FCLOSE                  ; Interrupt number for closing a file
   int INT_F_KERNEL                      ; Close the destination file
 
-  mov di, ax                            ; Exit with last fclose exit code
+  mov di, [bp - 4]                      ; Get a pointer to the arguments array (GS:DI)
+  mov di, gs:[di + 2]                   ; Get a pointer to the source file path
+  mov es, [bp - 6]                      ; The segment of each argument
+  
+  mov ax, INT_N_REMOVE                  ; Interrupt number for deleting a file
+  int INT_F_KERNEL                      ; Delete the source file
+  mov di, ax                            ; Exit with remove's exit code
+
 main_end:
   mov ax, INT_N_EXIT                    ; Interrupt number for exiting from the process
   int INT_F_KERNEL                      ; End this process
