@@ -30,7 +30,9 @@ helpMsg:                  db NEWLINE
   db "help", TAB, "| Prints this help message.", NEWLINE, TAB
   db "clear", TAB, "| Clears the screen", NEWLINE, TAB
   db "text", TAB, "| Print a files content, <text file.txt>", NEWLINE, TAB
-  db "files", TAB, "| List files in a directory, or in the users directory. <files PATH>", NEWLINE, TAB
+  db "files", TAB, "| List files in a directory, or in the users directory. <files PATH>",TAB
+  db "move", TAB, "| Move a file from one place to another. <move SOURCE DESTINATION>", NEWLINE, TAB
+  db "copy", TAB, "| Copy a file from one place to another. <copy SOURCE DESTINATION>", NEWLINE, TAB
   db 0
 
 currentUserDirPath:       db '/'

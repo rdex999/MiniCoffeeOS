@@ -185,8 +185,24 @@ fopen:
   mov ds, bx                                      ; FAT entry stored on the stack
   mov dx, 32                                      ; Copy 32 bytes, the size of a FAT entry
   call memcpy                                     ; Copy the FAT entry into the empty file slot in openFiles
-  mov cx, [bp - 7]                                ; Get the empty slot index
 
+  ; Update the files last accessed date 
+  mov ax, es:[sysClock_day]                       ; Get day in month
+  and ax, 0001_1111b                              ; day is 5 bits
+
+  mov bx, es:[sysClock_month]                     ; Get current month
+  and bx, 0000_1111b                              ; Month is 4 bits
+  shl bx, 5                                       ; Month starts from bit 5
+  or ax, bx                                       ; Get month in result register
+
+  mov bx, es:[sysClock_year]                      ; Get current year
+  add bx, 20                                      ; Year starts from 20
+  shl bx, 5 + 4                                   ; Year starts from bit 9
+  or ax, bx                                       ; Get year in result register
+
+  mov es:[di + 18], ax                            ; Write the current date to the files FAT entry
+  
+  mov cx, [bp - 7]                                ; Get the empty slot index
   mov ax, cx                                      ; Get the files slot index
   inc ax                                          ; Increase by 1 so we dont return 0 for a valid index (0 indicates error)
 

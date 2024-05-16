@@ -380,6 +380,7 @@ createFile_initEntry:
 
   mov bl, ds:[sysClock_year]            ; Get current year
   xor bh, bh                            ; Zero out high 8 bits
+  add bx, 20                            ; Year starts from 20
   shl bx, 5 + 4                         ; Shift left by 9 bits (year: bits 9-15)
   or ax, bx                             ; Get current year in result register
 
