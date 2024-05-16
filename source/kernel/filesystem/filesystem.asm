@@ -183,4 +183,62 @@ countClusters:
   xor ax, ax                    ; If there is an error, return 0
   jmp .end                      ; Return
 
+
+; Get the amount of directories in the full version of a files path (with the current user directory)
+; PARAMETERS
+;   - 0) ES:DI  => Files path
+; RETURNS
+;   - 0) AX     => Amount of directories in the full path
+countFullPathDirs:
+  mov ax, 1                           ; Start counting from 1
+  cmp byte es:[di], '/'               ; Check if the given path starts from the root directory
+  je .skipFirstDir                    ; If it does, then dont count the directories in the current user directory
+
+  ; If it doesnt start from the root directory, count the amount of directories in the current user directory
+  push ds                             ; Save DS because changin it
+  mov bx, KERNEL_SEGMENT              ; Set DS:SI -> current user directory
+  mov ds, bx                          ;
+  lea si, currentUserDirPath + 1      ; Start from one character after the first one, because dont need to count the root directory
+.userDirCntLoop:
+  cmp byte ds:[si], 0                 ; Check if its the end of the root directory
+  je .userDirCntEnd                   ; If it is, exit out of this loop
+
+  cmp byte ds:[si], '/'               ; Check if the current character is a '/'
+  jne .userDirCntNotDir               ; If not, dont increment the directories count
+
+  inc ax                              ; If the current character is '/', increase the directory count
+.userDirCntNotDir:
+  inc si                              ; Increase the current user directory string pointer to point to the next character
+  jmp .userDirCntLoop                 ; Continue searching the string
+
+.userDirCntEnd:
+  pop ds                              ; Restore DS
+  jmp .dirCntLoop                     ; Dont skip the first character of the given path, because its not a '/' (know from the first line of the function)
+
+.skipFirstDir:
+
+  inc di                              ; If the first character of the given path is '/', skip it
+
+.dirCntLoop:
+  cmp byte es:[di], 0                 ; Check if its the end of the given path
+  je .afterDirCntLoop                 ; If it is, break out of this loop
+
+  cmp byte es:[di], '/'               ; Check if the current character in the given path is a '/'
+  jne .notDir                         ; If its not, dont increment the directory count
+
+  inc ax                              ; If its a '/', increment the directory count
+
+.notDir:
+  inc di                              ; Increase given path string pointer so it points to the next character
+  jmp .dirCntLoop                     ; Continue searching the string
+
+.afterDirCntLoop:
+  cmp byte es:[di - 1], '/'           ; Check if the given path ends with a '/', which doesnt count as a directory
+  jne .end                            ; If it doesnt end with '/', dont decrement the directory count
+
+  dec ax                              ; If it ends with '/', decrement the directory count
+
+.end:
+  ret
+
 %endif
