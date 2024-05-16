@@ -145,6 +145,15 @@ terminateProcess:
   mov word gs:[si + PROCESS_DESC_SLEEP_MS16], 0   ; Set its sleep time to 0
   mov gs:[si + PROCESS_DESC_EXIT_CODE8], cl
 
+  mov ax, gs:[si + PROCESS_DESC_SEG16]
+  mov gs:[si + PROCESS_DESC_REG_DS16], ax
+  mov gs:[si + PROCESS_DESC_REG_ES16], ax
+  mov gs:[si + PROCESS_DESC_REG_GS16], ax
+  mov gs:[si + PROCESS_DESC_REG_FS16], ax
+  mov gs:[si + PROCESS_DESC_REG_SS16], ax
+  mov gs:[si + PROCESS_DESC_REG_CS16], ax
+
+
   xor ax, ax
 
 .end:

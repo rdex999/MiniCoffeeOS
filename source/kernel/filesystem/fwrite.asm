@@ -106,7 +106,7 @@ fwrite:
   mov bx, ax                                      ; Get the amount of bytes written in BX, because we dont wanna modify AX (its the return value register)
   add bx, cx                                      ; Add the current position in the file to it
   cmp bx, es:[di + FILE_OPEN_ENTRY256 + 28]       ; Check if the new file size is greater than the current size
-  jbe .end                                        ; If its not, just return the amount of bytes written
+  ; jbe .end                                        ; If its not, just return the amount of bytes written
 
   add es:[di + FILE_OPEN_ENTRY256 + 28], ax       ; If it is greater, add the amount of bytes written to the size
 

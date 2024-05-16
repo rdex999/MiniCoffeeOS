@@ -23,6 +23,7 @@
   popf
 
 %%processesInit_nextSeg:
+  mov es:[si + PROCESS_DESC_SEG16], bx
   mov es:[si + PROCESS_DESC_REG_DS16], bx         ; Reset current process descriptor segments, to the current segment
   mov es:[si + PROCESS_DESC_REG_ES16], bx         ; 
   mov es:[si + PROCESS_DESC_REG_FS16], bx         ; 

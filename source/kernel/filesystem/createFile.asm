@@ -48,7 +48,12 @@ createFile:
   pop si                                ; Restore the path offset
   pop ds                                ; Restore the paths segment
 
+  cmp byte ds:[si], '/'                 ; Check if the first character of the path is a '/', which doesnt count as a directory
+  je .afterIncDirCnt                    ; If it is a '/', dont increment the directory count
+
   inc ax                                ; Increase amount of '/' in the string, so we always allocate at least 11 bytes
+.afterIncDirCnt:
+
   mov bx, 11                            ; Each path part is 11 bytes
   mul bx                                ; Multiply the amount of '/' in the path by 11 to get the amount of memory to allocate
 

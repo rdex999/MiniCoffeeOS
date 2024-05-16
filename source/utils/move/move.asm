@@ -121,18 +121,62 @@ main:
 
 .afterCopyFilename:
   ; Jump here with a pointer to the file to create in ES:DI
-  mov bx, es
-  mov ds, bx
-  PUTS_INT 100h, di             ;;;;;; DEBUG
 
-  mov di, [srcFileHandle]
-  mov ax, INT_N_FCLOSE
-  int INT_F_KERNEL
+  ; Create/recreate the destination file, open it and get a handle to it.
+  mov si, FILE_OPEN_ACCESS_WRITE        ; We want to create the file, or recreate it if it already exists, so request write access
+  mov ax, INT_N_FOPEN                   ; Interrupt number for openning a file
+  int INT_F_KERNEL                      ; Open the destination file
 
-  xor di, di
+  mov bx, fs                            ; Reset segments to their original value
+  mov ds, bx                            ;
+  mov es, bx                            ;
+
+  test ax, ax                           ; Check if the files handle is null
+  jnz .dstFileOpened                    ; If its not null, dont print an error message
+
+  PUTS_INT 100h, errCrtDstFile          ; If null priint an error message
+  mov di, [srcFileHandle]               ; Get file handle for the source file
+  and di, 0FFh                          ; Handle is 8 bits
+  mov ax, INT_N_FCLOSE                  ; Interrupt number for closing a file
+  int INT_F_KERNEL                      ; Close the source file
+
+  mov di, ERR_FILE_DOESNT_EXIST         ; Set error code
+  jmp main_end                          ; Exit
+
+.dstFileOpened:
+  mov [dstFileHandle], al               ; Store the handle to the destination file
+
+  ; Read the source file into the buffer
+  mov dl, [srcFileHandle]               ; Get the source file handle
+  xor dh, dh                            ; Handle is 8 bits
+
+  mov si, 0FFFFh - PROCESS_LOAD_OFFSET - fileBuffer   ; Set the amount of bytes to read to the amount of memory left for this process
+  lea di, fileBuffer                    ; Buffer to store data in
+  mov ax, INT_N_FREAD                   ; Interrupt number for reading a file
+  int INT_F_KERNEL                      ; Read the file
+
+  ; Write the buffer to the destination file
+  mov si, ax                            ; Get the amount of bytes read from the source file, and set it as the amount of bytes to write
+  lea di, fileBuffer                    ; Get a pointer to the buffer to write the data from
+  mov dl, [dstFileHandle]               ; Get the handle to the destination file
+  xor dh, dh                            ; Handle is 8 bits
+  mov ax, INT_N_FWRITE                  ; Interrupt number for writing to a file
+  int INT_F_KERNEL                      ; Write the bytes of the source file to the destination file
+
+  mov di, [srcFileHandle]               ; Get the source file handle
+  and di, 0FFh                          ; Handle is 8 bits
+  mov ax, INT_N_FCLOSE                  ; Interrupt number for closing a file
+  int INT_F_KERNEL                      ; Close the source file
+
+  mov di, [dstFileHandle]               ; Get the destination file handle
+  and di, 0FFh                          ; Handle is 8 bits
+  mov ax, INT_N_FCLOSE                  ; Interrupt number for closing a file
+  int INT_F_KERNEL                      ; Close the destination file
+
+  mov di, ax                            ; Exit with last fclose exit code
 main_end:
-  mov ax, INT_N_EXIT
-  int INT_F_KERNEL
+  mov ax, INT_N_EXIT                    ; Interrupt number for exiting from the process
+  int INT_F_KERNEL                      ; End this process
 
 ;
 ; ---------- [ DATA SEGMENT ] ----------
@@ -140,6 +184,7 @@ main_end:
 
 errInvalidUsage:              db "[ - move] Error, invalid usage. Correct usage: move SOURCE_PATH DESTINATION_PATH", 0
 errFileDoesntExit:            db "[ - move] Error, one of the given files does not exist.", NEWLINE, 0
+errCrtDstFile:                db "[ - move] Error, could not create the destination file.", NEWLINE, 0
 
 srcFileHandle:                db 0
 dstFileHandle:                db 0
