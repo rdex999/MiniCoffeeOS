@@ -150,6 +150,27 @@ main:
   ; DI  - minute
   ; SI  - second
   PRINTF_INT_LM fileFormatDateStr, ax, bx, cx, dx, di, si   ; Print the files creation time
+
+  ; Print the files last accessed date
+  pop si
+  push si
+  mov cx, [si + 18]                     ; Get the files creation date in CX
+  mov ax, cx                            ; The year will be in AX
+  shr ax, 9                             ; Get the year in AX
+  add ax, 2000 - 20                     ; Get year, starting from the 2000 (-20 because it starts from 20 idk why)
+
+  mov bx, cx                            ; Month will be in BX
+  and bx, 0F0h                          ; Zero out all bits except the month bits
+  shr bx, 5                             ; Get month in BX
+
+  and cx, 1Fh                           ; Get day in CX
+
+  ; When getting here, registers will have the creation time&date
+  ; AX  - year
+  ; BX  - month
+  ; CX  - day
+  PRINTF_INT_LM fileLastAccessedFormat, ax, bx, cx   ; Print the files last accessed date
+
   pop si                                ; Restore current file in directory pointer
   pop cx                                ; Restore amount of files left to read
 
@@ -175,19 +196,19 @@ main_end:
 ; ---------- [ DATA SECTION ] ----------
 ;
 
-errTooManyArgs:       db "[ - files] Error, too many arguments.", NEWLINE, 0
-errPathDoesntExist:   db "[ - files] Error, the given path does not exist.", NEWLINE, 0
+errTooManyArgs:             db "[ - files] Error, too many arguments.", NEWLINE, 0
+errPathDoesntExist:         db "[ - files] Error, the given path does not exist.", NEWLINE, 0
 
-listFilesOnDirMsg:    db "[ * files] Listing files on ", 0
+listFilesOnDirMsg:          db "[ * files] Listing files on ", 0
 
-tableStr:             db NEWLINE, TAB, "FILE NAME  ", TAB, "TYPE ", TAB, "SIZE      ", TAB, "CREATION DATE", NEWLINE, NEWLINE, 0
-dirTypeStr:           db "DIR", 0
-fileTypeStr:          db "FILE", 0
-fileFormatStr:        db TAB, "%s", TAB, "%s ", TAB, "%u.%u kB  ", TAB, 0
-fileFormatDateStr:    db "%u-%u-%u  %u:%u:%u", NEWLINE, 0
-userDir:              times MAX_PATH_FORMATTED_LENGTH db 0
+tableStr:                   db NEWLINE, TAB, "FILE NAME  ", TAB, "TYPE ", TAB, "SIZE      ", TAB, "CREATION DATE", TAB, TAB, TAB, "LAST ACCESSED DATE", NEWLINE, NEWLINE, 0
+dirTypeStr:                 db "DIR", 0
+fileTypeStr:                db "FILE", 0
+fileFormatStr:              db TAB, "%s", TAB, "%s ", TAB, "%u.%u kB  ", TAB, 0
+fileFormatDateStr:          db "%u-%u-%u  %u:%u:%u", TAB, TAB, 0
+fileLastAccessedFormat:     db "%u-%u-%u", NEWLINE, 0
 
-bytesRead: db "bytes read %u", NEWLINE, 0
+userDir:                    times MAX_PATH_FORMATTED_LENGTH db 0
 
 dirBuffer:
 
