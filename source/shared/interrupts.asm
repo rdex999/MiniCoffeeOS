@@ -201,18 +201,25 @@
 ; Doesnt return anything
 %define INT_N_GET_USER_PATH 18h
 
+; Set the current directory that the user is at
+; PARAMETERS
+;   - 0) ES:DI  => The new user directory string
+; RETURNS
+;   - 0) AX     => Error code, 0 on success
+%define INT_N_SET_USER_PATH 19h
+
 ; Execute a system command
 ; PARAMETERS
 ;   - 0) ES:DI  => The command string
 ; RETURNS
 ;   - 0) AX     => The exit code of the command
-%define INT_N_SYSTEM 19h
+%define INT_N_SYSTEM 1Ah
 
 ; Get the last exit code a command has returned
 ; Takes no parameters
 ; RETURNS
 ;   - 0) AX     => The exit code
-%define INT_N_GET_EXIT_CODE 1Ah
+%define INT_N_GET_EXIT_CODE 1Bh
 
 ; Copy a chunk of memory from one location to another
 ; PARAMS
@@ -221,7 +228,7 @@
 ;   - 2) DX       => The amount of memory to copy, in bytes.
 ; RETURNS
 ;   - ES:AX       => The original destination pointer
-%define INT_N_MEMCPY 1Bh
+%define INT_N_MEMCPY 1Ch
 
 
 ; Get the length of a null-terminated string.
@@ -229,6 +236,6 @@
 ;   - 0) ES:DI    => The string, null terminated
 ; RETURNS
 ;   - 0) AX       => The length of the string, in bytes.
-%define INT_N_STRLEN 1Ch
+%define INT_N_STRLEN 1Dh
 
 %endif

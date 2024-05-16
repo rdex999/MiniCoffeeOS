@@ -57,6 +57,22 @@ getFileEntry:
 
   inc ax                          ; Increase the amount of '/' in the path by 1, because there is always at least one part
 .afterIncDirCnt:
+  push ax                         ; Save the current directory count
+  mov es, [bp - 6]                ; Get a pointer to the file path
+  mov di, [bp - 8]                ;
+  push di                         ; Save it
+  call strlen                     ; Get its length
+  pop di                          ; Restore file path pointer
+  add di, ax                      ; Offset the file path pointer so it points to the character after the last one
+
+  pop ax                          ; Restore directory count
+  cmp byte es:[di - 1], '/'       ; Check if the file path ends with a '/', which doesnt count as a directory
+  jne .afterDecDirCnt             ; If it does not end with '/', dont decrement the directory count
+
+  dec ax                          ; If the file path ends with a '/', decremnt the directory count
+
+.afterDecDirCnt:
+
   mov [bp - 17], al               ; Store the result, thats for later
   mov [bp - 27], al
 

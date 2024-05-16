@@ -4,9 +4,9 @@
 
 # When using this file, specify -f = .
 
-.PHONY: all ui shell text files move copy
+.PHONY: all ui shell text files move copy cd
 
-all: ui shell text files move copy
+all: ui shell text files move copy cd
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui
@@ -31,4 +31,8 @@ $(BLD)/bin/move: $(SRC)/utils/move/move.asm
 
 copy: $(BLD)/bin/copy
 $(BLD)/bin/copy: $(SRC)/utils/copy/copy.asm
+	$(AS) $(AS_FLAGS) -o $@ $?
+
+cd: $(BLD)/bin/cd
+$(BLD)/bin/cd: $(SRC)/utils/cd/cd.asm
 	$(AS) $(AS_FLAGS) -o $@ $?

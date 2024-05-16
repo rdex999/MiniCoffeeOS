@@ -108,6 +108,9 @@ ISR_kernelInt:
   cmp ax, INT_N_GET_USER_PATH
   je ISR_getUserPath
 
+  cmp ax, INT_N_SET_USER_PATH
+  je ISR_setUserPath
+
   cmp ax, INT_N_SYSTEM
   je ISR_system
 
