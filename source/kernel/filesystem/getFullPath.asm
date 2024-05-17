@@ -20,7 +20,10 @@ getFullPath:
   
   mov [bp - 6], ds                          ; Store path segment
   mov [bp - 8], si                          ; Store path offset
-  
+
+  cmp byte ds:[si], '/'
+  je getFullPath_isOnFullPath
+
   mov bx, KERNEL_SEGMENT                    ; Set the kernel segment because currentUserDirPath is in it
   mov ds, bx                                ; 
 

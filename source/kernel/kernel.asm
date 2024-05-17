@@ -36,6 +36,7 @@ helpMsg:                  db NEWLINE
   db "cd", TAB, TAB, "| Go into a directory. <cd PATH>", NEWLINE, TAB
   db "delete", TAB, "| Delete a file from the filesystem. <delete FILE>", NEWLINE, TAB
   db "create", TAB, "| Create a new file. <create FILE>", NEWLINE, TAB
+  db "mkdir", TAB, "| Create a new directory. <mkdir PATH>", NEWLINE, TAB
   db 0
 
 currentUserDirPath:       db '/'

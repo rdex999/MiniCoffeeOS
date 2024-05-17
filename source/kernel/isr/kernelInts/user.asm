@@ -85,10 +85,12 @@ ISR_setUserPath:
 
   pop ax                                      ; Restore the length of the requested directory string
   add di, ax                                  ; Offset the offseted current user directory, so it points to the character after the last one
+  mov byte es:[di], 0                         ; Null terminate the string, in case it wasnt already
   cmp byte es:[di - 1], '/'                   ; Check if it ends with '/'
   je .success                                 ; If it does, then just return
 
   mov byte es:[di], '/'                       ; Set the last character of the current user directory to '/'
+  mov byte es:[di + 1], 0                     ; Null terminate the string because adding a character to it
 
 .success:
   xor ax, ax                                  ; Zero out error code
