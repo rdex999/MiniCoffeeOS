@@ -34,6 +34,7 @@ helpMsg:                  db NEWLINE
   db "move", TAB, "| Move a file from one place to another. <move SOURCE DESTINATION>", NEWLINE, TAB
   db "copy", TAB, "| Copy a file from one place to another. <copy SOURCE DESTINATION>", NEWLINE, TAB
   db "cd", TAB, TAB, "| Go into a directory. <cd PATH>", NEWLINE, TAB
+  db "delete", TAB, "| Delete a file from the filesystem. <delete FILE>", NEWLINE, TAB
   db 0
 
 currentUserDirPath:       db '/'
