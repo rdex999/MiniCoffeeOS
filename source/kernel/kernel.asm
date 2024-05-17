@@ -37,6 +37,7 @@ helpMsg:                  db NEWLINE
   db "delete", TAB, "| Delete a file from the filesystem. <delete FILE>", NEWLINE, TAB
   db "create", TAB, "| Create a new file. <create FILE>", NEWLINE, TAB
   db "mkdir", TAB, "| Create a new directory. <mkdir PATH>", NEWLINE, TAB
+  db "write", TAB, '| Write to a file. ">" write, ">>" append', TAB, '[write "text" >> FILE]', NEWLINE, TAB
   db 0
 
 currentUserDirPath:       db '/'
@@ -104,8 +105,6 @@ cmdClear:                 db "clear", 0
 
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
-
-buffer: times 200 db 0
 
 ;
 ; ---------- [ KERNEL MAIN ] ----------

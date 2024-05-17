@@ -26,4 +26,14 @@ ISR_strlen:
   call strlen
   jmp ISR_kernelInt_end_restBX
 
+; Compare two strings
+; PARAMETERS
+;   - 0) ES:DI    => First string
+;   - 1) DS:SI    => Second string
+; RETURNS
+;   - 0) AX       => Zero if the strings are equal
+ISR_strcmp:
+  call strcmp
+  jmp ISR_kernelInt_end_restBX
+
 %endif

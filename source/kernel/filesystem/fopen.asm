@@ -176,6 +176,12 @@ fopen:
 .setPosEnd:
   mov si, [bp - 9]                                ; Get a pointer to the files FAT entry
   mov ax, ss:[si + 28]                            ; Get the files size
+  test ax, ax                                     ; Check if the file size is 0, in which case dont need to decrement it
+  jz .setPosEnd_set                               ; If its zero dont decrement the file position
+
+  dec ax                                          ; If not zero, decrement the file position
+
+.setPosEnd_set:
   mov es:[di + FILE_OPEN_POS16], ax               ; Initialize the files current read position to the end of the file
 
 .afterSetPos:

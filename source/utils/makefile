@@ -4,9 +4,9 @@
 
 # When using this file, specify -f = .
 
-.PHONY: all ui shell text files move copy cd delete create mkdir
+.PHONY: all ui shell text files move copy cd delete create mkdir write
 
-all: ui shell text files move copy cd delete create mkdir
+all: ui shell text files move copy cd delete create mkdir write
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui
@@ -47,4 +47,8 @@ $(BLD)/bin/create: $(SRC)/utils/create/create.asm
 
 mkdir: $(BLD)/bin/mkdir
 $(BLD)/bin/mkdir: $(SRC)/utils/mkdir/mkdir.asm
+	$(AS) $(AS_FLAGS) -o $@ $?
+
+write: $(BLD)/bin/write
+$(BLD)/bin/write: $(SRC)/utils/write/write.asm
 	$(AS) $(AS_FLAGS) -o $@ $?

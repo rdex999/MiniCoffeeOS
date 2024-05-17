@@ -126,6 +126,9 @@ ISR_kernelInt:
   cmp ax, INT_N_STRLEN
   je ISR_strlen
 
+  cmp ax, INT_N_STRCMP
+  je ISR_strcmp
+
 ISR_kernelInt_end:
 ; *NOTE: "rest" == restore
 ISR_kernelInt_restAX:

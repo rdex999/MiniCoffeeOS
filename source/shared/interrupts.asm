@@ -230,7 +230,6 @@
 ;   - ES:AX       => The original destination pointer
 %define INT_N_MEMCPY 1Ch
 
-
 ; Get the length of a null-terminated string.
 ; PARAMETERS
 ;   - 0) ES:DI    => The string, null terminated
@@ -238,13 +237,20 @@
 ;   - 0) AX       => The length of the string, in bytes.
 %define INT_N_STRLEN 1Dh
 
+; Compare two strings
+; PARAMETERS
+;   - 0) ES:DI    => First string
+;   - 1) DS:SI    => Second string
+; RETURNS
+;   - 0) AX       => Zero if the strings are equal
+%define INT_N_STRCMP 1Eh
 
 ; Create a directory
 ; PARAMETERS
 ;   - 0) ES:DI    => New directory path
 ; RETURNS
 ;   - 0) AX       => Error code, 0 on success
-%define INT_N_MKDIR 1Eh
+%define INT_N_MKDIR 1Fh
 
 
 %endif
