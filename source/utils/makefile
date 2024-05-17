@@ -4,9 +4,9 @@
 
 # When using this file, specify -f = .
 
-.PHONY: all ui shell text files move copy cd delete
+.PHONY: all ui shell text files move copy cd delete create
 
-all: ui shell text files move copy cd delete
+all: ui shell text files move copy cd delete create
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui
@@ -39,4 +39,8 @@ $(BLD)/bin/cd: $(SRC)/utils/cd/cd.asm
 
 delete: $(BLD)/bin/delete
 $(BLD)/bin/delete: $(SRC)/utils/delete/delete.asm
+	$(AS) $(AS_FLAGS) -o $@ $?
+
+create: $(BLD)/bin/create
+$(BLD)/bin/create: $(SRC)/utils/create/create.asm
 	$(AS) $(AS_FLAGS) -o $@ $?
