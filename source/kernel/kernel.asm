@@ -33,6 +33,7 @@ helpMsg:                  db NEWLINE
   db "files", TAB, "| List files in a directory, or in the users directory. <files PATH>",TAB
   db "move", TAB, "| Move a file from one place to another. <move SOURCE DESTINATION>", NEWLINE, TAB
   db "copy", TAB, "| Copy a file from one place to another. <copy SOURCE DESTINATION>", NEWLINE, TAB
+  db "cd", TAB, TAB, "| Go into a directory. <cd PATH>", NEWLINE, TAB
   db 0
 
 currentUserDirPath:       db '/'
@@ -101,6 +102,8 @@ cmdClear:                 db "clear", 0
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
 
+buffer: times 200 db 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -119,6 +122,17 @@ kernelMain:
   lea di, shellExec 
   xor cl, cl
   call createProcess
+
+  ; lea di, buffer
+  ; lea si, shellExec
+  ; call getFullPath
+
+  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  ; lea si, buffer
+  ; mov dx, 44
+  ; call printStrLen
+
+
 
 .halt:
   hlt

@@ -43,12 +43,10 @@ getFullPath:
 
 getFullPath_afterUserPathCopy:
   ; Set pointers to buffer and path. ES:DI => buffer, DS:SI => path
+  mov ds, [bp - 6]                    ; Set path segemnt in DS
   mov si, [bp - 8]                    ; Set path offset in SI
-  mov bx, [bp - 6]                    ; Set path segemnt in DS
-  mov ds, bx                          ; 
   
-  mov bx, [bp - 2]                    ; Set buffer segment in ES
-  mov es, bx                          ;
+  mov es, [bp - 2]                    ; Set buffer segment in ES
 
   cmp byte ds:[si], '/'               ; Check if the path (parameter) starts with '/' to determin if its from the root dir
   je getFullPath_isOnFullPath         ; If its from the root dir then just parse it and write it to the beginning of the buffer
@@ -68,6 +66,9 @@ getFullPath_isOnFullPath:
   ; If there was an error then return with the error code which is in BX
 
 getFullPath_end:
+  mov ds, [bp - 2]
+  mov si, [bp - 6]
+
   mov sp, bp                          ; Restore stack frame
   pop bp                              ; 
   ret

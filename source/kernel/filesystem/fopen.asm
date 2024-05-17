@@ -218,6 +218,8 @@ fopen:
   jmp .end
 
 .handleWriteAccess:
+
+
   ; We need to check if the file exists, if it does, delete it and create it again
   mov ds, [bp - 2]                                ; Get a pointer to the files path (DS:SI)
   mov si, [bp - 11]                               ; Get offset
@@ -228,7 +230,6 @@ fopen:
   call getFileEntry                               ; Get the files entry
   test ax, ax                                     ; Check error code
   jnz .writeAccess_create                         ; If there was an error (which is not wrong) then the file doesnt exist, just create it
-
   mov es, [bp - 2]                                ; If the file does exist, delete it.  // Get a pointer to the files path
   mov di, [bp - 11]                               ; Get offset
   call remove                                     ; Delete the file

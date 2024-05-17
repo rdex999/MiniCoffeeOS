@@ -137,6 +137,11 @@ parsePath_foundNull_searchExt:          ; Loop from the end of the buffer and se
 
   ; Copy the extension to the end of the string - 3. for example "file.txt" => "FILE    TXT"
 parsePath_foundNull_foundExt:
+  mov ax, [bp - 3]
+  add ax, 3
+  cmp di, ax
+  jbe parsePath_success
+
   push ds                               ; Save data segment, because were gonna change it
   mov bx, es                            ; Set data segment to ES
   mov ds, bx                            ; Doing this because MOVSB is using DS:SI and ES:DI and since were copying from the buffer, to the buffer..

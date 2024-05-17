@@ -41,18 +41,7 @@ createFile:
   mov es, bx                            ; Set ES = DS
 
   mov di, si                            ; Set DI = SI, the paths offset
-  mov si, '/'                           ; Set second argument for strFindLetterCount, the letter to find ('/')
-  push es                               ; Save the original path string pointer
-  push di                               ; Save its offset
-  call strFindLetterCount               ; Get the amount of '/' in the path in AX
-  pop si                                ; Restore the path offset
-  pop ds                                ; Restore the paths segment
-
-  cmp byte ds:[si], '/'                 ; Check if the first character of the path is a '/', which doesnt count as a directory
-  je .afterIncDirCnt                    ; If it is a '/', dont increment the directory count
-
-  inc ax                                ; Increase amount of '/' in the string, so we always allocate at least 11 bytes
-.afterIncDirCnt:
+  call countFullPathDirs
 
   mov bx, 11                            ; Each path part is 11 bytes
   mul bx                                ; Multiply the amount of '/' in the path by 11 to get the amount of memory to allocate
@@ -62,7 +51,8 @@ createFile:
   sub sp, ax                            ; Allocate space for the formatted path on the stack
   mov [bp - 10], sp                     ; Save formatted path offset
 
-  ; DS:SI, the string path, is already set.
+  mov ds, [bp - 6] 
+  mov si, [bp - 8]
   mov bx, ss                            ; Set argument for getFullPath, where to store the new path   // Set it to the buffer
   mov es, bx                            ;
   mov di, sp                            ; SP already set to the buffers offset
@@ -171,6 +161,7 @@ createFile:
   ; We get the directory of the file by searching for the last '/' in the files path (then copy it to a seperate buffer, until that '/')
   mov es, [bp - 6]                      ; Get unformatted file path segment
   mov di, [bp - 8]                      ; Get unformatted file path offset
+  mov si, di                            ; Initialize pointer to the last '/', to the first character of the string
 .searchLestFolder:
   cmp byte es:[di], '/'                 ; Check if the current character in the path is a '/'
   jne .notDirSeparator                  ; If not, then skip the next line
@@ -185,13 +176,40 @@ createFile:
   jmp .searchLestFolder                 ; Continue searching the path for '/'
 
 .afterFindLastDir:
+  push si                               ; Save pointer to the last '/'
+  mov bx, KERNEL_SEGMENT                ; Set ES:DI -> Current user directory
+  mov es, bx                            ;
+  lea di, currentUserDirPath            ;
+  call strlen                           ; Get the length of the current user directory path
+  pop si                                ; Restore pointer to the last '/'
+
   ; When getting here ES:SI will point to the last '/' in the path
   mov dx, si                            ; Get the pointer in DX
   sub dx, [bp - 8]                      ; Subtract from it the beginning of the string, to get the length of the string until the last '/'
+  add dx, ax
 
   sub sp, dx                            ; Allocate space for the copy of the path 
   dec sp                                ; Allocate one more byte for the null character
   mov [bp - 20], sp                     ; Store a pointer to the beginning of the buffer
+
+  mov di, sp                            ; Get a pointer to the allocated buffer
+  push si                               ; Save the pointer to the lest '/'
+  lea si, currentUserDirPath            ; Set DS:SI -> current user directory path
+  mov bx, es                            ; ES already set to the kernels directory
+  mov ds, bx                            ;
+
+  mov bx, ss                            ; ES:DI -> buffer pointer
+  mov es, bx                            ;
+  mov dx, ax                            ; Set the amount of bytes to copy to the length of the current user directory
+  push dx                               ; Save length
+  call memcpy                           ; Copy the current user directory into the buffer
+  pop dx                                ; Restore amount of bytes copied
+  pop si                                ; Restore the pointer to the last '/' in the unformatted path
+
+  add di, dx                            ; Offset the buffer so it points to the character after the last character of the current user directory
+
+  mov dx, si                            ; Get pointer to the last '/' in DX
+  sub dx, [bp - 8]                      ; Get the length of the unformatted path until the last '/'
 
   ; Now we have the length of the path until the last '/' in DX
   ; so we want to copy the path into the new buffer.
@@ -201,14 +219,12 @@ createFile:
 
   mov bx, ss                            ; Get a pointer to the beginning of the allocated buffer
   mov es, bx                            ; Set segment
-  mov di, sp                            ; Set offset
   push dx                               ; Save the length of the new path
   call memcpy                           ; Copy the unformatted path to the buffer, until the last '/'
   pop dx                                ; Restore length of new path
 
   add di, dx                            ; Add the length to the buffer pointer, to get a pointer to the last character +1
   mov byte es:[di], 0                   ; Null terminate the new path
-
   sub sp, 32                            ; Allocate a buffer for the entry of the directory
   mov di, sp                            ; Get a pointer to the beginning of the buffer
 
@@ -216,6 +232,7 @@ createFile:
   mov ds, bx                            ; Set DS = SS
   mov es, bx                            ; Set ES = SS
   mov si, [bp - 20]                     ; Get a pointer to the new path
+
   call getFileEntry                     ; Get the directories entry and store it on the stack (the allocated 32 byte buffer)
   test ax, ax                           ; Check error code
   jnz .end                              ; If there was an error then return with it
@@ -234,6 +251,7 @@ createFile:
 
   mov word [bp - 15], 0                 ; Initialize offset from the cluster to 0
 .searchEmptyInDir_readSector:
+  
   mov bx, ss                            ; Reset ES to stack segment, for the buffers
   mov es, bx                            ;
 
