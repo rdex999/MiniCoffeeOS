@@ -102,22 +102,25 @@ parseCmdArgs:
   mov es, [bp - 2]                ; Get the command string pointer, for countCmdArgBytes
   mov di, [bp - 4]                ;
 
-  mov ds, [bp - 6]                ; Get the buffer pointer
-  mov si, [bp - 8]                ;
-  mov ds:[si], di                 ; Set the current location in the buffer to the string pointer (we fill the buffer with pointers)
-
   call countCmdArgBytes           ; Get a pointer to the next argument, (DS:SI) and the length of the current one
 
+  mov bx, di
   add di, ax                      ; Offset the current argument to the space after it
   mov byte es:[di], 0             ; Null terminate the argument
 
   mov [bp - 2], ds                ; Update command string pointer so it points to the next argument
   mov [bp - 4], si                ;
 
+  mov al, ds:[si]
+
+  mov ds, [bp - 6]                ; Get the buffer pointer
+  mov si, [bp - 8]                ;
+  mov ds:[si], bx                 ; Set the current location in the buffer to the string pointer (we fill the buffer with pointers)
+
   add word [bp - 8], 2            ; Increase buffer pointer so it points to the next pointer (its an array of pointers)
 
-  cmp byte ds:[si], 0             ; Check if its the end of the command
-  jne .parseNextArg               ; As long as its not the end, continue parsing
+  test al, al                     ; Check if its the end of the command
+  jnz .parseNextArg               ; As long as its not the end, continue parsing
 
 .end:
   mov sp, bp                      ; Restore stack frame
@@ -137,6 +140,7 @@ countCmdArgBytes:
   mov si, di                      ; Set offset
 
   ; We want to skip the first spaces
+  cld                             ; Clear direction flag so LODSB will increment SI each time
   mov cx, 0FFFFh                  ; Set maximum amount of bytes to check
   mov al, ' '                     ; Character to check for
   repe scasb                      ; Skip all spaces
@@ -145,14 +149,34 @@ countCmdArgBytes:
   mov si, di                      ; Reset DS:SI to the first character of the argument
 
   xor cx, cx                      ; Zero out bytes count
+  cmp byte ds:[si], '"'           ; Check if the first character is a quot
+  jne .cntLoop                    ; If its not, dont parse for quotes
 
-  cld                             ; Clear direction flag so LODSB will increment SI each time
+  inc di                          ; If quot, increase string pointers
+  inc si                          ;
+.quotCntBytesLoop:
+  lodsb                           ; Get the next character in the quot string
+
+  test al, al                     ; Check if its a null character
+  jz .isNull                      ; If its null, return
+
+.quotCntBytesLoop_notNull:
+  inc cx                          ; If not null, increase byte count
+  
+  cmp al, '"'                     ; Check if the current character is an end quot
+  jne .quotCntBytesLoop           ; If not an end quot, continue searching for it
+
+  dec cx                          ; If its an end quot, decrement the bytes count because the end quot doesnt count.
+  jmp .retCnt                     ; Return
+
+
 .cntLoop:
   lodsb                           ; Get the next character from the command string
 
   test al, al                     ; Check if its null
   jnz .notNull                    ; If it is, return the legnth
 
+.isNull:
   dec si                          ; If null, decrement string pointer so it points to the null byte
   jmp .retCnt                     ; Return the amount of bytes
 

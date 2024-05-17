@@ -176,6 +176,20 @@ createFile:
   jmp .searchLestFolder                 ; Continue searching the path for '/'
 
 .afterFindLastDir:
+  mov di, [bp - 8]                      ; Get a pointer to the beginning of the unformatted string
+  cmp byte es:[di], '/'                 ; Check if it starts from the root directory
+  jne .copyUserDir                      ; If it doesnt, copy the relative path
+
+  mov dx, si                            ; Get the pointer in DX
+  sub dx, [bp - 8]                      ; Subtract from it the beginning of the string, to get the length of the string until the last '/'
+
+  sub sp, dx                            ; Allocate space for the copy of the path 
+  dec sp                                ; Allocate one more byte for the null character
+  mov [bp - 20], sp                     ; Store a pointer to the beginning of the buffer
+  mov di, sp                            ; Get a pointer to the allocated buffer
+  jmp .afterCopyUserDir                 ; Skip copying the relative path, because the path starts from the root directory
+
+.copyUserDir:
   push si                               ; Save pointer to the last '/'
   mov bx, KERNEL_SEGMENT                ; Set ES:DI -> Current user directory
   mov es, bx                            ;
@@ -208,6 +222,7 @@ createFile:
 
   add di, dx                            ; Offset the buffer so it points to the character after the last character of the current user directory
 
+.afterCopyUserDir:
   mov dx, si                            ; Get pointer to the last '/' in DX
   sub dx, [bp - 8]                      ; Get the length of the unformatted path until the last '/'
 
