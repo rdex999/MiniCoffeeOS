@@ -90,6 +90,9 @@ ISR_kernelInt:
   cmp ax, INT_N_REMOVE
   je ISR_remove
 
+  cmp ax, INT_N_MKDIR
+  je ISR_mkdir
+
   cmp ax, INT_N_GET_LOW_TIME
   je ISR_getLowTime
 

@@ -62,4 +62,27 @@ ISR_remove:
   call remove
   jmp ISR_kernelInt_end_restBX
 
+
+; Create a directory
+; PARAMETERS
+;   - 0) ES:DI    => New directory path
+; RETURNS
+;   - 0) AX       => Error code, 0 on s
+ISR_mkdir:
+  push es
+  push ds
+  mov bx, es
+  mov ds, bx
+  mov si, di
+
+  xor bx, bx
+  mov es, bx
+  xor di, di
+
+  mov dl, FAT_F_DIRECTORY
+  call createFile
+  pop ds
+  pop es
+  jmp ISR_kernelInt_end_restBX
+
 %endif

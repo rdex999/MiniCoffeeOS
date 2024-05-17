@@ -238,4 +238,13 @@
 ;   - 0) AX       => The length of the string, in bytes.
 %define INT_N_STRLEN 1Dh
 
+
+; Create a directory
+; PARAMETERS
+;   - 0) ES:DI    => New directory path
+; RETURNS
+;   - 0) AX       => Error code, 0 on success
+%define INT_N_MKDIR 1Eh
+
+
 %endif
