@@ -219,7 +219,7 @@
   pop ax                                      ; Restore AX
   iret
 
-%%switchProcess_end
+%%switchProcess_end:
 
 %endmacro
 
