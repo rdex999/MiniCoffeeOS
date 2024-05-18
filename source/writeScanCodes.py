@@ -241,7 +241,7 @@ def getCapitalAscii(keyCode: int) -> int:
         case '/':
             return ord('?')
         case _:
-            return 0
+            return k.ascii
 
 keys.sort(key=attrgetter("scanCode"))
 

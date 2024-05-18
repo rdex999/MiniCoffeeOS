@@ -125,17 +125,6 @@ kernelMain:
   xor cl, cl
   call createProcess
 
-  ; lea di, buffer
-  ; lea si, shellExec
-  ; call getFullPath
-
-  ; mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
-  ; lea si, buffer
-  ; mov dx, 44
-  ; call printStrLen
-
-
-
 .halt:
   hlt
   jmp .halt                             ; jump to <this> location. should not get there.

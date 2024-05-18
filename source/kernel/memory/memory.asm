@@ -85,17 +85,40 @@ getNextSegOff:
 ; RETURNS
 ;   - ES:DI       => The original destination pointer
 memcpy:
-  mov cx, dx                ; Amount of bytes to copy in CX
-  shr cx, 1                 ; Divide by 2 because copying 2 bytes each time
-  cld                       ; Clear direction flag so MOVSW will increase SI and DI each time
-  rep movsw                 ; Copy bytes from DS:SI to ES:DI, increase SI and DI, and repeat until CX == 0
-  test dx, 1                ; Check if the amount of bytes copied is a multiple of 2, because we divided it by 2
-  jz memcpy_end             ; If it is then return
+  push bp                   ; Save stack frame
+  mov bp, sp                ;
+  sub sp, 2                 ; Allocate space for local stuff
+  mov [bp - 2], di          ; Save destination pointer because returning it later
 
-  movsb                     ; If not then copy the last byte
+  mov ax, es                ; Set AX = ES
+  mov bx, ds                ; Set BX = DS   // Because cant perform operations on segments directly
+  cmp ax, bx                ; Check if the destination pointer is after the source, in which case copy data from the end
+  ja .setCopyFromEnd        ; If above copy from the end
+  jb .setCopyFromStart      ; If the destination is below the source, copy from the start
 
-memcpy_end:
-  sub di, dx
+  cmp di, si                ; If the segments are equal, check if the destination offset is above the source
+  jb .setCopyFromStart      ; If its below, copy from the start
+  je .end                   ; If both destination and source are equal, dont copy data, just return
+
+.setCopyFromEnd:
+  mov cx, dx                ; Get amount of bytes to copy in CX
+  dec dx                    ; Need to offset the destination and source so they point to the end, but offset by the amount of bytes to copy - 1
+  add di, dx                ; Offset destination
+  add si, dx                ; Offset source
+  std                       ; Set direction flag so MOVSB will decrement DI and SI
+  rep movsb                 ; Copy the data
+  cld                       ; Clear direction flag because 99% of the time its cleared
+  jmp .end                  ; Return
+
+.setCopyFromStart:
+  mov cx, dx                ; Get amount of bytes to copy
+  cld                       ; Clear direction flag so MOVSB will increment DI and SI
+  rep movsb
+
+.end:
+  mov di, [bp - 2]          ; Restore destination pointer
+  mov sp, bp                ; Restore stack frame
+  pop bp                    ;
   ret
 
 
