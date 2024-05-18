@@ -106,6 +106,8 @@ cmdClear:                 db "clear", 0
 uiExec:                   db "/bin/ui", 0
 shellExec:                db "/bin/shell", 0
 
+buffer: times 40 db 0
+
 ;
 ; ---------- [ KERNEL MAIN ] ----------
 ;
@@ -116,6 +118,18 @@ kernelMain:
   lea si, [welcomeMsg]
   mov di, COLOR(VGA_TXT_LIGHT_CYAN, VGA_TXT_BLACK)
   call printStr
+
+  mov si, 40
+  lea di, buffer
+  call read
+
+  PRINT_NEWLINE 1
+
+  lea si, buffer
+  mov di, COLOR(VGA_TXT_YELLOW, VGA_TXT_DARK_GRAY)
+  call printStr
+
+  jmp $
 
   lea di, uiExec
   xor cl, cl 

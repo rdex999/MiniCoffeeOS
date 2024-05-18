@@ -8,6 +8,7 @@
 %include "kernel/macros/macros.asm"
 %include "kernel/io/printf.asm"
 %include "kernel/io/printSubRoutines.asm"
+%include "kernel/io/read.asm"
 
 ; Just prints a character, doesnt advance the cursor.
 ; If its a special character (newline, tab, carriage return) then the function saves AX, DI, SI, DX
@@ -213,87 +214,4 @@ printCharNoAdvance_end:
   pop es
   ret
 
-
-; reads a string into a buffer with echoing. zero terminates the string.
-; PARAMS
-;   - 0) ES:DI  => buffer
-;   - 1) SI     => length to read
-; RETURNS
-;   - AX  => number of bytes read
-read:
-  push bp
-  mov bp, sp
-  sub sp, 4
-
-  mov [bp - 2], gs
-  mov bx, KERNEL_SEGMENT
-  mov gs, bx
-
-  mov word [bp - 4], 0
-
-read_loop:
-  SAVE_BEFORE_CALL kbd_waitForChar, di, si
-
-  cmp al, CARRIAGE_RETURN
-  je read_handleEnter
-
-  cmp al, BACKSPACE
-  je read_handleBackspace
-
-  cmp al, TAB
-  je read_loop
-
-  test si, si
-  jz read_loop
-  dec si
-
-  cld
-  stosb
-
-  inc word [bp - 4]
-  push di
-  push si
-  mov ah, gs:[trmColor]
-  mov di, ax
-  call printChar
-  pop si
-  pop di
-  jmp read_loop
-
-read_handleBackspace:
-  cmp word [bp - 4], 0
-  je read_loop
-  
-  SAVE_BEFORE_CALL getCursorIndex, di, si
-  test ax, ax
-  jz read_loop
-
-  dec ax
-  push di
-  push si
-  mov di, ax
-  call setCursorIndex
-
-  mov ah, gs:[trmColor]
-  mov al, ' '
-  mov di, ax
-  call printCharNoAdvance
-
-  pop si
-  pop di
-
-  dec di
-  dec word [bp - 4]
-  inc si
-  jmp read_loop
-
-read_handleEnter:
-  mov byte es:[di], 0
-  mov ax, [bp - 4]
-
-read_end:
-  mov gs, [bp - 2]
-  mov sp, bp
-  pop bp
-  ret
 %endif
