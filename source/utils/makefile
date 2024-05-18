@@ -10,8 +10,8 @@ all: ui shell text files move copy cd delete create mkdir write
 	mcopy -i $(FDA) $(BLD)/bin "::bin"
 
 ui: $(BLD)/bin/ui
-$(BLD)/bin/ui: $(SRC)/utils/ui/ui.asm
-	$(AS) $(AS_FLAGS) -o $@ $?
+$(BLD)/bin/ui: $(SRC)/utils/ui/ui.asm $(SRC)/utils/ui/drawTopBar.asm
+	$(AS) $(AS_FLAGS) -o $@ $(SRC)/utils/ui/ui.asm 
 
 shell: $(BLD)/bin/shell
 $(BLD)/bin/shell: $(SRC)/utils/shell/shell.asm
